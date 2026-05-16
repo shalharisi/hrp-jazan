@@ -1,127 +1,506 @@
-import React from "react";
+import React, { useState } from "react";
 import { useParams, Link } from "wouter";
 import { useI18n } from "@/lib/i18n-context";
-import { useGetPregnancy, useListAppointments } from "@workspace/api-client-react";
+import { useGetPregnancy, useUpdatePregnancy, useListHospitals, PregnancyUpdateRiskLevel, PregnancyUpdateReferralRecommendation } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RiskBadge, ComplianceBadge, ReferralBadge } from "@/components/ui/status-badges";
-import { Calendar, User, Activity } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Pencil, X, Save, User, Calendar, Phone } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
+
+const RISK_FACTORS_G1 = [
+  "تعدد الأجنة", "عمر الأم فوق 40", "عمر الأم أقل من 16",
+  "BMI 35 أو أكثر", "حمل IVF", "مدخنة",
+  "نتائج فحص الفصل الأول إيجابية",
+  "3 إجهاضات أو أكثر", "ولادة مبكرة سابقة", "وفاة جنينية سابقة",
+  "عملية قيصرية سابقة", "سوابق تسمم الحمل", "جلطات وريدية سابقة",
+  "سابقة إصابة بنزيف ما بعد الولادة",
+];
+
+const RISK_FACTORS_G2 = [
+  "ارتفاع ضغط الدم الحملي",
+  "تسمم الحمل / الإرعاش",
+  "داء السكري الحملي",
+  "انفصال المشيمة",
+  "المشيمة المنزاحة",
+  "تأخر النمو داخل الرحم (IUGR)",
+  "نقص السائل الأمنيوسي",
+  "زيادة السائل الأمنيوسي",
+  "تمزق الأغشية المبكر (PPROM)",
+  "نزيف ما قبل الولادة",
+  "الإجهاض المهدد",
+  "هيموغلوبين منخفض (Hb < 9)",
+];
+
+const RISK_FACTORS_G3 = [
+  "داء السكري النوع الأول",
+  "داء السكري النوع الثاني",
+  "ارتفاع ضغط الدم المزمن",
+  "أمراض القلب",
+  "أمراض الكلى",
+  "أمراض الغدة الدرقية",
+  "الصرع",
+  "الأمراض المناعية الذاتية",
+  "الربو الشديد",
+  "أمراض الكبد",
+  "الاكتئاب / الاضطرابات النفسية",
+  "فقر الدم المنجلي أو الثلاسيميا",
+  "السرطان",
+];
+
+type EditForm = {
+  visitDate: string;
+  lmpDate: string;
+  gestationalAge: string;
+  riskLevel: string;
+  referralRecommendation: string;
+  riskFactors: string[];
+  pregnancyRiskFactors: string[];
+  medicalConditions: string[];
+  medications: string;
+  isVteHighRisk: boolean;
+  enoxaparinPrescribed: boolean;
+  referralExplained: boolean | null;
+  doctorName: string;
+  referredHospitalId: string;
+  appointmentDate: string;
+  notes: string;
+  followUpNotes: string;
+};
 
 export default function PregnancyDetail() {
   const { id } = useParams();
   const pregnancyId = Number(id);
   const { t } = useI18n();
+  const { toast } = useToast();
+  const [editMode, setEditMode] = useState(false);
 
-  const { data: detail, isLoading: loadingCase } = useGetPregnancy(pregnancyId, {
+  const { data: detail, isLoading, refetch } = useGetPregnancy(pregnancyId, {
     query: { queryKey: ["pregnancy", pregnancyId], enabled: !!pregnancyId }
   });
 
-  const { data: appointments, isLoading: loadingAppts } = useListAppointments(
-    { pregnancyId },
-    { query: { queryKey: ["appointments", pregnancyId], enabled: !!pregnancyId } }
-  );
+  const { data: hospitals } = useListHospitals();
+  const updatePregnancy = useUpdatePregnancy();
 
-  if (loadingCase) return <Skeleton className="h-64 w-full" />;
-  if (!detail) return <div>Case not found</div>;
+  const [form, setForm] = useState<EditForm>({
+    visitDate: "", lmpDate: "", gestationalAge: "", riskLevel: "", referralRecommendation: "",
+    riskFactors: [], pregnancyRiskFactors: [], medicalConditions: [],
+    medications: "", isVteHighRisk: false, enoxaparinPrescribed: false,
+    referralExplained: null, doctorName: "", referredHospitalId: "",
+    appointmentDate: "", notes: "", followUpNotes: "",
+  });
 
-  const { pregnancy, patient } = detail;
+  function startEdit() {
+    if (!detail) return;
+    const { pregnancy } = detail;
+    setForm({
+      visitDate: pregnancy.visitDate ?? "",
+      lmpDate: pregnancy.lmpDate ?? "",
+      gestationalAge: pregnancy.gestationalAge != null ? String(pregnancy.gestationalAge) : "",
+      riskLevel: pregnancy.riskLevel ?? "",
+      referralRecommendation: pregnancy.referralRecommendation ?? "",
+      riskFactors: pregnancy.riskFactors ?? [],
+      pregnancyRiskFactors: pregnancy.pregnancyRiskFactors ?? [],
+      medicalConditions: pregnancy.medicalConditions ?? [],
+      medications: pregnancy.medications ?? "",
+      isVteHighRisk: pregnancy.isVteHighRisk ?? false,
+      enoxaparinPrescribed: pregnancy.enoxaparinPrescribed ?? false,
+      referralExplained: pregnancy.referralExplained ?? null,
+      doctorName: pregnancy.doctorName ?? "",
+      referredHospitalId: pregnancy.referredHospitalId ? String(pregnancy.referredHospitalId) : "",
+      appointmentDate: pregnancy.appointmentDate ?? "",
+      notes: pregnancy.notes ?? "",
+      followUpNotes: pregnancy.followUpNotes ?? "",
+    });
+    setEditMode(true);
+  }
+
+  function cancelEdit() { setEditMode(false); }
+
+  function toggleInArray(arr: string[], val: string): string[] {
+    return arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val];
+  }
+
+  function saveEdit() {
+    updatePregnancy.mutate(
+      {
+        id: pregnancyId,
+        data: {
+          visitDate: form.visitDate || undefined,
+          lmpDate: form.lmpDate || null,
+          gestationalAge: form.gestationalAge ? Number(form.gestationalAge) : null,
+          riskLevel: form.riskLevel as PregnancyUpdateRiskLevel || undefined,
+          referralRecommendation: form.referralRecommendation as PregnancyUpdateReferralRecommendation || undefined,
+          riskFactors: form.riskFactors,
+          pregnancyRiskFactors: form.pregnancyRiskFactors,
+          medicalConditions: form.medicalConditions,
+          medications: form.medications || null,
+          isVteHighRisk: form.isVteHighRisk,
+          enoxaparinPrescribed: form.enoxaparinPrescribed,
+          referralExplained: form.referralExplained,
+          doctorName: form.doctorName || null,
+          referredHospitalId: form.referredHospitalId ? Number(form.referredHospitalId) : null,
+          appointmentDate: form.appointmentDate || null,
+          notes: form.notes || null,
+          followUpNotes: form.followUpNotes || null,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast({ title: t("general.saved"), description: t("general.saveSuccess") });
+          setEditMode(false);
+          refetch();
+        },
+        onError: () => {
+          toast({ title: "خطأ", description: t("general.saveError"), variant: "destructive" });
+        },
+      }
+    );
+  }
+
+  if (isLoading) return <Skeleton className="h-64 w-full" />;
+  if (!detail) return <div>لم يتم العثور على الحالة</div>;
+
+  const { pregnancy, patient, appointments } = detail;
+  const p = pregnancy;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-3xl font-bold">Case Details</h1>
+        <div>
+          <h1 className="text-3xl font-bold">{t("pregnancy.caseDetails")}</h1>
+          {patient && (
+            <Link href={`/patients/${patient.id}`} className="text-primary hover:underline text-sm">
+              {patient.nameAr} — {patient.nationalId}
+            </Link>
+          )}
+        </div>
+        <div className="flex gap-2">
+          {editMode ? (
+            <>
+              <Button onClick={saveEdit} disabled={updatePregnancy.isPending}>
+                <Save className="w-4 h-4 ms-2" />
+                {t("general.save")}
+              </Button>
+              <Button variant="outline" onClick={cancelEdit}>
+                <X className="w-4 h-4 ms-2" />
+                {t("general.cancel")}
+              </Button>
+            </>
+          ) : (
+            <Button variant="outline" onClick={startEdit}>
+              <Pencil className="w-4 h-4 ms-2" />
+              {t("pregnancy.editCase")}
+            </Button>
+          )}
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="col-span-1 md:col-span-2">
-          <CardHeader>
-            <CardTitle>Case Status</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex gap-4 flex-wrap">
-              <RiskBadge level={pregnancy.riskLevel} />
-              <ComplianceBadge status={pregnancy.compliance} />
-              <ReferralBadge recommendation={pregnancy.referralRecommendation} />
-              {pregnancy.isVteHighRisk && <Badge variant="destructive">VTE High Risk</Badge>}
+      {/* Patient summary */}
+      {patient && (
+        <Card className="bg-muted/40">
+          <CardContent className="pt-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+              <div><span className="text-muted-foreground">{t("patients.name")}: </span><span className="font-medium">{patient.nameAr}</span></div>
+              <div><span className="text-muted-foreground">{t("patients.nationalId")}: </span><span className="font-medium" dir="ltr">{patient.nationalId}</span></div>
+              <div><span className="text-muted-foreground">{t("patients.age")}: </span><span className="font-medium">{patient.age != null ? `${patient.age} سنة` : "—"}</span></div>
+              <div><span className="text-muted-foreground">{t("patients.phone")}: </span><span className="font-medium" dir="ltr">{patient.phone}</span></div>
+              {patient.doctorPhone && (
+                <div><span className="text-muted-foreground">{t("patients.doctorPhone")}: </span><span className="font-medium" dir="ltr">{patient.doctorPhone}</span></div>
+              )}
+              {patient.address && (
+                <div><span className="text-muted-foreground">{t("patients.address")}: </span><span className="font-medium">{patient.address}</span></div>
+              )}
+              <div><span className="text-muted-foreground">{t("patients.sector")}: </span><span className="font-medium">{patient.sectorNameAr ?? "—"}</span></div>
+              <div><span className="text-muted-foreground">{t("patients.healthCenter")}: </span><span className="font-medium">{patient.healthCenterNameAr ?? "—"}</span></div>
             </div>
+          </CardContent>
+        </Card>
+      )}
 
-            {pregnancy.riskFactors && pregnancy.riskFactors.length > 0 && (
-              <div>
-                <h3 className="font-semibold mb-2">Risk Factors</h3>
-                <div className="flex flex-wrap gap-2">
-                  {pregnancy.riskFactors.map((rf, i) => (
-                    <Badge key={i} variant="outline">{rf}</Badge>
-                  ))}
-                </div>
+      {/* Status Row */}
+      {!editMode && (
+        <div className="flex flex-wrap gap-2">
+          <RiskBadge level={p.riskLevel} />
+          <ComplianceBadge status={p.compliance} />
+          <ReferralBadge recommendation={p.referralRecommendation} />
+          {p.isVteHighRisk && <Badge variant="destructive">VTE عالي الخطورة</Badge>}
+          {p.enoxaparinPrescribed && <Badge className="bg-blue-100 text-blue-800">Enoxaparin موصوف</Badge>}
+          {p.referralExplained === true && <Badge className="bg-green-100 text-green-800">الإحالة مُوضَّحة ✓</Badge>}
+          {p.referralExplained === false && <Badge className="bg-red-100 text-red-800">الإحالة غير مُوضَّحة</Badge>}
+        </div>
+      )}
+
+      {/* Main form */}
+      <Card>
+        <CardHeader><CardTitle>بيانات الزيارة</CardTitle></CardHeader>
+        <CardContent>
+          {editMode ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Field label={t("pregnancy.visitDate")}><Input type="date" value={form.visitDate} onChange={e => setForm(f => ({ ...f, visitDate: e.target.value }))} /></Field>
+              <Field label={t("pregnancy.lmpDate")}><Input type="date" value={form.lmpDate} onChange={e => setForm(f => ({ ...f, lmpDate: e.target.value }))} /></Field>
+              <Field label={t("pregnancy.gestationalAge")}><Input type="number" min={0} max={45} value={form.gestationalAge} onChange={e => setForm(f => ({ ...f, gestationalAge: e.target.value }))} placeholder="أسبوع" /></Field>
+              <Field label={t("pregnancy.riskLevel")}>
+                <Select value={form.riskLevel} onValueChange={v => setForm(f => ({ ...f, riskLevel: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {["low","medium","high","critical"].map(l => <SelectItem key={l} value={l}>{t(`risk.${l}` as any)}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label={t("pregnancy.doctorName")}><Input value={form.doctorName} onChange={e => setForm(f => ({ ...f, doctorName: e.target.value }))} /></Field>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+              <InfoRow label={t("pregnancy.visitDate")} value={p.visitDate ? new Date(p.visitDate).toLocaleDateString("ar-SA") : "—"} />
+              <InfoRow label={t("pregnancy.lmpDate")} value={p.lmpDate ? new Date(p.lmpDate).toLocaleDateString("ar-SA") : "—"} />
+              <InfoRow label={t("pregnancy.gestationalAge")} value={p.gestationalAge != null ? `${p.gestationalAge} أسبوع` : "—"} />
+              <InfoRow label={t("pregnancy.riskLevel")} value={t(`risk.${p.riskLevel}` as any)} />
+              <InfoRow label={t("pregnancy.doctorName")} value={p.doctorName ?? "—"} />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Risk Factors G1 */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("pregnancy.riskFactors")}</CardTitle>
+          <p className="text-sm text-muted-foreground">{t("pregnancy.riskFactorsDesc")}</p>
+        </CardHeader>
+        <CardContent>
+          {editMode ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {RISK_FACTORS_G1.map(f => (
+                <label key={f} className="flex items-center gap-3 rounded-md border p-3 cursor-pointer hover:bg-muted">
+                  <Checkbox checked={form.riskFactors.includes(f)} onCheckedChange={() => setForm(prev => ({ ...prev, riskFactors: toggleInArray(prev.riskFactors, f) }))} />
+                  <span className="text-sm">{f}</span>
+                </label>
+              ))}
+            </div>
+          ) : (
+            <BadgeList items={p.riskFactors ?? []} />
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Risk Factors G2 */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("pregnancy.pregnancyRiskFactors")}</CardTitle>
+          <p className="text-sm text-muted-foreground">{t("pregnancy.pregnancyRiskFactorsDesc")}</p>
+        </CardHeader>
+        <CardContent>
+          {editMode ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {RISK_FACTORS_G2.map(f => (
+                <label key={f} className="flex items-center gap-3 rounded-md border p-3 cursor-pointer hover:bg-muted">
+                  <Checkbox checked={form.pregnancyRiskFactors.includes(f)} onCheckedChange={() => setForm(prev => ({ ...prev, pregnancyRiskFactors: toggleInArray(prev.pregnancyRiskFactors, f) }))} />
+                  <span className="text-sm">{f}</span>
+                </label>
+              ))}
+            </div>
+          ) : (
+            <BadgeList items={p.pregnancyRiskFactors ?? []} />
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Medical Conditions G3 */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("pregnancy.medicalConditions")}</CardTitle>
+          <p className="text-sm text-muted-foreground">{t("pregnancy.medicalConditionsDesc")}</p>
+        </CardHeader>
+        <CardContent>
+          {editMode ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {RISK_FACTORS_G3.map(f => (
+                <label key={f} className="flex items-center gap-3 rounded-md border p-3 cursor-pointer hover:bg-muted">
+                  <Checkbox checked={form.medicalConditions.includes(f)} onCheckedChange={() => setForm(prev => ({ ...prev, medicalConditions: toggleInArray(prev.medicalConditions, f) }))} />
+                  <span className="text-sm">{f}</span>
+                </label>
+              ))}
+            </div>
+          ) : (
+            <BadgeList items={p.medicalConditions ?? []} />
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Medications + VTE + Referral */}
+      <Card>
+        <CardHeader><CardTitle>الأدوية والإحالة</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          {editMode ? (
+            <>
+              <Field label={t("pregnancy.medications")}>
+                <p className="text-xs text-muted-foreground mb-1">{t("pregnancy.medicationsDesc")}</p>
+                <Textarea value={form.medications} onChange={e => setForm(f => ({ ...f, medications: e.target.value }))} rows={2} placeholder="اذكر الدواء إن وُجد..." />
+              </Field>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <label className="flex items-center gap-3 rounded-md border p-4 cursor-pointer hover:bg-muted">
+                  <Checkbox checked={form.isVteHighRisk} onCheckedChange={v => setForm(f => ({ ...f, isVteHighRisk: !!v }))} />
+                  <span className="text-sm font-medium">{t("pregnancy.isVteHighRisk")}</span>
+                </label>
+                <label className="flex items-center gap-3 rounded-md border p-4 cursor-pointer hover:bg-muted">
+                  <Checkbox checked={form.enoxaparinPrescribed} onCheckedChange={v => setForm(f => ({ ...f, enoxaparinPrescribed: !!v }))} />
+                  <span className="text-sm font-medium">{t("pregnancy.enoxaparinPrescribed")}</span>
+                </label>
               </div>
-            )}
-          </CardContent>
-        </Card>
+              <Field label={t("pregnancy.referralRecommendation")}>
+                <Select value={form.referralRecommendation} onValueChange={v => setForm(f => ({ ...f, referralRecommendation: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {["follow_at_center","follow_at_hospital","transfer_kfch"].map(r => (
+                      <SelectItem key={r} value={r}>{t(`referral.${r}` as any)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label={t("pregnancy.referralExplained")}>
+                <Select
+                  value={form.referralExplained === true ? "yes" : form.referralExplained === false ? "no" : ""}
+                  onValueChange={v => setForm(f => ({ ...f, referralExplained: v === "yes" ? true : v === "no" ? false : null }))}
+                >
+                  <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="yes">{t("pregnancy.yes")}</SelectItem>
+                    <SelectItem value="no">{t("pregnancy.no")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Field label={t("pregnancy.referredHospital")}>
+                  <Select value={form.referredHospitalId} onValueChange={v => setForm(f => ({ ...f, referredHospitalId: v }))}>
+                    <SelectTrigger><SelectValue placeholder="اختر المستشفى" /></SelectTrigger>
+                    <SelectContent>
+                      {hospitals?.map(h => <SelectItem key={h.id} value={String(h.id)}>{h.nameAr}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label={t("pregnancy.appointmentDate")}>
+                  <Input type="date" value={form.appointmentDate} onChange={e => setForm(f => ({ ...f, appointmentDate: e.target.value }))} />
+                </Field>
+              </div>
+            </>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <InfoRow label={t("pregnancy.medications")} value={p.medications ?? "—"} />
+              <InfoRow label={t("pregnancy.isVteHighRisk")} value={p.isVteHighRisk ? "نعم" : "لا"} />
+              <InfoRow label={t("pregnancy.enoxaparinPrescribed")} value={p.enoxaparinPrescribed ? "نعم" : "لا"} />
+              <InfoRow label={t("pregnancy.referralExplained")} value={p.referralExplained === true ? "نعم" : p.referralExplained === false ? "لا" : "—"} />
+              <InfoRow label={t("pregnancy.referralRecommendation")} value={t(`referral.${p.referralRecommendation}` as any)} />
+              <InfoRow label={t("pregnancy.referredHospital")} value={p.referredHospitalNameAr ?? "—"} />
+              <InfoRow label={t("pregnancy.appointmentDate")} value={p.appointmentDate ? new Date(p.appointmentDate).toLocaleDateString("ar-SA") : "—"} />
+              <InfoRow label={t("pregnancy.compliance")} value={t(`compliance.${p.compliance}` as any)} />
+              {p.workingDaysToAppointment != null && (
+                <InfoRow label="أيام العمل للموعد" value={`${p.workingDaysToAppointment} يوم`} />
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle>Patient Info</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-2">
-              <User className="w-4 h-4 text-muted-foreground" />
-              <Link href={`/patients/${patient.id}`} className="font-medium hover:underline text-primary">
-                {patient.nameAr}
-              </Link>
+      {/* Notes */}
+      <Card>
+        <CardHeader><CardTitle>الملاحظات</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          {editMode ? (
+            <>
+              <Field label={t("pregnancy.notes")}>
+                <Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} placeholder="ملاحظات عامة..." />
+              </Field>
+              <Field label={t("pregnancy.followUpNotes")}>
+                <Textarea value={form.followUpNotes} onChange={e => setForm(f => ({ ...f, followUpNotes: e.target.value }))} rows={2} placeholder="استجابات تواصل المراجعة..." />
+              </Field>
+            </>
+          ) : (
+            <div className="space-y-3 text-sm">
+              <InfoRow label={t("pregnancy.notes")} value={p.notes ?? "—"} />
+              <InfoRow label={t("pregnancy.followUpNotes")} value={p.followUpNotes ?? "—"} />
             </div>
-            <div className="flex items-center gap-2">
-              <Activity className="w-4 h-4 text-muted-foreground" />
-              <span>NID: {patient.nationalId}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-muted-foreground" />
-              <span>Visit: {new Date(pregnancy.visitDate).toLocaleDateString()}</span>
-            </div>
-          </CardContent>
-        </Card>
+          )}
+        </CardContent>
+      </Card>
 
-        <Card className="col-span-1 md:col-span-3">
-          <CardHeader>
-            <CardTitle>Appointments</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Hospital</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loadingAppts ? (
-                  <TableRow><TableCell colSpan={3}><Skeleton className="h-8" /></TableCell></TableRow>
-                ) : appointments?.length === 0 ? (
-                  <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground">No appointments scheduled</TableCell></TableRow>
-                ) : (
-                  appointments?.map(apt => (
-                    <TableRow key={apt.id}>
-                      <TableCell>{new Date(apt.appointmentDate).toLocaleString()}</TableCell>
-                      <TableCell>{apt.hospitalNameAr}</TableCell>
-                      <TableCell>
-                        {apt.attended === true ? (
-                          <Badge className="bg-green-500/10 text-green-700">Attended</Badge>
-                        ) : apt.attended === false ? (
-                          <Badge className="bg-red-500/10 text-red-700">Missed</Badge>
-                        ) : (
-                          <Badge variant="outline">Scheduled</Badge>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Appointments */}
+      <Card>
+        <CardHeader><CardTitle>المواعيد في المستشفى</CardTitle></CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("pregnancy.appointmentDate")}</TableHead>
+                <TableHead>{t("pregnancy.referredHospital")}</TableHead>
+                <TableHead>{t("pregnancy.attendance")}</TableHead>
+                <TableHead>{t("pregnancy.attendanceNote")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {!appointments || appointments.length === 0 ? (
+                <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">{t("general.noData")}</TableCell></TableRow>
+              ) : (
+                appointments.map(apt => (
+                  <TableRow key={apt.id}>
+                    <TableCell>{new Date(apt.appointmentDate).toLocaleDateString("ar-SA")}</TableCell>
+                    <TableCell>{apt.hospitalNameAr ?? "—"}</TableCell>
+                    <TableCell>
+                      {apt.attended === true ? (
+                        <Badge className="bg-green-100 text-green-800">✅ حضر</Badge>
+                      ) : apt.attended === false ? (
+                        <Badge className="bg-red-100 text-red-800">❌ غائب</Badge>
+                      ) : (
+                        <Badge variant="outline">⏳ مجدول</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{apt.attendanceNote ?? "—"}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <Label>{label}</Label>
+      {children}
+    </div>
+  );
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="font-medium">{value}</span>
+    </div>
+  );
+}
+
+function BadgeList({ items }: { items: string[] }) {
+  if (!items || items.length === 0) {
+    return <p className="text-sm text-muted-foreground">لا يوجد</p>;
+  }
+  return (
+    <div className="flex flex-wrap gap-2">
+      {items.map((item, i) => (
+        <Badge key={i} variant="outline" className="text-sm py-1">{item}</Badge>
+      ))}
     </div>
   );
 }

@@ -146,6 +146,8 @@ export interface Patient {
   age?: number | null;
   phone: string;
   /** @nullable */
+  doctorPhone?: string | null;
+  /** @nullable */
   address?: string | null;
   healthCenterId: number;
   /** @nullable */
@@ -172,6 +174,8 @@ export interface PatientInput {
   dateOfBirth?: string | null;
   phone: string;
   /** @nullable */
+  doctorPhone?: string | null;
+  /** @nullable */
   address?: string | null;
   healthCenterId: number;
 }
@@ -183,6 +187,8 @@ export interface PatientUpdate {
   /** @nullable */
   dateOfBirth?: string | null;
   phone?: string;
+  /** @nullable */
+  doctorPhone?: string | null;
   /** @nullable */
   address?: string | null;
   healthCenterId?: number;
@@ -240,9 +246,24 @@ export interface Pregnancy {
      */
   gestationalAge: number | null;
   riskLevel: PregnancyRiskLevel;
+  /** Field 13: General obstetric risk factors */
   riskFactors?: string[];
+  /** Field 14: Pregnancy-related or current health risk factors */
+  pregnancyRiskFactors?: string[];
+  /** Field 15: General medical conditions */
+  medicalConditions?: string[];
+  /**
+     * Field 16: Contraindicated medications (Warfarin, isotretinoin, etc.)
+     * @nullable
+     */
+  medications?: string | null;
   isVteHighRisk?: boolean;
   enoxaparinPrescribed?: boolean;
+  /**
+     * Field 19: Did doctor explain referral to patient?
+     * @nullable
+     */
+  referralExplained?: boolean | null;
   /** @nullable */
   doctorName?: string | null;
   referralRecommendation: PregnancyReferralRecommendation;
@@ -258,6 +279,11 @@ export interface Pregnancy {
   workingDaysToAppointment?: number | null;
   /** @nullable */
   notes?: string | null;
+  /**
+     * Field 27: Follow-up contact responses / notes
+     * @nullable
+     */
+  followUpNotes?: string | null;
   /** @nullable */
   coordinatorClassification?: string | null;
   createdAt: string;
@@ -297,8 +323,14 @@ export interface PregnancyInput {
   gestationalAge?: number | null;
   riskLevel: PregnancyInputRiskLevel;
   riskFactors?: string[];
+  pregnancyRiskFactors?: string[];
+  medicalConditions?: string[];
+  /** @nullable */
+  medications?: string | null;
   isVteHighRisk?: boolean;
   enoxaparinPrescribed?: boolean;
+  /** @nullable */
+  referralExplained?: boolean | null;
   /** @nullable */
   doctorName?: string | null;
   referralRecommendation: PregnancyInputReferralRecommendation;
@@ -308,6 +340,8 @@ export interface PregnancyInput {
   appointmentDate?: string | null;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  followUpNotes?: string | null;
   /** @nullable */
   coordinatorClassification?: string | null;
 }
@@ -339,8 +373,14 @@ export interface PregnancyUpdate {
   gestationalAge?: number | null;
   riskLevel?: PregnancyUpdateRiskLevel;
   riskFactors?: string[];
+  pregnancyRiskFactors?: string[];
+  medicalConditions?: string[];
+  /** @nullable */
+  medications?: string | null;
   isVteHighRisk?: boolean;
   enoxaparinPrescribed?: boolean;
+  /** @nullable */
+  referralExplained?: boolean | null;
   /** @nullable */
   doctorName?: string | null;
   referralRecommendation?: PregnancyUpdateReferralRecommendation;
@@ -350,6 +390,8 @@ export interface PregnancyUpdate {
   appointmentDate?: string | null;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  followUpNotes?: string | null;
   /** @nullable */
   coordinatorClassification?: string | null;
 }

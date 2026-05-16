@@ -29,8 +29,12 @@ function serializePregnancy(
     gestationalAge: p.gestationalAge ?? null,
     riskLevel: p.riskLevel,
     riskFactors: p.riskFactors ?? [],
+    pregnancyRiskFactors: p.pregnancyRiskFactors ?? [],
+    medicalConditions: p.medicalConditions ?? [],
+    medications: p.medications ?? null,
     isVteHighRisk: p.isVteHighRisk,
     enoxaparinPrescribed: p.enoxaparinPrescribed,
+    referralExplained: p.referralExplained ?? null,
     doctorName: p.doctorName ?? null,
     referralRecommendation: p.referralRecommendation,
     referredHospitalId: p.referredHospitalId ?? null,
@@ -39,6 +43,7 @@ function serializePregnancy(
     compliance: p.compliance,
     workingDaysToAppointment: p.workingDaysToAppointment ?? null,
     notes: p.notes ?? null,
+    followUpNotes: p.followUpNotes ?? null,
     coordinatorClassification: p.coordinatorClassification ?? null,
     createdAt: p.createdAt.toISOString(),
     updatedAt: p.updatedAt.toISOString(),
@@ -158,8 +163,12 @@ router.post("/pregnancies", requireWriteAccess, async (req, res): Promise<void> 
       gestationalAge: parsed.data.gestationalAge ?? null,
       riskLevel: parsed.data.riskLevel,
       riskFactors: parsed.data.riskFactors ?? [],
+      pregnancyRiskFactors: parsed.data.pregnancyRiskFactors ?? [],
+      medicalConditions: parsed.data.medicalConditions ?? [],
+      medications: parsed.data.medications ?? null,
       isVteHighRisk: parsed.data.isVteHighRisk ?? false,
       enoxaparinPrescribed: parsed.data.enoxaparinPrescribed ?? false,
+      referralExplained: parsed.data.referralExplained ?? null,
       doctorName: parsed.data.doctorName ?? null,
       referralRecommendation: parsed.data.referralRecommendation,
       referredHospitalId: parsed.data.referredHospitalId ?? null,
@@ -167,6 +176,7 @@ router.post("/pregnancies", requireWriteAccess, async (req, res): Promise<void> 
       compliance,
       workingDaysToAppointment: workingDays,
       notes: parsed.data.notes ?? null,
+      followUpNotes: parsed.data.followUpNotes ?? null,
       coordinatorClassification: parsed.data.coordinatorClassification ?? null,
     })
     .returning();
@@ -261,6 +271,7 @@ router.get("/pregnancies/:id", async (req, res): Promise<void> => {
       dateOfBirth: patient.dateOfBirth ?? null,
       age: null,
       phone: patient.phone,
+      doctorPhone: patient.doctorPhone ?? null,
       address: patient.address ?? null,
       healthCenterId: patient.healthCenterId,
       healthCenterNameAr: null,
@@ -316,13 +327,18 @@ router.patch("/pregnancies/:id", requireWriteAccess, async (req, res): Promise<v
   if (parsed.data.gestationalAge !== undefined) updateData.gestationalAge = parsed.data.gestationalAge;
   if (parsed.data.riskLevel != null) updateData.riskLevel = parsed.data.riskLevel;
   if (parsed.data.riskFactors != null) updateData.riskFactors = parsed.data.riskFactors;
+  if (parsed.data.pregnancyRiskFactors != null) updateData.pregnancyRiskFactors = parsed.data.pregnancyRiskFactors;
+  if (parsed.data.medicalConditions != null) updateData.medicalConditions = parsed.data.medicalConditions;
+  if (parsed.data.medications !== undefined) updateData.medications = parsed.data.medications;
   if (parsed.data.isVteHighRisk !== undefined) updateData.isVteHighRisk = parsed.data.isVteHighRisk;
   if (parsed.data.enoxaparinPrescribed !== undefined) updateData.enoxaparinPrescribed = parsed.data.enoxaparinPrescribed;
+  if (parsed.data.referralExplained !== undefined) updateData.referralExplained = parsed.data.referralExplained;
   if (parsed.data.doctorName !== undefined) updateData.doctorName = parsed.data.doctorName;
   if (parsed.data.referralRecommendation != null) updateData.referralRecommendation = parsed.data.referralRecommendation;
   if (parsed.data.referredHospitalId !== undefined) updateData.referredHospitalId = parsed.data.referredHospitalId;
   if (parsed.data.appointmentDate !== undefined) updateData.appointmentDate = parsed.data.appointmentDate;
   if (parsed.data.notes !== undefined) updateData.notes = parsed.data.notes;
+  if (parsed.data.followUpNotes !== undefined) updateData.followUpNotes = parsed.data.followUpNotes;
   if (parsed.data.coordinatorClassification !== undefined) updateData.coordinatorClassification = parsed.data.coordinatorClassification;
 
   const [pregnancy] = await db

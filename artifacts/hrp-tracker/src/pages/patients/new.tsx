@@ -24,12 +24,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
-  nationalId: z.string().length(10),
-  nameAr: z.string().min(2),
-  phone: z.string().min(10),
+  nationalId: z.string().length(10, "يجب أن يتكون رقم الهوية من 10 أرقام"),
+  nameAr: z.string().min(2, "الاسم مطلوب"),
+  dateOfBirth: z.string().optional(),
+  phone: z.string().min(10, "رقم الجوال غير صحيح"),
+  doctorPhone: z.string().optional(),
   address: z.string().optional(),
-  sectorId: z.coerce.number().min(1, "Sector is required"),
-  healthCenterId: z.coerce.number().min(1, "Health Center is required"),
+  sectorId: z.coerce.number().min(1, "القطاع مطلوب"),
+  healthCenterId: z.coerce.number().min(1, "المركز الصحي مطلوب"),
 });
 
 export default function PatientNew() {
@@ -43,7 +45,9 @@ export default function PatientNew() {
     defaultValues: {
       nationalId: "",
       nameAr: "",
+      dateOfBirth: "",
       phone: "",
+      doctorPhone: "",
       address: "",
       sectorId: 0,
       healthCenterId: 0,
@@ -60,14 +64,22 @@ export default function PatientNew() {
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     createPatient.mutate(
-      { data: values },
+      { data: {
+        nationalId: values.nationalId,
+        nameAr: values.nameAr,
+        phone: values.phone,
+        doctorPhone: values.doctorPhone || null,
+        dateOfBirth: values.dateOfBirth || null,
+        address: values.address || null,
+        healthCenterId: values.healthCenterId,
+      }},
       {
         onSuccess: (patient) => {
-          toast({ title: "Success", description: "Patient registered successfully" });
+          toast({ title: t("general.saved"), description: t("general.saveSuccess") });
           setLocation(`/patients/${patient.id}`);
         },
         onError: () => {
-          toast({ title: "Error", description: "Failed to register patient", variant: "destructive" });
+          toast({ title: "خطأ", description: t("general.saveError"), variant: "destructive" });
         }
       }
     );
@@ -78,94 +90,135 @@ export default function PatientNew() {
       <h1 className="text-3xl font-bold">{t("patients.new")}</h1>
       <Card>
         <CardHeader>
-          <CardTitle>Patient Information</CardTitle>
+          <CardTitle>{t("patients.patientInfo")}</CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="nationalId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>National ID</FormLabel>
-                    <FormControl>
-                      <Input placeholder="10 digits" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="nameAr"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name (Arabic)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="الاسم" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone Number</FormLabel>
-                    <FormControl>
-                      <Input placeholder="05XXXXXXXX" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="sectorId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Sector</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value ? String(field.value) : undefined}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="nationalId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("patients.nationalId")}</FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select Sector" />
-                        </SelectTrigger>
+                        <Input placeholder="10 أرقام" {...field} dir="ltr" />
                       </FormControl>
-                      <SelectContent>
-                        {sectors?.map(s => (
-                          <SelectItem key={s.id} value={String(s.id)}>{s.nameAr}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="healthCenterId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Health Center</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value ? String(field.value) : undefined} disabled={!sectorId}>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="nameAr"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("patients.name")}</FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select Health Center" />
-                        </SelectTrigger>
+                        <Input placeholder="الاسم الكامل" {...field} />
                       </FormControl>
-                      <SelectContent>
-                        {healthCenters?.map(hc => (
-                          <SelectItem key={hc.id} value={String(hc.id)}>{hc.nameAr}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="dateOfBirth"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("patients.dateOfBirth")}</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("patients.phone")}</FormLabel>
+                      <FormControl>
+                        <Input placeholder="05XXXXXXXX" {...field} dir="ltr" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="doctorPhone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("patients.doctorPhone")}</FormLabel>
+                      <FormControl>
+                        <Input placeholder="05XXXXXXXX" {...field} dir="ltr" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("patients.address")}</FormLabel>
+                      <FormControl>
+                        <Input placeholder="العنوان" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="sectorId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("patients.sector")}</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value ? String(field.value) : undefined}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="اختر القطاع" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {sectors?.map(s => (
+                            <SelectItem key={s.id} value={String(s.id)}>{s.nameAr}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="healthCenterId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("patients.healthCenter")}</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value ? String(field.value) : undefined} disabled={!sectorId}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="اختر المركز الصحي" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {healthCenters?.map(hc => (
+                            <SelectItem key={hc.id} value={String(hc.id)}>{hc.nameAr}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               <Button type="submit" disabled={createPatient.isPending} className="w-full">
                 {t("general.save")}
               </Button>

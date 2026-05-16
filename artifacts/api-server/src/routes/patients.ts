@@ -106,6 +106,7 @@ router.get("/patients", async (req, res): Promise<void> => {
       dateOfBirth: p.dateOfBirth ?? null,
       age,
       phone: p.phone,
+      doctorPhone: p.doctorPhone ?? null,
       address: p.address ?? null,
       healthCenterId: p.healthCenterId,
       healthCenterNameAr: center?.nameAr ?? null,
@@ -159,6 +160,7 @@ router.post("/patients", requireWriteAccess, async (req, res): Promise<void> => 
       nameEn: parsed.data.nameEn ?? null,
       dateOfBirth: parsed.data.dateOfBirth ?? null,
       phone: parsed.data.phone,
+      doctorPhone: parsed.data.doctorPhone ?? null,
       address: parsed.data.address ?? null,
       healthCenterId: parsed.data.healthCenterId,
     })
@@ -184,6 +186,7 @@ router.post("/patients", requireWriteAccess, async (req, res): Promise<void> => 
     dateOfBirth: patient.dateOfBirth ?? null,
     age: null,
     phone: patient.phone,
+    doctorPhone: patient.doctorPhone ?? null,
     address: patient.address ?? null,
     healthCenterId: patient.healthCenterId,
     healthCenterNameAr: center[0]?.nameAr ?? null,
@@ -240,6 +243,7 @@ router.get("/patients/by-nid/:nationalId", async (req, res): Promise<void> => {
       dateOfBirth: patient.dateOfBirth ?? null,
       age,
       phone: patient.phone,
+      doctorPhone: patient.doctorPhone ?? null,
       address: patient.address ?? null,
       healthCenterId: patient.healthCenterId,
       healthCenterNameAr: center[0]?.nameAr ?? null,
@@ -292,6 +296,7 @@ router.get("/patients/:id", async (req, res): Promise<void> => {
     dateOfBirth: patient.dateOfBirth ?? null,
     age,
     phone: patient.phone,
+    doctorPhone: patient.doctorPhone ?? null,
     address: patient.address ?? null,
     healthCenterId: patient.healthCenterId,
     healthCenterNameAr: center?.nameAr ?? null,
@@ -333,6 +338,7 @@ router.patch("/patients/:id", requireWriteAccess, async (req, res): Promise<void
   if (parsed.data.nameEn !== undefined) updateData.nameEn = parsed.data.nameEn;
   if (parsed.data.dateOfBirth !== undefined) updateData.dateOfBirth = parsed.data.dateOfBirth;
   if (parsed.data.phone != null) updateData.phone = parsed.data.phone;
+  if (parsed.data.doctorPhone !== undefined) updateData.doctorPhone = parsed.data.doctorPhone;
   if (parsed.data.address !== undefined) updateData.address = parsed.data.address;
   if (parsed.data.healthCenterId != null) updateData.healthCenterId = parsed.data.healthCenterId;
 
@@ -367,6 +373,7 @@ router.patch("/patients/:id", requireWriteAccess, async (req, res): Promise<void
     dateOfBirth: patient.dateOfBirth ?? null,
     age: null,
     phone: patient.phone,
+    doctorPhone: patient.doctorPhone ?? null,
     address: patient.address ?? null,
     healthCenterId: patient.healthCenterId,
     healthCenterNameAr: center?.nameAr ?? null,
@@ -388,8 +395,12 @@ function serializePregnancy(p: typeof pregnanciesTable.$inferSelect, patient: ty
     gestationalAge: p.gestationalAge ?? null,
     riskLevel: p.riskLevel,
     riskFactors: p.riskFactors ?? [],
+    pregnancyRiskFactors: p.pregnancyRiskFactors ?? [],
+    medicalConditions: p.medicalConditions ?? [],
+    medications: p.medications ?? null,
     isVteHighRisk: p.isVteHighRisk,
     enoxaparinPrescribed: p.enoxaparinPrescribed,
+    referralExplained: p.referralExplained ?? null,
     doctorName: p.doctorName ?? null,
     referralRecommendation: p.referralRecommendation,
     referredHospitalId: p.referredHospitalId ?? null,
@@ -398,6 +409,7 @@ function serializePregnancy(p: typeof pregnanciesTable.$inferSelect, patient: ty
     compliance: p.compliance,
     workingDaysToAppointment: p.workingDaysToAppointment ?? null,
     notes: p.notes ?? null,
+    followUpNotes: p.followUpNotes ?? null,
     coordinatorClassification: p.coordinatorClassification ?? null,
     createdAt: p.createdAt.toISOString(),
     updatedAt: p.updatedAt.toISOString(),

@@ -150,6 +150,8 @@ export const getAuthLogoutUrl = () => {
 }
 
 /**
+ * Public endpoint — does not require a valid access token. Always clears the hrp_refresh_token httpOnly cookie. Audit log is written on a best-effort basis if a bearer token is present.
+
  * @summary Logout (invalidate refresh token cookie)
  */
 export const authLogout = async ( options?: RequestInit): Promise<void> => {

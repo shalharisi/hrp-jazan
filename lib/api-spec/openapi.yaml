@@ -64,8 +64,11 @@ paths:
       operationId: authLogout
       tags: [auth]
       summary: Logout (invalidate refresh token cookie)
-      security:
-        - bearerAuth: []
+      description: >
+        Public endpoint — does not require a valid access token.
+        Always clears the hrp_refresh_token httpOnly cookie.
+        Audit log is written on a best-effort basis if a bearer token is present.
+      security: []
       responses:
         "200":
           description: Logout successful
@@ -937,6 +940,8 @@ components:
           type: ["integer", "null"]
         phone:
           type: string
+        doctorPhone:
+          type: ["string", "null"]
         address:
           type: ["string", "null"]
         healthCenterId:
@@ -969,6 +974,8 @@ components:
           type: ["string", "null"]
         phone:
           type: string
+        doctorPhone:
+          type: ["string", "null"]
         address:
           type: ["string", "null"]
         healthCenterId:
@@ -985,6 +992,8 @@ components:
           type: ["string", "null"]
         phone:
           type: string
+        doctorPhone:
+          type: ["string", "null"]
         address:
           type: ["string", "null"]
         healthCenterId:
@@ -1039,10 +1048,27 @@ components:
           type: array
           items:
             type: string
+          description: "Field 13: General obstetric risk factors"
+        pregnancyRiskFactors:
+          type: array
+          items:
+            type: string
+          description: "Field 14: Pregnancy-related or current health risk factors"
+        medicalConditions:
+          type: array
+          items:
+            type: string
+          description: "Field 15: General medical conditions"
+        medications:
+          type: ["string", "null"]
+          description: "Field 16: Contraindicated medications (Warfarin, isotretinoin, etc.)"
         isVteHighRisk:
           type: boolean
         enoxaparinPrescribed:
           type: boolean
+        referralExplained:
+          type: ["boolean", "null"]
+          description: "Field 19: Did doctor explain referral to patient?"
         doctorName:
           type: ["string", "null"]
         referralRecommendation:
@@ -1062,6 +1088,9 @@ components:
           type: ["integer", "null"]
         notes:
           type: ["string", "null"]
+        followUpNotes:
+          type: ["string", "null"]
+          description: "Field 27: Follow-up contact responses / notes"
         coordinatorClassification:
           type: ["string", "null"]
         createdAt:
@@ -1088,10 +1117,22 @@ components:
           type: array
           items:
             type: string
+        pregnancyRiskFactors:
+          type: array
+          items:
+            type: string
+        medicalConditions:
+          type: array
+          items:
+            type: string
+        medications:
+          type: ["string", "null"]
         isVteHighRisk:
           type: boolean
         enoxaparinPrescribed:
           type: boolean
+        referralExplained:
+          type: ["boolean", "null"]
         doctorName:
           type: ["string", "null"]
         referralRecommendation:
@@ -1102,6 +1143,8 @@ components:
         appointmentDate:
           type: ["string", "null"]
         notes:
+          type: ["string", "null"]
+        followUpNotes:
           type: ["string", "null"]
         coordinatorClassification:
           type: ["string", "null"]
@@ -1122,10 +1165,22 @@ components:
           type: array
           items:
             type: string
+        pregnancyRiskFactors:
+          type: array
+          items:
+            type: string
+        medicalConditions:
+          type: array
+          items:
+            type: string
+        medications:
+          type: ["string", "null"]
         isVteHighRisk:
           type: boolean
         enoxaparinPrescribed:
           type: boolean
+        referralExplained:
+          type: ["boolean", "null"]
         doctorName:
           type: ["string", "null"]
         referralRecommendation:
@@ -1136,6 +1191,8 @@ components:
         appointmentDate:
           type: ["string", "null"]
         notes:
+          type: ["string", "null"]
+        followUpNotes:
           type: ["string", "null"]
         coordinatorClassification:
           type: ["string", "null"]
