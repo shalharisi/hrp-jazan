@@ -6,8 +6,10 @@ export const translations = {
     "nav.pregnancies": "الحالات",
     "nav.alerts": "التنبيهات",
     "nav.guide": "دليل المستخدم",
+    "nav.users": "إدارة المستخدمين",
     "nav.settings": "الإعدادات",
     "nav.logout": "تسجيل الخروج",
+    "nav.privacy": "الخصوصية",
 
     // Dashboard
     "dashboard.title": "لوحة التحكم",
@@ -60,8 +62,10 @@ export const translations = {
     "nav.pregnancies": "Cases",
     "nav.alerts": "Alerts",
     "nav.guide": "User Guide",
+    "nav.users": "User Management",
     "nav.settings": "Settings",
     "nav.logout": "Logout",
+    "nav.privacy": "Privacy",
 
     // Dashboard
     "dashboard.title": "Dashboard",

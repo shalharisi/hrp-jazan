@@ -15,12 +15,12 @@ export default function PatientDetail() {
   const { t } = useI18n();
 
   const { data: patient, isLoading: loadingPatient } = useGetPatient(patientId, {
-    query: { enabled: !!patientId }
+    query: { queryKey: ["patient", patientId], enabled: !!patientId }
   });
 
   const { data: pregnancies, isLoading: loadingPregnancies } = useListPregnancies(
     { patientId },
-    { query: { enabled: !!patientId } }
+    { query: { queryKey: ["pregnancies", patientId], enabled: !!patientId } }
   );
 
   if (loadingPatient) {

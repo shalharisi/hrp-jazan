@@ -15,12 +15,12 @@ export default function PregnancyDetail() {
   const { t } = useI18n();
 
   const { data: detail, isLoading: loadingCase } = useGetPregnancy(pregnancyId, {
-    query: { enabled: !!pregnancyId }
+    query: { queryKey: ["pregnancy", pregnancyId], enabled: !!pregnancyId }
   });
 
   const { data: appointments, isLoading: loadingAppts } = useListAppointments(
     { pregnancyId },
-    { query: { enabled: !!pregnancyId } }
+    { query: { queryKey: ["appointments", pregnancyId], enabled: !!pregnancyId } }
   );
 
   if (loadingCase) return <Skeleton className="h-64 w-full" />;

@@ -53,7 +53,7 @@ export default function PatientNew() {
   const sectorId = form.watch("sectorId");
   const { data: healthCenters } = useListHealthCenters(
     { sectorId: sectorId || undefined },
-    { query: { enabled: !!sectorId } }
+    { query: { queryKey: ["health-centers", sectorId], enabled: !!sectorId } }
   );
 
   const createPatient = useCreatePatient();

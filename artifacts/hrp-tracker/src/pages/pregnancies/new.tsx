@@ -52,7 +52,7 @@ export default function PregnancyNew() {
   
   const [nidSearch, setNidSearch] = useState("");
   const { data: searchResult, refetch } = useGetPatientByNid(nidSearch, {
-    query: { enabled: false }
+    query: { queryKey: ["patient-nid", nidSearch], enabled: false }
   });
 
   const form = useForm<z.infer<typeof formSchema>>({
