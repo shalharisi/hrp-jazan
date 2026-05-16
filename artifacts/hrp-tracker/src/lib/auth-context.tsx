@@ -36,13 +36,13 @@ const API = `${BASE}/api`;
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({
     user: null,
-    accessToken: sessionStorage.getItem(TOKEN_KEY),
+    accessToken: localStorage.getItem(TOKEN_KEY),
     loading: true,
   });
 
   // Wire the global API client to always inject the current bearer token
   useEffect(() => {
-    setAuthTokenGetter(() => sessionStorage.getItem(TOKEN_KEY));
+    setAuthTokenGetter(() => localStorage.getItem(TOKEN_KEY));
     return () => {
       setAuthTokenGetter(null);
     };
@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch(`${API}/auth/refresh`, { method: "POST", credentials: "include" });
       if (!res.ok) return false;
       const data = await res.json() as { accessToken: string };
-      sessionStorage.setItem(TOKEN_KEY, data.accessToken);
+      localStorage.setItem(TOKEN_KEY, data.accessToken);
       setState(s => ({ ...s, accessToken: data.accessToken }));
       return true;
     } catch {
@@ -77,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // On mount: try to restore session
   useEffect(() => {
     (async () => {
-      let token = sessionStorage.getItem(TOKEN_KEY);
+      let token = localStorage.getItem(TOKEN_KEY);
 
       if (!token) {
         const refreshed = await refreshToken();
@@ -85,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setState({ user: null, accessToken: null, loading: false });
           return;
         }
-        token = sessionStorage.getItem(TOKEN_KEY);
+        token = localStorage.getItem(TOKEN_KEY);
       }
 
       if (!token) {
@@ -100,11 +100,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Token expired, try refresh
         const refreshed = await refreshToken();
         if (refreshed) {
-          const newToken = sessionStorage.getItem(TOKEN_KEY)!;
+          const newToken = localStorage.getItem(TOKEN_KEY)!;
           const freshUser = await fetchMe(newToken);
           setState({ user: freshUser, accessToken: newToken, loading: false });
         } else {
-          sessionStorage.removeItem(TOKEN_KEY);
+          localStorage.removeItem(TOKEN_KEY);
           setState({ user: null, accessToken: null, loading: false });
         }
       }
@@ -126,25 +126,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const data = await res.json() as { accessToken: string; user: AuthUser };
-    sessionStorage.setItem(TOKEN_KEY, data.accessToken);
+    localStorage.setItem(TOKEN_KEY, data.accessToken);
     setState({ user: data.user, accessToken: data.accessToken, loading: false });
   }, []);
 
   const logout = useCallback(async () => {
-    const token = sessionStorage.getItem(TOKEN_KEY);
-    if (token) {
-      await fetch(`${API}/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-        headers: { Authorization: `Bearer ${token}` },
-      }).catch(() => {});
-    }
-    sessionStorage.removeItem(TOKEN_KEY);
+    // Always call logout endpoint — it clears the httpOnly refresh cookie server-side.
+    // Does not require a valid access token (endpoint accepts expired/missing tokens).
+    const token = localStorage.getItem(TOKEN_KEY);
+    await fetch(`${API}/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    }).catch(() => {});
+    localStorage.removeItem(TOKEN_KEY);
     setState({ user: null, accessToken: null, loading: false });
   }, []);
 
   const giveConsent = useCallback(async () => {
-    const token = sessionStorage.getItem(TOKEN_KEY);
+    const token = localStorage.getItem(TOKEN_KEY);
     await fetch(`${API}/auth/consent`, {
       method: "POST",
       credentials: "include",

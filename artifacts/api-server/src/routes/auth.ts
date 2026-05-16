@@ -94,17 +94,22 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   });
 });
 
-// POST /api/auth/logout
-router.post("/auth/logout", requireAuth, async (req, res): Promise<void> => {
-  await logAudit({
-    userId: req.user?.userId,
-    username: req.user?.username,
-    action: "LOGOUT",
-    resourceType: "auth",
-    ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0] ?? req.socket?.remoteAddress,
-  });
+// POST /api/auth/logout — public endpoint; must clear cookie even with expired/missing token.
+// requireAuth is intentionally omitted so logout always works.
+router.post("/auth/logout", async (req, res): Promise<void> => {
+  // Audit if we can identify the user (best-effort, not required)
+  const bearerUser = req.user; // may be undefined since no requireAuth
+  if (bearerUser) {
+    await logAudit({
+      userId: bearerUser.userId,
+      username: bearerUser.username,
+      action: "LOGOUT",
+      resourceType: "auth",
+      ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0] ?? req.socket?.remoteAddress,
+    });
+  }
 
-  res.clearCookie("hrp_refresh_token");
+  res.clearCookie("hrp_refresh_token", { httpOnly: true, sameSite: "strict" });
   res.json({ success: true });
 });
 

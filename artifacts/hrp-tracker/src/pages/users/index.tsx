@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, Users, CheckCircle, XCircle } from "lucide-react";
+import { UserPlus, Users, CheckCircle, XCircle, Pencil } from "lucide-react";
 
 interface User {
   id: number;
@@ -27,9 +27,23 @@ const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 const API = `${BASE}/api`;
 
 function getAuthHeaders(): Record<string, string> {
-  const token = sessionStorage.getItem("hrp_access_token");
+  const token = localStorage.getItem("hrp_access_token");
   return token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" };
 }
+
+const roleColor: Record<string, string> = {
+  admin: "bg-red-100 text-red-800",
+  coordinator: "bg-blue-100 text-blue-800",
+  doctor: "bg-purple-100 text-purple-800",
+  viewer: "bg-gray-100 text-gray-700",
+};
+
+const roleLabel: Record<string, { ar: string; en: string }> = {
+  admin: { ar: "مدير", en: "Admin" },
+  coordinator: { ar: "منسق", en: "Coordinator" },
+  doctor: { ar: "طبيب", en: "Doctor" },
+  viewer: { ar: "عارض", en: "Viewer" },
+};
 
 export default function UsersPage() {
   const { lang } = useI18n();
@@ -38,6 +52,8 @@ export default function UsersPage() {
   const { toast } = useToast();
   const ar = lang === "ar";
   const [open, setOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<User | null>(null);
+  const [editRole, setEditRole] = useState<string>("");
 
   const [form, setForm] = useState({
     username: "", password: "", nameAr: "", nameEn: "", role: "viewer" as string,
@@ -87,20 +103,27 @@ export default function UsersPage() {
       return res.json();
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["users"] }),
+    onError: (err: Error) => toast({ title: String(err.message), variant: "destructive" }),
   });
 
-  const roleColor: Record<string, string> = {
-    admin: "bg-red-100 text-red-800",
-    coordinator: "bg-blue-100 text-blue-800",
-    doctor: "bg-purple-100 text-purple-800",
-    viewer: "bg-gray-100 text-gray-700",
-  };
-  const roleLabel: Record<string, { ar: string; en: string }> = {
-    admin: { ar: "مدير", en: "Admin" },
-    coordinator: { ar: "منسق", en: "Coordinator" },
-    doctor: { ar: "طبيب", en: "Doctor" },
-    viewer: { ar: "عارض", en: "Viewer" },
-  };
+  const changeRoleMutation = useMutation({
+    mutationFn: async ({ id, role }: { id: number; role: string }) => {
+      const res = await fetch(`${API}/users/${id}`, {
+        method: "PATCH",
+        headers: getAuthHeaders(),
+        credentials: "include",
+        body: JSON.stringify({ role }),
+      });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.error); }
+      return res.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["users"] });
+      setEditTarget(null);
+      toast({ title: ar ? "تم تغيير الدور بنجاح" : "Role changed successfully" });
+    },
+    onError: (err: Error) => toast({ title: String(err.message), variant: "destructive" }),
+  });
 
   if (!isAdmin) {
     return (
@@ -171,6 +194,48 @@ export default function UsersPage() {
         </Dialog>
       </div>
 
+      {/* Role-edit dialog */}
+      {editTarget && (
+        <Dialog open={!!editTarget} onOpenChange={(v) => { if (!v) setEditTarget(null); }}>
+          <DialogContent dir={ar ? "rtl" : "ltr"} className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle>{ar ? "تغيير دور المستخدم" : "Change User Role"}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-2">
+              <p className="text-sm text-muted-foreground">
+                {ar ? `المستخدم: ${editTarget.nameAr} (@${editTarget.username})` : `User: ${editTarget.nameAr} (@${editTarget.username})`}
+              </p>
+              <div>
+                <Label>{ar ? "الدور الجديد" : "New Role"}</Label>
+                <Select value={editRole} onValueChange={setEditRole}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder={ar ? roleLabel[editTarget.role]?.ar : roleLabel[editTarget.role]?.en} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(roleLabel).map(([k, v]) => (
+                      <SelectItem key={k} value={k}>{ar ? v.ar : v.en}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={() => setEditTarget(null)}>
+                  {ar ? "إلغاء" : "Cancel"}
+                </Button>
+                <Button
+                  style={{ background: "#006633" }}
+                  className="text-white"
+                  disabled={!editRole || editRole === editTarget.role || changeRoleMutation.isPending}
+                  onClick={() => changeRoleMutation.mutate({ id: editTarget.id, role: editRole })}
+                >
+                  {changeRoleMutation.isPending ? "..." : ar ? "حفظ" : "Save"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">
@@ -191,7 +256,7 @@ export default function UsersPage() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium">{user.nameAr}</span>
                       {user.nameEn && <span className="text-sm text-muted-foreground">({user.nameEn})</span>}
-                      <Badge className={roleColor[user.role]}>
+                      <Badge className={roleColor[user.role] ?? "bg-gray-100 text-gray-700"}>
                         {ar ? roleLabel[user.role]?.ar : roleLabel[user.role]?.en}
                       </Badge>
                       {!user.isActive && (
@@ -203,16 +268,28 @@ export default function UsersPage() {
                       {user.lastLogin && ` · ${ar ? "آخر دخول" : "Last login"}: ${new Date(user.lastLogin).toLocaleDateString(ar ? "ar-SA" : "en-GB")}`}
                     </p>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toggleActiveMutation.mutate({ id: user.id, isActive: !user.isActive })}
-                    title={ar ? (user.isActive ? "إيقاف الحساب" : "تفعيل الحساب") : (user.isActive ? "Deactivate" : "Activate")}
-                  >
-                    {user.isActive
-                      ? <CheckCircle className="w-5 h-5 text-green-600" />
-                      : <XCircle className="w-5 h-5 text-red-500" />}
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    {/* Change role */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => { setEditTarget(user); setEditRole(user.role); }}
+                      title={ar ? "تغيير الدور" : "Change role"}
+                    >
+                      <Pencil className="w-4 h-4 text-muted-foreground" />
+                    </Button>
+                    {/* Toggle active */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => toggleActiveMutation.mutate({ id: user.id, isActive: !user.isActive })}
+                      title={ar ? (user.isActive ? "إيقاف الحساب" : "تفعيل الحساب") : (user.isActive ? "Deactivate" : "Activate")}
+                    >
+                      {user.isActive
+                        ? <CheckCircle className="w-5 h-5 text-green-600" />
+                        : <XCircle className="w-5 h-5 text-red-500" />}
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

@@ -88,6 +88,16 @@ export const translations = {
     "general.add": "إضافة",
     "general.search": "بحث...",
     "general.actions": "إجراءات",
+
+    // Filters
+    "filter.hospital": "المستشفى",
+    "filter.sector": "القطاع",
+    "filter.healthCenter": "المركز الصحي",
+    "filter.allHospitals": "كل المستشفيات",
+    "filter.allSectors": "كل القطاعات",
+    "filter.allCenters": "كل المراكز",
+    "filter.clearAll": "مسح الفلاتر",
+    "filter.results": "نتيجة",
   },
   en: {
     // Navigation
@@ -178,6 +188,16 @@ export const translations = {
     "general.add": "Add",
     "general.search": "Search...",
     "general.actions": "Actions",
+
+    // Filters
+    "filter.hospital": "Hospital",
+    "filter.sector": "Sector",
+    "filter.healthCenter": "Health Center",
+    "filter.allHospitals": "All Hospitals",
+    "filter.allSectors": "All Sectors",
+    "filter.allCenters": "All Centers",
+    "filter.clearAll": "Clear Filters",
+    "filter.results": "result(s)",
   }
 } as const;
 

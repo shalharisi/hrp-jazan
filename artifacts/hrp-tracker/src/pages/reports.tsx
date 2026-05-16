@@ -10,7 +10,7 @@ const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 const API = `${BASE}/api`;
 
 function getAuthHeaders(): Record<string, string> {
-  const token = sessionStorage.getItem("hrp_access_token");
+  const token = localStorage.getItem("hrp_access_token");
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
