@@ -31,6 +31,8 @@ import {
   LogOut,
   UserCog,
   ChevronUp,
+  FileDown,
+  Database,
 } from "lucide-react";
 import logoPath from "../../assets/logo.jpg";
 
@@ -44,8 +46,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: "/patients", icon: Users, label: t("nav.patients") },
     { href: "/pregnancies", icon: Activity, label: t("nav.pregnancies") },
     { href: "/alerts", icon: Bell, label: t("nav.alerts") },
+    { href: "/reports", icon: FileDown, label: t("nav.reports") },
     { href: "/guide", icon: BookOpen, label: t("nav.guide") },
-    ...(isAdmin ? [{ href: "/users", icon: UserCog, label: t("nav.users") }] : []),
+    ...(isAdmin ? [
+      { href: "/users", icon: UserCog, label: t("nav.users") },
+      { href: "/admin/reference", icon: Database, label: t("nav.reference") },
+    ] : []),
   ];
 
   const roleLabel: Record<string, { ar: string; en: string }> = {

@@ -20,6 +20,8 @@ import UserGuide from "@/pages/guide";
 import LoginPage from "@/pages/login";
 import PrivacyPage from "@/pages/privacy";
 import UsersPage from "@/pages/users/index";
+import ReportsPage from "@/pages/reports";
+import ReferencePage from "@/pages/admin/reference";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -64,6 +66,8 @@ function ProtectedApp() {
           <Route path="/guide" component={UserGuide} />
           <Route path="/privacy" component={PrivacyPage} />
           <Route path="/users" component={UsersPage} />
+          <Route path="/reports" component={ReportsPage} />
+          <Route path="/admin/reference" component={ReferencePage} />
           <Route component={NotFound} />
         </Switch>
       </AppLayout>

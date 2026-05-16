@@ -9,6 +9,7 @@ import dashboardRouter from "./dashboard";
 import alertsRouter from "./alerts";
 import usersRouter from "./users";
 import auditLogsRouter from "./audit-logs";
+import exportRouter from "./export";
 import { requireAuth } from "../lib/auth";
 import { auditMiddleware } from "../lib/audit";
 
@@ -32,6 +33,9 @@ router.use(alertsRouter);
 router.use(auditMiddleware("patients"), patientsRouter);
 router.use(auditMiddleware("pregnancies"), pregnanciesRouter);
 router.use(auditMiddleware("appointments"), appointmentsRouter);
+
+// Export routes (admin / coordinator / doctor)
+router.use(exportRouter);
 
 // Admin-only routes (enforced inside the routers)
 router.use(usersRouter);

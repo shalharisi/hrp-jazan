@@ -2,9 +2,12 @@ import { Router, type IRouter } from "express";
 import { db, sectorsTable, hospitalsTable, healthCentersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { ListHealthCentersQueryParams } from "@workspace/api-zod";
+import { requireRole } from "../lib/auth";
+import { z } from "zod";
 
 const router: IRouter = Router();
 
+// ─── GET /sectors ─────────────────────────────────────────────────────────────
 router.get("/sectors", async (req, res): Promise<void> => {
   const sectors = await db
     .select({
@@ -41,6 +44,7 @@ router.get("/sectors", async (req, res): Promise<void> => {
   res.json(result);
 });
 
+// ─── GET /hospitals ────────────────────────────────────────────────────────────
 router.get("/hospitals", async (_req, res): Promise<void> => {
   const hospitals = await db.select().from(hospitalsTable).orderBy(hospitalsTable.id);
   res.json(hospitals.map((h) => ({
@@ -52,6 +56,60 @@ router.get("/hospitals", async (_req, res): Promise<void> => {
   })));
 });
 
+// ─── POST /hospitals (admin only) ─────────────────────────────────────────────
+const CreateHospitalBody = z.object({
+  nameAr: z.string().min(2, "اسم المستشفى باللعربية مطلوب"),
+  nameEn: z.string().min(2, "Hospital English name required"),
+  isKfch: z.boolean().default(false),
+});
+
+router.post("/hospitals", requireRole("admin"), async (req, res): Promise<void> => {
+  const parsed = CreateHospitalBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const [hospital] = await db
+    .insert(hospitalsTable)
+    .values(parsed.data)
+    .returning();
+
+  res.status(201).json({
+    id: hospital!.id,
+    nameAr: hospital!.nameAr,
+    nameEn: hospital!.nameEn,
+    isKfch: hospital!.isKfch,
+    totalCases: null,
+  });
+});
+
+// ─── PATCH /hospitals/:id (admin only) ────────────────────────────────────────
+const UpdateHospitalBody = z.object({
+  nameAr: z.string().min(2).optional(),
+  nameEn: z.string().min(2).optional(),
+  isKfch: z.boolean().optional(),
+});
+
+router.patch("/hospitals/:id", requireRole("admin"), async (req, res): Promise<void> => {
+  const id = parseInt(String(req.params["id"] ?? ""));
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const parsed = UpdateHospitalBody.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+
+  const [hospital] = await db
+    .update(hospitalsTable)
+    .set(parsed.data)
+    .where(eq(hospitalsTable.id, id))
+    .returning();
+
+  if (!hospital) { res.status(404).json({ error: "Not found" }); return; }
+
+  res.json({ id: hospital.id, nameAr: hospital.nameAr, nameEn: hospital.nameEn, isKfch: hospital.isKfch, totalCases: null });
+});
+
+// ─── GET /health-centers ───────────────────────────────────────────────────────
 router.get("/health-centers", async (req, res): Promise<void> => {
   const params = ListHealthCentersQueryParams.safeParse(req.query);
   if (!params.success) {
@@ -84,6 +142,79 @@ router.get("/health-centers", async (req, res): Promise<void> => {
   }));
 
   res.json(result);
+});
+
+// ─── POST /health-centers (admin only) ────────────────────────────────────────
+const CreateHealthCenterBody = z.object({
+  nameAr: z.string().min(2, "اسم المركز باللعربية مطلوب"),
+  nameEn: z.string().optional(),
+  sectorId: z.number().int().positive("يرجى اختيار القطاع"),
+});
+
+router.post("/health-centers", requireRole("admin"), async (req, res): Promise<void> => {
+  const parsed = CreateHealthCenterBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  // Verify sector exists
+  const [sector] = await db.select().from(sectorsTable).where(eq(sectorsTable.id, parsed.data.sectorId)).limit(1);
+  if (!sector) {
+    res.status(400).json({ error: "القطاع المحدد غير موجود" });
+    return;
+  }
+
+  const [center] = await db
+    .insert(healthCentersTable)
+    .values(parsed.data)
+    .returning();
+
+  res.status(201).json({
+    id: center!.id,
+    nameAr: center!.nameAr,
+    nameEn: center!.nameEn ?? null,
+    sectorId: center!.sectorId,
+    sectorNameAr: sector.nameAr,
+  });
+});
+
+// ─── PATCH /health-centers/:id (admin only) ───────────────────────────────────
+const UpdateHealthCenterBody = z.object({
+  nameAr: z.string().min(2).optional(),
+  nameEn: z.string().optional(),
+  sectorId: z.number().int().positive().optional(),
+});
+
+router.patch("/health-centers/:id", requireRole("admin"), async (req, res): Promise<void> => {
+  const id = parseInt(String(req.params["id"] ?? ""));
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const parsed = UpdateHealthCenterBody.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+
+  const updateData: Record<string, unknown> = {};
+  if (parsed.data.nameAr) updateData["nameAr"] = parsed.data.nameAr;
+  if (parsed.data.nameEn !== undefined) updateData["nameEn"] = parsed.data.nameEn;
+  if (parsed.data.sectorId) updateData["sectorId"] = parsed.data.sectorId;
+
+  const [center] = await db
+    .update(healthCentersTable)
+    .set(updateData)
+    .where(eq(healthCentersTable.id, id))
+    .returning();
+
+  if (!center) { res.status(404).json({ error: "Not found" }); return; }
+
+  const [sector] = await db.select().from(sectorsTable).where(eq(sectorsTable.id, center.sectorId)).limit(1);
+
+  res.json({
+    id: center.id,
+    nameAr: center.nameAr,
+    nameEn: center.nameEn ?? null,
+    sectorId: center.sectorId,
+    sectorNameAr: sector?.nameAr ?? null,
+  });
 });
 
 export default router;
