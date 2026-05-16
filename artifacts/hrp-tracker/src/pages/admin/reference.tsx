@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, MapPin, Plus, Pencil, Database } from "lucide-react";
+import { Building2, MapPin, Plus, Pencil, Database, Trash2, AlertTriangle } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 const API = `${BASE}/api`;
@@ -55,6 +55,7 @@ function HospitalsTab() {
 
   const [addOpen, setAddOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Hospital | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Hospital | null>(null);
   const [search, setSearch] = useState("");
   const [form, setForm] = useState({ nameAr: "", nameEn: "", isKfch: false });
 
@@ -114,6 +115,26 @@ function HospitalsTab() {
       setEditTarget(null);
     },
     onError: (e) => toast({ title: String(e.message), variant: "destructive" }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`${API}/hospitals/${id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(e.error ?? "Failed");
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["hospitals"] });
+      toast({ title: t("reference.deleted") });
+      setDeleteTarget(null);
+    },
+    onError: (e) => { toast({ title: String(e.message), variant: "destructive" }); setDeleteTarget(null); },
   });
 
   const filtered = hospitals.filter(
@@ -190,6 +211,34 @@ function HospitalsTab() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Delete confirm dialog */}
+      {deleteTarget && (
+        <Dialog open={!!deleteTarget} onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}>
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-red-600">
+                <AlertTriangle className="h-5 w-5" />
+                {t("reference.deleteHospital")}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="py-2">
+              <p className="text-sm text-muted-foreground">{t("reference.confirmDelete")}</p>
+              <p className="mt-2 font-semibold">{deleteTarget.nameAr}</p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setDeleteTarget(null)}>{t("general.cancel")}</Button>
+              <Button
+                variant="destructive"
+                disabled={deleteMutation.isPending}
+                onClick={() => deleteMutation.mutate(deleteTarget.id)}
+              >
+                {deleteMutation.isPending ? "..." : ar ? "حذف" : "Delete"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Edit dialog */}
       {editTarget && (
@@ -277,14 +326,24 @@ function HospitalsTab() {
                     ) : null}
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setEditTarget(h)}
-                      className="h-7 px-2"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
+                    <div className="flex items-center justify-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setEditTarget(h)}
+                        className="h-7 px-2"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setDeleteTarget(h)}
+                        className="h-7 px-2 text-red-500 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -305,6 +364,7 @@ function HealthCentersTab() {
 
   const [addOpen, setAddOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<HealthCenter | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<HealthCenter | null>(null);
   const [search, setSearch] = useState("");
   const [sectorFilter, setSectorFilter] = useState<string>("all");
   const [form, setForm] = useState({ nameAr: "", nameEn: "", sectorId: "" });
@@ -383,6 +443,27 @@ function HealthCentersTab() {
       (c.nameEn ?? "").toLowerCase().includes(search.toLowerCase());
     const matchSector = sectorFilter === "all" || String(c.sectorId) === sectorFilter;
     return matchSearch && matchSector;
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`${API}/health-centers/${id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(e.error ?? "Failed");
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["health-centers"] });
+      qc.invalidateQueries({ queryKey: ["sectors"] });
+      toast({ title: t("reference.deleted") });
+      setDeleteTarget(null);
+    },
+    onError: (e) => { toast({ title: String(e.message), variant: "destructive" }); setDeleteTarget(null); },
   });
 
   const [editSectorId, setEditSectorId] = useState<string>("");
@@ -482,6 +563,34 @@ function HealthCentersTab() {
         </Dialog>
       </div>
 
+      {/* Delete confirm dialog */}
+      {deleteTarget && (
+        <Dialog open={!!deleteTarget} onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}>
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-red-600">
+                <AlertTriangle className="h-5 w-5" />
+                {t("reference.deleteHealthCenter")}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="py-2">
+              <p className="text-sm text-muted-foreground">{t("reference.confirmDelete")}</p>
+              <p className="mt-2 font-semibold">{deleteTarget.nameAr}</p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setDeleteTarget(null)}>{t("general.cancel")}</Button>
+              <Button
+                variant="destructive"
+                disabled={deleteMutation.isPending}
+                onClick={() => deleteMutation.mutate(deleteTarget.id)}
+              >
+                {deleteMutation.isPending ? "..." : ar ? "حذف" : "Delete"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
       {/* Edit dialog */}
       {editTarget && (
         <Dialog open={!!editTarget} onOpenChange={(v) => { if (!v) { setEditTarget(null); setEditSectorId(""); } }}>
@@ -574,14 +683,24 @@ function HealthCentersTab() {
                     <Badge variant="outline" className="text-xs">{c.sectorNameAr}</Badge>
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => { setEditTarget(c); setEditSectorId(""); }}
-                      className="h-7 px-2"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
+                    <div className="flex items-center justify-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => { setEditTarget(c); setEditSectorId(""); }}
+                        className="h-7 px-2"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setDeleteTarget(c)}
+                        className="h-7 px-2 text-red-500 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}

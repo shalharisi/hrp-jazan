@@ -73,6 +73,10 @@ export const translations = {
     "reference.saved": "تم الحفظ بنجاح",
     "reference.editHospital": "تعديل المستشفى",
     "reference.editHealthCenter": "تعديل المركز الصحي",
+    "reference.deleteHospital": "حذف المستشفى",
+    "reference.deleteHealthCenter": "حذف المركز الصحي",
+    "reference.confirmDelete": "هل أنت متأكد من الحذف؟ لا يمكن التراجع عن هذه العملية.",
+    "reference.deleted": "تم الحذف بنجاح",
 
     // General
     "general.save": "حفظ",
@@ -159,6 +163,10 @@ export const translations = {
     "reference.saved": "Saved successfully",
     "reference.editHospital": "Edit Hospital",
     "reference.editHealthCenter": "Edit Health Center",
+    "reference.deleteHospital": "Delete Hospital",
+    "reference.deleteHealthCenter": "Delete Health Center",
+    "reference.confirmDelete": "Are you sure you want to delete? This action cannot be undone.",
+    "reference.deleted": "Deleted successfully",
 
     // General
     "general.save": "Save",

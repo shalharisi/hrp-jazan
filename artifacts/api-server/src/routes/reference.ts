@@ -217,4 +217,39 @@ router.patch("/health-centers/:id", requireRole("admin"), async (req, res): Prom
   });
 });
 
+// ─── DELETE /hospitals/:id (admin only) ──────────────────────────────────────
+router.delete("/hospitals/:id", requireRole("admin"), async (req, res): Promise<void> => {
+  const id = parseInt(String(req.params["id"] ?? ""));
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  // Check no patients reference a health center in a sector using this hospital
+  // (Hospital is linked via sectors, not directly to patients)
+  const [hospital] = await db.select().from(hospitalsTable).where(eq(hospitalsTable.id, id)).limit(1);
+  if (!hospital) { res.status(404).json({ error: "Not found" }); return; }
+
+  await db.delete(hospitalsTable).where(eq(hospitalsTable.id, id));
+  res.status(204).send();
+});
+
+// ─── DELETE /health-centers/:id (admin only) ─────────────────────────────────
+router.delete("/health-centers/:id", requireRole("admin"), async (req, res): Promise<void> => {
+  const id = parseInt(String(req.params["id"] ?? ""));
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  // Check no patients are registered at this health center
+  const { patientsTable: pt } = await import("@workspace/db");
+  const { count: countFn } = await import("drizzle-orm");
+  const [usage] = await db.select({ n: countFn() }).from(pt).where(eq(pt.healthCenterId, id));
+  if ((usage?.n ?? 0) > 0) {
+    res.status(409).json({
+      error: `لا يمكن حذف المركز لأن ${usage!.n} حالة مسجلة فيه. انقل الحالات أولاً.`,
+      code: "CENTER_IN_USE",
+    });
+    return;
+  }
+
+  await db.delete(healthCentersTable).where(eq(healthCentersTable.id, id));
+  res.status(204).send();
+});
+
 export default router;
