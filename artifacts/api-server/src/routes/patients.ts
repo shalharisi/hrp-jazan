@@ -9,11 +9,17 @@ import {
   CreatePatientBody,
   UpdatePatientBody,
 } from "@workspace/api-zod";
+import { requireWriteAccess, coordinatorSectorGuard } from "../lib/auth";
 
 const router: IRouter = Router();
 
 // GET /patients
 router.get("/patients", async (req, res): Promise<void> => {
+  // Coordinator sector enforcement: override sectorId from JWT, ignore client-supplied value
+  if (req.user?.role === "coordinator" && req.user.sectorId) {
+    req.query["sectorId"] = String(req.user.sectorId);
+  }
+
   const params = ListPatientsQueryParams.safeParse(req.query);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -110,8 +116,8 @@ router.get("/patients", async (req, res): Promise<void> => {
   res.json({ items, total });
 });
 
-// POST /patients
-router.post("/patients", async (req, res): Promise<void> => {
+// POST /patients — requires write access (not viewer) + sector guard
+router.post("/patients", requireWriteAccess, coordinatorSectorGuard, async (req, res): Promise<void> => {
   const parsed = CreatePatientBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -259,8 +265,8 @@ router.get("/patients/:id", async (req, res): Promise<void> => {
   });
 });
 
-// PATCH /patients/:id
-router.patch("/patients/:id", async (req, res): Promise<void> => {
+// PATCH /patients/:id — requires write access (not viewer)
+router.patch("/patients/:id", requireWriteAccess, async (req, res): Promise<void> => {
   const params = UpdatePatientParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });

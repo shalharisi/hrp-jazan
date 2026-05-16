@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { setAuthTokenGetter } from "@workspace/api-client-react";
 
 export type UserRole = "admin" | "coordinator" | "doctor" | "viewer";
 
@@ -39,17 +40,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading: true,
   });
 
-  const apiFetch = useCallback(async (path: string, options?: RequestInit) => {
-    const token = sessionStorage.getItem(TOKEN_KEY);
-    return fetch(`${API}${path}`, {
-      ...options,
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...(options?.headers ?? {}),
-      },
-    });
+  // Wire the global API client to always inject the current bearer token
+  useEffect(() => {
+    setAuthTokenGetter(() => sessionStorage.getItem(TOKEN_KEY));
+    return () => {
+      setAuthTokenGetter(null);
+    };
   }, []);
 
   const refreshToken = useCallback(async (): Promise<boolean> => {
@@ -117,8 +113,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = useCallback(async (username: string, password: string) => {
-    const res = await apiFetch("/auth/login", {
+    const res = await fetch(`${API}/auth/login`, {
       method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
     });
 
@@ -130,7 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const data = await res.json() as { accessToken: string; user: AuthUser };
     sessionStorage.setItem(TOKEN_KEY, data.accessToken);
     setState({ user: data.user, accessToken: data.accessToken, loading: false });
-  }, [apiFetch]);
+  }, []);
 
   const logout = useCallback(async () => {
     const token = sessionStorage.getItem(TOKEN_KEY);
@@ -146,9 +144,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const giveConsent = useCallback(async () => {
-    await apiFetch("/auth/consent", { method: "POST" });
+    const token = sessionStorage.getItem(TOKEN_KEY);
+    await fetch(`${API}/auth/consent`, {
+      method: "POST",
+      credentials: "include",
+      headers: { Authorization: `Bearer ${token ?? ""}` },
+    });
     setState(s => s.user ? { ...s, user: { ...s.user, consentGivenAt: new Date().toISOString() } } : s);
-  }, [apiFetch]);
+  }, []);
 
   const canWrite = state.user !== null && state.user.role !== "viewer";
   const isAdmin = state.user?.role === "admin";

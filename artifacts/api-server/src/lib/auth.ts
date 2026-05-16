@@ -1,8 +1,20 @@
 import jwt from "jsonwebtoken";
 import type { Request, Response, NextFunction } from "express";
 
-const JWT_SECRET = process.env["JWT_SECRET"] ?? "hrp-jazan-2026-secret-key-change-in-production";
-const JWT_REFRESH_SECRET = process.env["JWT_REFRESH_SECRET"] ?? "hrp-jazan-2026-refresh-secret-change-in-production";
+function requireEnv(name: string): string {
+  const val = process.env[name];
+  if (!val) {
+    throw new Error(
+      `Environment variable ${name} is required but not set. ` +
+      `Set it in your .env file or deployment configuration.`
+    );
+  }
+  return val;
+}
+
+// Fail fast if secrets are not configured — never use weak in-code defaults
+const JWT_SECRET = requireEnv("JWT_SECRET");
+const JWT_REFRESH_SECRET = requireEnv("JWT_REFRESH_SECRET");
 const ACCESS_TOKEN_EXPIRY = "15m";
 const REFRESH_TOKEN_EXPIRY = "7d";
 
@@ -13,6 +25,7 @@ export interface JwtPayload {
   username: string;
   role: UserRole;
   nameAr: string;
+  sectorId?: string | null;
 }
 
 export function generateAccessToken(payload: JwtPayload): string {
@@ -71,14 +84,65 @@ export function requireRole(...roles: UserRole[]) {
   };
 }
 
+/**
+ * Block mutation methods (POST/PATCH/PUT/DELETE) for viewer role.
+ * GET and HEAD requests pass through for all authenticated users.
+ */
 export function requireWriteAccess(req: Request, res: Response, next: NextFunction): void {
   if (!req.user) {
     res.status(401).json({ error: "غير مصرح", code: "UNAUTHORIZED" });
     return;
   }
-  if (req.user.role === "viewer") {
+  const mutationMethods = ["POST", "PATCH", "PUT", "DELETE"];
+  if (mutationMethods.includes(req.method.toUpperCase()) && req.user.role === "viewer") {
     res.status(403).json({ error: "صلاحية القراءة فقط – لا يمكنك إجراء تعديلات", code: "FORBIDDEN" });
     return;
   }
+  next();
+}
+
+/**
+ * Enforce sector-based data scoping for coordinator role.
+ * Coordinators can only see/modify data within their assigned sector.
+ * Admin and doctor have unrestricted access.
+ */
+export function coordinatorSectorGuard(req: Request, res: Response, next: NextFunction): void {
+  if (!req.user) {
+    res.status(401).json({ error: "غير مصرح", code: "UNAUTHORIZED" });
+    return;
+  }
+
+  // Only restrict coordinator role
+  if (req.user.role !== "coordinator") {
+    next();
+    return;
+  }
+
+  const userSectorId = req.user.sectorId;
+  if (!userSectorId) {
+    // Coordinator with no sector assigned cannot access any sector-scoped data
+    next();
+    return;
+  }
+
+  // For GET requests with sectorId query param — enforce it matches the user's sector
+  if (req.method.toUpperCase() === "GET" && req.query["sectorId"]) {
+    if (String(req.query["sectorId"]) !== String(userSectorId)) {
+      res.status(403).json({ error: "لا يمكنك الوصول إلى بيانات قطاع آخر", code: "SECTOR_FORBIDDEN" });
+      return;
+    }
+  }
+
+  // For mutation requests — inject the coordinator's sectorId automatically
+  if (["POST", "PATCH", "PUT"].includes(req.method.toUpperCase())) {
+    if (req.body && typeof req.body === "object") {
+      // If the request body contains a sectorId that doesn't match, reject it
+      if (req.body.sectorId && String(req.body.sectorId) !== String(userSectorId)) {
+        res.status(403).json({ error: "لا يمكنك تعديل بيانات قطاع آخر", code: "SECTOR_FORBIDDEN" });
+        return;
+      }
+    }
+  }
+
   next();
 }

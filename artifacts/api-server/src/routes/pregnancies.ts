@@ -9,6 +9,7 @@ import {
   UpdatePregnancyBody,
 } from "@workspace/api-zod";
 import { calculateCompliance } from "../lib/compliance";
+import { requireWriteAccess, coordinatorSectorGuard } from "../lib/auth";
 
 const router: IRouter = Router();
 
@@ -45,6 +46,11 @@ function serializePregnancy(
 
 // GET /pregnancies
 router.get("/pregnancies", async (req, res): Promise<void> => {
+  // Coordinator sector enforcement: override sectorId from JWT, ignore client-supplied value
+  if (req.user?.role === "coordinator" && req.user.sectorId) {
+    req.query["sectorId"] = String(req.user.sectorId);
+  }
+
   const params = ListPregnanciesQueryParams.safeParse(req.query);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -105,8 +111,8 @@ router.get("/pregnancies", async (req, res): Promise<void> => {
   res.json({ items, total });
 });
 
-// POST /pregnancies
-router.post("/pregnancies", async (req, res): Promise<void> => {
+// POST /pregnancies — requires write access (not viewer) + sector guard
+router.post("/pregnancies", requireWriteAccess, coordinatorSectorGuard, async (req, res): Promise<void> => {
   const parsed = CreatePregnancyBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -217,8 +223,8 @@ router.get("/pregnancies/:id", async (req, res): Promise<void> => {
   });
 });
 
-// PATCH /pregnancies/:id
-router.patch("/pregnancies/:id", async (req, res): Promise<void> => {
+// PATCH /pregnancies/:id — requires write access (not viewer)
+router.patch("/pregnancies/:id", requireWriteAccess, async (req, res): Promise<void> => {
   const params = UpdatePregnancyParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });

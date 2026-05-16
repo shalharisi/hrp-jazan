@@ -8,6 +8,7 @@ import {
   UpdateAppointmentBody,
 } from "@workspace/api-zod";
 import { calculateCompliance } from "../lib/compliance";
+import { requireWriteAccess, coordinatorSectorGuard } from "../lib/auth";
 
 const router: IRouter = Router();
 
@@ -54,8 +55,8 @@ router.get("/appointments", async (req, res): Promise<void> => {
   res.json(appointments.map((a) => serializeAppointment(a, hospitalMap.get(a.hospitalId))));
 });
 
-// POST /appointments
-router.post("/appointments", async (req, res): Promise<void> => {
+// POST /appointments — requires write access (not viewer) + sector guard
+router.post("/appointments", requireWriteAccess, coordinatorSectorGuard, async (req, res): Promise<void> => {
   const parsed = CreateAppointmentBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -86,8 +87,8 @@ router.post("/appointments", async (req, res): Promise<void> => {
   res.status(201).json(serializeAppointment(appointment, hospital));
 });
 
-// PATCH /appointments/:id
-router.patch("/appointments/:id", async (req, res): Promise<void> => {
+// PATCH /appointments/:id — requires write access (not viewer)
+router.patch("/appointments/:id", requireWriteAccess, async (req, res): Promise<void> => {
   const params = UpdateAppointmentParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
