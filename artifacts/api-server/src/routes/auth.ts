@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import bcrypt from "bcryptjs";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { generateAccessToken, generateRefreshToken, verifyRefreshToken, requireAuth } from "../lib/auth";
+import { generateAccessToken, generateRefreshToken, verifyRefreshToken, requireAuth, type JwtPayload } from "../lib/auth";
 import { logAudit } from "../lib/audit";
 import { z } from "zod";
 
@@ -12,6 +12,20 @@ const LoginBody = z.object({
   username: z.string().min(1),
   password: z.string().min(1),
 });
+
+/**
+ * Build a JWT payload from a DB user record.
+ * sectorId is included so coordinator sector enforcement works server-side.
+ */
+function buildPayload(user: typeof usersTable.$inferSelect): JwtPayload {
+  return {
+    userId: user.id,
+    username: user.username,
+    role: user.role as JwtPayload["role"],
+    nameAr: user.nameAr,
+    sectorId: user.sectorId ?? null,
+  };
+}
 
 // POST /api/auth/login
 router.post("/auth/login", async (req, res): Promise<void> => {
@@ -43,13 +57,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     return;
   }
 
-  const payload = {
-    userId: user.id,
-    username: user.username,
-    role: user.role as "admin" | "coordinator" | "doctor" | "viewer",
-    nameAr: user.nameAr,
-  };
-
+  const payload = buildPayload(user);
   const accessToken = generateAccessToken(payload);
   const refreshToken = generateRefreshToken(payload);
 
@@ -81,6 +89,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
       role: user.role,
       nameAr: user.nameAr,
       nameEn: user.nameEn ?? null,
+      consentGivenAt: user.consentGivenAt?.toISOString() ?? null,
     },
   });
 });
@@ -109,6 +118,7 @@ router.post("/auth/refresh", async (req, res): Promise<void> => {
 
   try {
     const payload = verifyRefreshToken(token);
+    // Re-fetch user from DB to get latest role + sectorId
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, payload.userId)).limit(1);
 
     if (!user || !user.isActive) {
@@ -116,13 +126,7 @@ router.post("/auth/refresh", async (req, res): Promise<void> => {
       return;
     }
 
-    const newPayload = {
-      userId: user.id,
-      username: user.username,
-      role: user.role as "admin" | "coordinator" | "doctor" | "viewer",
-      nameAr: user.nameAr,
-    };
-
+    const newPayload = buildPayload(user);
     const accessToken = generateAccessToken(newPayload);
     res.json({ accessToken });
   } catch {

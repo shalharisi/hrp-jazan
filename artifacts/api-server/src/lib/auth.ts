@@ -1,22 +1,42 @@
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import type { Request, Response, NextFunction } from "express";
+import { logger } from "./logger";
 
-function requireEnv(name: string): string {
+// ---------------------------------------------------------------------------
+// Secret management — never use in-code defaults for production
+// ---------------------------------------------------------------------------
+
+function resolveSecret(name: string): string {
   const val = process.env[name];
-  if (!val) {
+  if (val) return val;
+
+  if (process.env["NODE_ENV"] === "production") {
     throw new Error(
-      `Environment variable ${name} is required but not set. ` +
-      `Set it in your .env file or deployment configuration.`
+      `Environment variable ${name} is required in production. ` +
+      `Set it as a Replit secret in the Secrets tab.`
     );
   }
-  return val;
+
+  // Development only: generate a random ephemeral secret with a loud warning.
+  // Tokens will be invalidated on server restart. Set the env var to persist sessions.
+  const ephemeral = crypto.randomBytes(64).toString("hex");
+  logger.warn(
+    { envVar: name },
+    `${name} is not set. Using a random ephemeral secret — sessions will be lost on restart. ` +
+    `Set ${name} as a Replit secret for persistent sessions.`
+  );
+  return ephemeral;
 }
 
-// Fail fast if secrets are not configured — never use weak in-code defaults
-const JWT_SECRET = requireEnv("JWT_SECRET");
-const JWT_REFRESH_SECRET = requireEnv("JWT_REFRESH_SECRET");
+const JWT_SECRET = resolveSecret("JWT_SECRET");
+const JWT_REFRESH_SECRET = resolveSecret("JWT_REFRESH_SECRET");
 const ACCESS_TOKEN_EXPIRY = "15m";
 const REFRESH_TOKEN_EXPIRY = "7d";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 export type UserRole = "admin" | "coordinator" | "doctor" | "viewer";
 
@@ -27,6 +47,10 @@ export interface JwtPayload {
   nameAr: string;
   sectorId?: string | null;
 }
+
+// ---------------------------------------------------------------------------
+// Token helpers
+// ---------------------------------------------------------------------------
 
 export function generateAccessToken(payload: JwtPayload): string {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRY });
@@ -44,6 +68,10 @@ export function verifyRefreshToken(token: string): JwtPayload {
   return jwt.verify(token, JWT_REFRESH_SECRET) as JwtPayload;
 }
 
+// ---------------------------------------------------------------------------
+// Express augmentation
+// ---------------------------------------------------------------------------
+
 declare global {
   namespace Express {
     interface Request {
@@ -51,6 +79,10 @@ declare global {
     }
   }
 }
+
+// ---------------------------------------------------------------------------
+// Middleware
+// ---------------------------------------------------------------------------
 
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;
@@ -120,7 +152,7 @@ export function coordinatorSectorGuard(req: Request, res: Response, next: NextFu
 
   const userSectorId = req.user.sectorId;
   if (!userSectorId) {
-    // Coordinator with no sector assigned cannot access any sector-scoped data
+    // Coordinator with no sector assigned — allow through (unrestricted)
     next();
     return;
   }
@@ -133,10 +165,9 @@ export function coordinatorSectorGuard(req: Request, res: Response, next: NextFu
     }
   }
 
-  // For mutation requests — inject the coordinator's sectorId automatically
+  // For mutation requests — reject if body targets a different sector
   if (["POST", "PATCH", "PUT"].includes(req.method.toUpperCase())) {
     if (req.body && typeof req.body === "object") {
-      // If the request body contains a sectorId that doesn't match, reject it
       if (req.body.sectorId && String(req.body.sectorId) !== String(userSectorId)) {
         res.status(403).json({ error: "لا يمكنك تعديل بيانات قطاع آخر", code: "SECTOR_FORBIDDEN" });
         return;

@@ -9,6 +9,154 @@ import * as zod from 'zod';
 
 
 /**
+ * @summary Login with username and password
+ */
+export const AuthLoginBody = zod.object({
+  "username": zod.string(),
+  "password": zod.string()
+})
+
+export const AuthLoginResponse = zod.object({
+  "accessToken": zod.string(),
+  "user": zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "role": zod.enum(['admin', 'coordinator', 'doctor', 'viewer']),
+  "nameAr": zod.string(),
+  "nameEn": zod.string().nullish(),
+  "sectorId": zod.string().nullish(),
+  "isActive": zod.boolean().optional(),
+  "lastLogin": zod.coerce.date().nullish(),
+  "consentGivenAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date().optional()
+})
+})
+
+
+/**
+ * @summary Refresh access token using httpOnly refresh token cookie
+ */
+export const AuthRefreshResponse = zod.object({
+  "accessToken": zod.string()
+})
+
+
+/**
+ * @summary Get current authenticated user profile
+ */
+export const AuthMeResponse = zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "role": zod.enum(['admin', 'coordinator', 'doctor', 'viewer']),
+  "nameAr": zod.string(),
+  "nameEn": zod.string().nullish(),
+  "sectorId": zod.string().nullish(),
+  "isActive": zod.boolean().optional(),
+  "lastLogin": zod.coerce.date().nullish(),
+  "consentGivenAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date().optional()
+})
+
+
+/**
+ * @summary List all users (admin only)
+ */
+export const ListUsersResponseItem = zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "role": zod.enum(['admin', 'coordinator', 'doctor', 'viewer']),
+  "nameAr": zod.string(),
+  "nameEn": zod.string().nullish(),
+  "sectorId": zod.string().nullish(),
+  "isActive": zod.boolean().optional(),
+  "lastLogin": zod.coerce.date().nullish(),
+  "consentGivenAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date().optional()
+})
+export const ListUsersResponse = zod.array(ListUsersResponseItem)
+
+
+/**
+ * @summary Create a new user (admin only)
+ */
+export const createUserBodyPasswordMin = 8;
+
+
+
+export const CreateUserBody = zod.object({
+  "username": zod.string(),
+  "password": zod.string().min(createUserBodyPasswordMin),
+  "role": zod.enum(['admin', 'coordinator', 'doctor', 'viewer']),
+  "nameAr": zod.string(),
+  "nameEn": zod.string().optional(),
+  "sectorId": zod.string().optional()
+})
+
+
+/**
+ * @summary Update a user (admin only)
+ */
+export const UpdateUserParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const updateUserBodyPasswordMin = 8;
+
+
+
+export const UpdateUserBody = zod.object({
+  "role": zod.enum(['admin', 'coordinator', 'doctor', 'viewer']).optional(),
+  "nameAr": zod.string().optional(),
+  "nameEn": zod.string().optional(),
+  "sectorId": zod.string().optional(),
+  "isActive": zod.boolean().optional(),
+  "password": zod.string().min(updateUserBodyPasswordMin).optional()
+})
+
+export const UpdateUserResponse = zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "role": zod.enum(['admin', 'coordinator', 'doctor', 'viewer']),
+  "nameAr": zod.string(),
+  "nameEn": zod.string().nullish(),
+  "sectorId": zod.string().nullish(),
+  "isActive": zod.boolean().optional(),
+  "lastLogin": zod.coerce.date().nullish(),
+  "consentGivenAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date().optional()
+})
+
+
+/**
+ * @summary List audit logs (admin only)
+ */
+export const listAuditLogsQueryLimitDefault = 50;
+export const listAuditLogsQueryOffsetDefault = 0;
+
+export const ListAuditLogsQueryParams = zod.object({
+  "userId": zod.coerce.number().optional(),
+  "action": zod.coerce.string().optional(),
+  "limit": zod.coerce.number().default(listAuditLogsQueryLimitDefault),
+  "offset": zod.coerce.number().default(listAuditLogsQueryOffsetDefault)
+})
+
+export const ListAuditLogsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "userId": zod.number().nullish(),
+  "username": zod.string().nullish(),
+  "action": zod.string(),
+  "resourceType": zod.string(),
+  "resourceId": zod.string().nullish(),
+  "ipAddress": zod.string().nullish(),
+  "userAgent": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})),
+  "total": zod.number()
+})
+
+
+/**
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({

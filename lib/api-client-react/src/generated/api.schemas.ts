@@ -5,6 +5,95 @@
  * High-Risk Pregnancy Tracker API – Jazan Health Cluster 2026
  * OpenAPI spec version: 0.1.0
  */
+export type UserProfileRole = typeof UserProfileRole[keyof typeof UserProfileRole];
+
+
+export const UserProfileRole = {
+  admin: 'admin',
+  coordinator: 'coordinator',
+  doctor: 'doctor',
+  viewer: 'viewer',
+} as const;
+
+export interface UserProfile {
+  id: number;
+  username: string;
+  role: UserProfileRole;
+  nameAr: string;
+  /** @nullable */
+  nameEn?: string | null;
+  /** @nullable */
+  sectorId?: string | null;
+  isActive?: boolean;
+  /** @nullable */
+  lastLogin?: string | null;
+  /** @nullable */
+  consentGivenAt?: string | null;
+  createdAt?: string;
+}
+
+export interface LoginResponse {
+  accessToken: string;
+  user: UserProfile;
+}
+
+export type UserCreateInputRole = typeof UserCreateInputRole[keyof typeof UserCreateInputRole];
+
+
+export const UserCreateInputRole = {
+  admin: 'admin',
+  coordinator: 'coordinator',
+  doctor: 'doctor',
+  viewer: 'viewer',
+} as const;
+
+export interface UserCreateInput {
+  username: string;
+  /** @minLength 8 */
+  password: string;
+  role: UserCreateInputRole;
+  nameAr: string;
+  nameEn?: string;
+  sectorId?: string;
+}
+
+export type UserUpdateInputRole = typeof UserUpdateInputRole[keyof typeof UserUpdateInputRole];
+
+
+export const UserUpdateInputRole = {
+  admin: 'admin',
+  coordinator: 'coordinator',
+  doctor: 'doctor',
+  viewer: 'viewer',
+} as const;
+
+export interface UserUpdateInput {
+  role?: UserUpdateInputRole;
+  nameAr?: string;
+  nameEn?: string;
+  sectorId?: string;
+  isActive?: boolean;
+  /** @minLength 8 */
+  password?: string;
+}
+
+export interface AuditLog {
+  id: number;
+  /** @nullable */
+  userId?: number | null;
+  /** @nullable */
+  username?: string | null;
+  action: string;
+  resourceType: string;
+  /** @nullable */
+  resourceId?: string | null;
+  /** @nullable */
+  ipAddress?: string | null;
+  /** @nullable */
+  userAgent?: string | null;
+  createdAt: string;
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -411,6 +500,27 @@ export interface AlertsResponse {
   totalCount: number;
   criticalCount: number;
 }
+
+export type AuthLoginBody = {
+  username: string;
+  password: string;
+};
+
+export type AuthRefresh200 = {
+  accessToken: string;
+};
+
+export type ListAuditLogsParams = {
+userId?: number;
+action?: string;
+limit?: number;
+offset?: number;
+};
+
+export type ListAuditLogs200 = {
+  items: AuditLog[];
+  total: number;
+};
 
 export type ListHealthCentersParams = {
 sectorId?: number;
