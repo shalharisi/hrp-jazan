@@ -3,20 +3,32 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: High-Risk Pregnancy Tracker API – Jazan Health Cluster 2026
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: reference
+    description: Reference data (sectors, hospitals, health centers)
+  - name: patients
+    description: Patient management
+  - name: pregnancies
+    description: Pregnancy case management
+  - name: appointments
+    description: Appointment management
+  - name: dashboard
+    description: KPI dashboard and analytics
+  - name: alerts
+    description: System alerts
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +36,1009 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ─── Reference Data ───────────────────────────────────────────────────────
+  /sectors:
+    get:
+      operationId: listSectors
+      tags: [reference]
+      summary: List all sectors
+      responses:
+        "200":
+          description: List of sectors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Sector"
+
+  /hospitals:
+    get:
+      operationId: listHospitals
+      tags: [reference]
+      summary: List all hospitals
+      responses:
+        "200":
+          description: List of hospitals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Hospital"
+
+  /health-centers:
+    get:
+      operationId: listHealthCenters
+      tags: [reference]
+      summary: List health centers, optionally filtered by sector
+      parameters:
+        - name: sectorId
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of health centers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HealthCenter"
+
+  # ─── Patients ─────────────────────────────────────────────────────────────
+  /patients:
+    get:
+      operationId: listPatients
+      tags: [patients]
+      summary: List patients with optional search
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Search by national ID or name
+        - name: sectorId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: healthCenterId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: Paginated list of patients
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PatientList"
+    post:
+      operationId: createPatient
+      tags: [patients]
+      summary: Register a new patient
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatientInput"
+      responses:
+        "201":
+          description: Created patient
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Patient"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Patient with this national ID already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /patients/{id}:
+    get:
+      operationId: getPatient
+      tags: [patients]
+      summary: Get patient by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Patient details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Patient"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updatePatient
+      tags: [patients]
+      summary: Update patient details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatientUpdate"
+      responses:
+        "200":
+          description: Updated patient
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Patient"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /patients/by-nid/{nationalId}:
+    get:
+      operationId: getPatientByNid
+      tags: [patients]
+      summary: Look up a patient by national ID
+      parameters:
+        - name: nationalId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Patient with pregnancy history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PatientWithPregnancies"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ─── Pregnancies ──────────────────────────────────────────────────────────
+  /pregnancies:
+    get:
+      operationId: listPregnancies
+      tags: [pregnancies]
+      summary: List pregnancy cases with filters
+      parameters:
+        - name: patientId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: riskLevel
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [low, medium, high, critical]
+        - name: hospitalId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: sectorId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: compliance
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [compliant, non_compliant, pending]
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: Paginated list of pregnancies
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PregnancyList"
+    post:
+      operationId: createPregnancy
+      tags: [pregnancies]
+      summary: Create a new pregnancy case
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PregnancyInput"
+      responses:
+        "201":
+          description: Created pregnancy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pregnancy"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /pregnancies/{id}:
+    get:
+      operationId: getPregnancy
+      tags: [pregnancies]
+      summary: Get pregnancy case by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Pregnancy details with patient info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PregnancyDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updatePregnancy
+      tags: [pregnancies]
+      summary: Update pregnancy case
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PregnancyUpdate"
+      responses:
+        "200":
+          description: Updated pregnancy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pregnancy"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ─── Appointments ─────────────────────────────────────────────────────────
+  /appointments:
+    get:
+      operationId: listAppointments
+      tags: [appointments]
+      summary: List appointments
+      parameters:
+        - name: pregnancyId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: hospitalId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: attended
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: List of appointments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Appointment"
+    post:
+      operationId: createAppointment
+      tags: [appointments]
+      summary: Book an appointment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppointmentInput"
+      responses:
+        "201":
+          description: Created appointment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /appointments/{id}:
+    patch:
+      operationId: updateAppointment
+      tags: [appointments]
+      summary: Update appointment (attendance, reschedule)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppointmentUpdate"
+      responses:
+        "200":
+          description: Updated appointment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ─── Dashboard ────────────────────────────────────────────────────────────
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Overall KPI summary
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/by-sector:
+    get:
+      operationId: getDashboardBySector
+      tags: [dashboard]
+      summary: Case distribution by sector
+      responses:
+        "200":
+          description: Per-sector breakdown
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SectorStats"
+
+  /dashboard/by-hospital:
+    get:
+      operationId: getDashboardByHospital
+      tags: [dashboard]
+      summary: Case distribution by hospital
+      responses:
+        "200":
+          description: Per-hospital breakdown
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HospitalStats"
+
+  /dashboard/by-risk-level:
+    get:
+      operationId: getDashboardByRiskLevel
+      tags: [dashboard]
+      summary: Case distribution by risk level
+      responses:
+        "200":
+          description: Per-risk-level breakdown
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RiskLevelStats"
+
+  /dashboard/compliance:
+    get:
+      operationId: getDashboardCompliance
+      tags: [dashboard]
+      summary: Booking compliance KPIs
+      responses:
+        "200":
+          description: Compliance stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ComplianceStats"
+
+  # ─── Alerts ───────────────────────────────────────────────────────────────
+  /alerts:
+    get:
+      operationId: listAlerts
+      tags: [alerts]
+      summary: Get active alerts (VTE without Enoxaparin, critical without appointments)
+      responses:
+        "200":
+          description: Active alerts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlertsResponse"
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    # ─── Reference entities ────────────────────────────────────────────────
+    Sector:
+      type: object
+      required: [id, nameAr, nameEn, hospitalId]
+      properties:
+        id:
+          type: integer
+        nameAr:
+          type: string
+        nameEn:
+          type: string
+        hospitalId:
+          type: integer
+        hospitalNameAr:
+          type: ["string", "null"]
+        hospitalNameEn:
+          type: ["string", "null"]
+        healthCenterCount:
+          type: ["integer", "null"]
+
+    Hospital:
+      type: object
+      required: [id, nameAr, nameEn, isKfch]
+      properties:
+        id:
+          type: integer
+        nameAr:
+          type: string
+        nameEn:
+          type: string
+        isKfch:
+          type: boolean
+        totalCases:
+          type: ["integer", "null"]
+
+    HealthCenter:
+      type: object
+      required: [id, nameAr, sectorId]
+      properties:
+        id:
+          type: integer
+        nameAr:
+          type: string
+        nameEn:
+          type: ["string", "null"]
+        sectorId:
+          type: integer
+        sectorNameAr:
+          type: ["string", "null"]
+
+    # ─── Patient ──────────────────────────────────────────────────────────
+    Patient:
+      type: object
+      required: [id, nationalId, nameAr, phone, healthCenterId, sectorId, createdAt]
+      properties:
+        id:
+          type: integer
+        nationalId:
+          type: string
+        nameAr:
+          type: string
+        nameEn:
+          type: ["string", "null"]
+        dateOfBirth:
+          type: ["string", "null"]
+        age:
+          type: ["integer", "null"]
+        phone:
+          type: string
+        address:
+          type: ["string", "null"]
+        healthCenterId:
+          type: integer
+        healthCenterNameAr:
+          type: ["string", "null"]
+        sectorId:
+          type: integer
+        sectorNameAr:
+          type: ["string", "null"]
+        totalPregnancies:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+
+    PatientInput:
+      type: object
+      required: [nationalId, nameAr, phone, healthCenterId]
+      properties:
+        nationalId:
+          type: string
+          minLength: 10
+          maxLength: 10
+        nameAr:
+          type: string
+          minLength: 1
+        nameEn:
+          type: ["string", "null"]
+        dateOfBirth:
+          type: ["string", "null"]
+        phone:
+          type: string
+        address:
+          type: ["string", "null"]
+        healthCenterId:
+          type: integer
+
+    PatientUpdate:
+      type: object
+      properties:
+        nameAr:
+          type: string
+        nameEn:
+          type: ["string", "null"]
+        dateOfBirth:
+          type: ["string", "null"]
+        phone:
+          type: string
+        address:
+          type: ["string", "null"]
+        healthCenterId:
+          type: integer
+
+    PatientList:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Patient"
+        total:
+          type: integer
+
+    PatientWithPregnancies:
+      type: object
+      required: [patient, pregnancies]
+      properties:
+        patient:
+          $ref: "#/components/schemas/Patient"
+        pregnancies:
+          type: array
+          items:
+            $ref: "#/components/schemas/Pregnancy"
+
+    # ─── Pregnancy ────────────────────────────────────────────────────────
+    Pregnancy:
+      type: object
+      required: [id, patientId, visitDate, gestationalAge, riskLevel, referralRecommendation, compliance, createdAt]
+      properties:
+        id:
+          type: integer
+        patientId:
+          type: integer
+        patientNameAr:
+          type: ["string", "null"]
+        patientNationalId:
+          type: ["string", "null"]
+        visitDate:
+          type: string
+        lmpDate:
+          type: ["string", "null"]
+        gestationalAge:
+          type: ["integer", "null"]
+          description: Gestational age in weeks
+        riskLevel:
+          type: string
+          enum: [low, medium, high, critical]
+        riskFactors:
+          type: array
+          items:
+            type: string
+        isVteHighRisk:
+          type: boolean
+        enoxaparinPrescribed:
+          type: boolean
+        doctorName:
+          type: ["string", "null"]
+        referralRecommendation:
+          type: string
+          enum: [follow_at_center, follow_at_hospital, transfer_kfch]
+        referredHospitalId:
+          type: ["integer", "null"]
+        referredHospitalNameAr:
+          type: ["string", "null"]
+        appointmentDate:
+          type: ["string", "null"]
+        compliance:
+          type: string
+          enum: [compliant, non_compliant, pending]
+          description: "compliant: <=2 working days, non_compliant: >2, pending: no appointment yet"
+        workingDaysToAppointment:
+          type: ["integer", "null"]
+        notes:
+          type: ["string", "null"]
+        coordinatorClassification:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    PregnancyInput:
+      type: object
+      required: [patientId, visitDate, riskLevel, referralRecommendation]
+      properties:
+        patientId:
+          type: integer
+        visitDate:
+          type: string
+        lmpDate:
+          type: ["string", "null"]
+        gestationalAge:
+          type: ["integer", "null"]
+        riskLevel:
+          type: string
+          enum: [low, medium, high, critical]
+        riskFactors:
+          type: array
+          items:
+            type: string
+        isVteHighRisk:
+          type: boolean
+        enoxaparinPrescribed:
+          type: boolean
+        doctorName:
+          type: ["string", "null"]
+        referralRecommendation:
+          type: string
+          enum: [follow_at_center, follow_at_hospital, transfer_kfch]
+        referredHospitalId:
+          type: ["integer", "null"]
+        appointmentDate:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        coordinatorClassification:
+          type: ["string", "null"]
+
+    PregnancyUpdate:
+      type: object
+      properties:
+        visitDate:
+          type: string
+        lmpDate:
+          type: ["string", "null"]
+        gestationalAge:
+          type: ["integer", "null"]
+        riskLevel:
+          type: string
+          enum: [low, medium, high, critical]
+        riskFactors:
+          type: array
+          items:
+            type: string
+        isVteHighRisk:
+          type: boolean
+        enoxaparinPrescribed:
+          type: boolean
+        doctorName:
+          type: ["string", "null"]
+        referralRecommendation:
+          type: string
+          enum: [follow_at_center, follow_at_hospital, transfer_kfch]
+        referredHospitalId:
+          type: ["integer", "null"]
+        appointmentDate:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        coordinatorClassification:
+          type: ["string", "null"]
+
+    PregnancyDetail:
+      type: object
+      required: [pregnancy, patient, appointments]
+      properties:
+        pregnancy:
+          $ref: "#/components/schemas/Pregnancy"
+        patient:
+          $ref: "#/components/schemas/Patient"
+        appointments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Appointment"
+
+    PregnancyList:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Pregnancy"
+        total:
+          type: integer
+
+    # ─── Appointment ──────────────────────────────────────────────────────
+    Appointment:
+      type: object
+      required: [id, pregnancyId, hospitalId, appointmentDate, attended, createdAt]
+      properties:
+        id:
+          type: integer
+        pregnancyId:
+          type: integer
+        hospitalId:
+          type: integer
+        hospitalNameAr:
+          type: ["string", "null"]
+        appointmentDate:
+          type: string
+        attended:
+          type: ["boolean", "null"]
+          description: null = not yet, true = attended, false = missed
+        attendanceNote:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    AppointmentInput:
+      type: object
+      required: [pregnancyId, hospitalId, appointmentDate]
+      properties:
+        pregnancyId:
+          type: integer
+        hospitalId:
+          type: integer
+        appointmentDate:
+          type: string
+        attendanceNote:
+          type: ["string", "null"]
+
+    AppointmentUpdate:
+      type: object
+      properties:
+        appointmentDate:
+          type: string
+        attended:
+          type: ["boolean", "null"]
+        attendanceNote:
+          type: ["string", "null"]
+
+    # ─── Dashboard ────────────────────────────────────────────────────────
+    DashboardSummary:
+      type: object
+      required: [totalPatients, totalPregnancies, totalCritical, totalHighRisk, totalVteHighRisk, vteWithoutEnoxaparin, bookingComplianceRate, attendanceRate, criticalWithoutAppointment, pendingAppointments]
+      properties:
+        totalPatients:
+          type: integer
+        totalPregnancies:
+          type: integer
+        totalCritical:
+          type: integer
+        totalHighRisk:
+          type: integer
+        totalVteHighRisk:
+          type: integer
+        vteWithoutEnoxaparin:
+          type: integer
+          description: VTE high-risk cases without Enoxaparin prescribed
+        bookingComplianceRate:
+          type: number
+          description: Percentage of cases booked within 2 working days
+        attendanceRate:
+          type: number
+          description: Percentage of appointments attended
+        criticalWithoutAppointment:
+          type: integer
+          description: Critical cases with no appointment booked
+        pendingAppointments:
+          type: integer
+          description: Cases awaiting appointment booking
+
+    SectorStats:
+      type: object
+      required: [sectorId, sectorNameAr, totalCases, criticalCases, complianceRate]
+      properties:
+        sectorId:
+          type: integer
+        sectorNameAr:
+          type: string
+        sectorNameEn:
+          type: string
+        totalCases:
+          type: integer
+        criticalCases:
+          type: integer
+        highRiskCases:
+          type: integer
+        complianceRate:
+          type: number
+
+    HospitalStats:
+      type: object
+      required: [hospitalId, hospitalNameAr, totalReferrals, attendanceRate]
+      properties:
+        hospitalId:
+          type: integer
+        hospitalNameAr:
+          type: string
+        hospitalNameEn:
+          type: string
+        isKfch:
+          type: boolean
+        totalReferrals:
+          type: integer
+        attendedAppointments:
+          type: integer
+        missedAppointments:
+          type: integer
+        attendanceRate:
+          type: number
+
+    RiskLevelStats:
+      type: object
+      required: [riskLevel, count, percentage]
+      properties:
+        riskLevel:
+          type: string
+          enum: [low, medium, high, critical]
+        count:
+          type: integer
+        percentage:
+          type: number
+
+    ComplianceStats:
+      type: object
+      required: [compliant, nonCompliant, pending, totalWithAppointment, complianceRate]
+      properties:
+        compliant:
+          type: integer
+          description: Cases booked within 2 working days
+        nonCompliant:
+          type: integer
+          description: Cases booked after 2 working days
+        pending:
+          type: integer
+          description: Cases without appointment yet
+        totalWithAppointment:
+          type: integer
+        complianceRate:
+          type: number
+        attendanceRate:
+          type: number
+
+    # ─── Alerts ──────────────────────────────────────────────────────────
+    Alert:
+      type: object
+      required: [type, pregnancyId, patientNameAr, patientNationalId, severity]
+      properties:
+        type:
+          type: string
+          enum: [vte_without_enoxaparin, critical_without_appointment, missed_appointment, overdue_critical]
+        pregnancyId:
+          type: integer
+        patientId:
+          type: integer
+        patientNameAr:
+          type: string
+        patientNationalId:
+          type: string
+        riskLevel:
+          type: string
+        severity:
+          type: string
+          enum: [warning, critical]
+        message:
+          type: string
+        createdAt:
+          type: string
+
+    AlertsResponse:
+      type: object
+      required: [alerts, totalCount, criticalCount]
+      properties:
+        alerts:
+          type: array
+          items:
+            $ref: "#/components/schemas/Alert"
+        totalCount:
+          type: integer
+        criticalCount:
+          type: integer

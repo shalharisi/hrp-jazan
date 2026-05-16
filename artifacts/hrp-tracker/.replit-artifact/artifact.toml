@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "منظومة تتبع الحمل عالي الخطورة – جازان"
+version = "1.0.0"
+id = "artifacts/hrp-tracker"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22604
+
+[services.development]
+run = "pnpm --filter @workspace/hrp-tracker run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/hrp-tracker", "run", "build" ]
+publicDir = "artifacts/hrp-tracker/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22604"
+BASE_PATH = "/"
