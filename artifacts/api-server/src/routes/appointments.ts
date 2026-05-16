@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, appointmentsTable, hospitalsTable, pregnanciesTable } from "@workspace/db";
+import { db, appointmentsTable, hospitalsTable, pregnanciesTable, patientsTable, healthCentersTable } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import {
   ListAppointmentsQueryParams,
@@ -8,7 +8,8 @@ import {
   UpdateAppointmentBody,
 } from "@workspace/api-zod";
 import { calculateCompliance } from "../lib/compliance";
-import { requireWriteAccess, coordinatorSectorGuard } from "../lib/auth";
+import { requireWriteAccess } from "../lib/auth";
+import { logAudit, buildAuditParams } from "../lib/audit";
 
 const router: IRouter = Router();
 
@@ -26,6 +27,16 @@ function serializeAppointment(
     attendanceNote: a.attendanceNote ?? null,
     createdAt: a.createdAt.toISOString(),
   };
+}
+
+// ── Helper: resolve sector for a pregnancy (via patient → healthCenter) ───────
+async function getPregnancySectorId(pregnancyId: number): Promise<number | null> {
+  const [preg] = await db.select({ patientId: pregnanciesTable.patientId }).from(pregnanciesTable).where(eq(pregnanciesTable.id, pregnancyId)).limit(1);
+  if (!preg) return null;
+  const [patient] = await db.select({ healthCenterId: patientsTable.healthCenterId }).from(patientsTable).where(eq(patientsTable.id, preg.patientId)).limit(1);
+  if (!patient) return null;
+  const [hc] = await db.select({ sectorId: healthCentersTable.sectorId }).from(healthCentersTable).where(eq(healthCentersTable.id, patient.healthCenterId)).limit(1);
+  return hc?.sectorId ?? null;
 }
 
 // GET /appointments
@@ -55,12 +66,25 @@ router.get("/appointments", async (req, res): Promise<void> => {
   res.json(appointments.map((a) => serializeAppointment(a, hospitalMap.get(a.hospitalId))));
 });
 
-// POST /appointments — requires write access (not viewer) + sector guard
-router.post("/appointments", requireWriteAccess, coordinatorSectorGuard, async (req, res): Promise<void> => {
+// POST /appointments — requires write access (not viewer)
+router.post("/appointments", requireWriteAccess, async (req, res): Promise<void> => {
   const parsed = CreateAppointmentBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
+  }
+
+  // ── Coordinator sector enforcement (via pregnancyId → patient → sector) ──
+  if (req.user?.role === "coordinator") {
+    if (!req.user.sectorId) {
+      res.status(403).json({ error: "حسابك لم يُعيَّن له قطاع بعد", code: "NO_SECTOR_ASSIGNED" });
+      return;
+    }
+    const pregnancySectorId = await getPregnancySectorId(parsed.data.pregnancyId);
+    if (pregnancySectorId === null || String(pregnancySectorId) !== String(req.user.sectorId)) {
+      res.status(403).json({ error: "لا يمكنك إضافة موعد لحالة من قطاع آخر", code: "SECTOR_FORBIDDEN" });
+      return;
+    }
   }
 
   const [appointment] = await db
@@ -83,6 +107,15 @@ router.post("/appointments", requireWriteAccess, coordinatorSectorGuard, async (
       .where(eq(pregnanciesTable.id, parsed.data.pregnancyId));
   }
 
+  // Audit log
+  logAudit({
+    ...buildAuditParams(req),
+    action: "CREATE",
+    resourceType: "appointment",
+    resourceId: String(appointment.id),
+    newValue: appointment,
+  }).catch(() => {});
+
   const [hospital] = await db.select().from(hospitalsTable).where(eq(hospitalsTable.id, appointment.hospitalId)).limit(1);
   res.status(201).json(serializeAppointment(appointment, hospital));
 });
@@ -99,6 +132,26 @@ router.patch("/appointments/:id", requireWriteAccess, async (req, res): Promise<
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
+  }
+
+  // Fetch current record for oldValue audit and sector check
+  const [existing] = await db.select().from(appointmentsTable).where(eq(appointmentsTable.id, params.data.id)).limit(1);
+  if (!existing) {
+    res.status(404).json({ error: "Appointment not found" });
+    return;
+  }
+
+  // ── Coordinator sector enforcement ──
+  if (req.user?.role === "coordinator") {
+    if (!req.user.sectorId) {
+      res.status(403).json({ error: "حسابك لم يُعيَّن له قطاع", code: "NO_SECTOR_ASSIGNED" });
+      return;
+    }
+    const pregnancySectorId = await getPregnancySectorId(existing.pregnancyId);
+    if (pregnancySectorId === null || String(pregnancySectorId) !== String(req.user.sectorId)) {
+      res.status(403).json({ error: "لا يمكنك تعديل موعد من قطاع آخر", code: "SECTOR_FORBIDDEN" });
+      return;
+    }
   }
 
   const updateData: Record<string, unknown> = {};
@@ -128,6 +181,16 @@ router.patch("/appointments/:id", requireWriteAccess, async (req, res): Promise<
         .where(eq(pregnanciesTable.id, appointment.pregnancyId));
     }
   }
+
+  // Audit log
+  logAudit({
+    ...buildAuditParams(req),
+    action: "UPDATE",
+    resourceType: "appointment",
+    resourceId: String(appointment.id),
+    oldValue: existing,
+    newValue: appointment,
+  }).catch(() => {});
 
   const [hospital] = await db.select().from(hospitalsTable).where(eq(hospitalsTable.id, appointment.hospitalId)).limit(1);
   res.json(serializeAppointment(appointment, hospital));

@@ -1,8 +1,9 @@
 import { Router, type IRouter } from "express";
-import { db, sectorsTable, hospitalsTable, healthCentersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { db, sectorsTable, hospitalsTable, healthCentersTable, patientsTable } from "@workspace/db";
+import { eq, count } from "drizzle-orm";
 import { ListHealthCentersQueryParams } from "@workspace/api-zod";
 import { requireRole } from "../lib/auth";
+import { logAudit, buildAuditParams } from "../lib/audit";
 import { z } from "zod";
 
 const router: IRouter = Router();
@@ -28,24 +29,18 @@ router.get("/sectors", async (req, res): Promise<void> => {
     centerCountBySector.set(hc.sectorId, (centerCountBySector.get(hc.sectorId) ?? 0) + 1);
   }
 
-  const result = sectors.map((s) => {
-    const hospital = hospitalMap.get(s.hospitalId);
-    return {
-      id: s.id,
-      nameAr: s.nameAr,
-      nameEn: s.nameEn,
-      hospitalId: s.hospitalId,
-      hospitalNameAr: hospital?.nameAr ?? null,
-      hospitalNameEn: hospital?.nameEn ?? null,
-      healthCenterCount: centerCountBySector.get(s.id) ?? 0,
-    };
-  });
-
-  res.json(result);
+  res.json(sectors.map((s) => ({
+    id: s.id,
+    nameAr: s.nameAr,
+    nameEn: s.nameEn ?? null,
+    hospitalId: s.hospitalId,
+    hospitalNameAr: hospitalMap.get(s.hospitalId)?.nameAr ?? null,
+    healthCenterCount: centerCountBySector.get(s.id) ?? 0,
+  })));
 });
 
 // ─── GET /hospitals ────────────────────────────────────────────────────────────
-router.get("/hospitals", async (_req, res): Promise<void> => {
+router.get("/hospitals", async (req, res): Promise<void> => {
   const hospitals = await db.select().from(hospitalsTable).orderBy(hospitalsTable.id);
   res.json(hospitals.map((h) => ({
     id: h.id,
@@ -75,6 +70,14 @@ router.post("/hospitals", requireRole("admin"), async (req, res): Promise<void> 
     .values(parsed.data)
     .returning();
 
+  logAudit({
+    ...buildAuditParams(req),
+    action: "CREATE",
+    resourceType: "hospital",
+    resourceId: String(hospital!.id),
+    newValue: hospital,
+  }).catch(() => {});
+
   res.status(201).json({
     id: hospital!.id,
     nameAr: hospital!.nameAr,
@@ -98,6 +101,10 @@ router.patch("/hospitals/:id", requireRole("admin"), async (req, res): Promise<v
   const parsed = UpdateHospitalBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
+  // Fetch current for audit oldValue
+  const [existing] = await db.select().from(hospitalsTable).where(eq(hospitalsTable.id, id)).limit(1);
+  if (!existing) { res.status(404).json({ error: "Not found" }); return; }
+
   const [hospital] = await db
     .update(hospitalsTable)
     .set(parsed.data)
@@ -106,7 +113,37 @@ router.patch("/hospitals/:id", requireRole("admin"), async (req, res): Promise<v
 
   if (!hospital) { res.status(404).json({ error: "Not found" }); return; }
 
+  logAudit({
+    ...buildAuditParams(req),
+    action: "UPDATE",
+    resourceType: "hospital",
+    resourceId: String(hospital.id),
+    oldValue: existing,
+    newValue: hospital,
+  }).catch(() => {});
+
   res.json({ id: hospital.id, nameAr: hospital.nameAr, nameEn: hospital.nameEn, isKfch: hospital.isKfch, totalCases: null });
+});
+
+// ─── DELETE /hospitals/:id (admin only) ──────────────────────────────────────
+router.delete("/hospitals/:id", requireRole("admin"), async (req, res): Promise<void> => {
+  const id = parseInt(String(req.params["id"] ?? ""));
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const [hospital] = await db.select().from(hospitalsTable).where(eq(hospitalsTable.id, id)).limit(1);
+  if (!hospital) { res.status(404).json({ error: "Not found" }); return; }
+
+  await db.delete(hospitalsTable).where(eq(hospitalsTable.id, id));
+
+  logAudit({
+    ...buildAuditParams(req),
+    action: "DELETE",
+    resourceType: "hospital",
+    resourceId: String(id),
+    oldValue: hospital,
+  }).catch(() => {});
+
+  res.status(204).send();
 });
 
 // ─── GET /health-centers ───────────────────────────────────────────────────────
@@ -117,38 +154,32 @@ router.get("/health-centers", async (req, res): Promise<void> => {
     return;
   }
 
-  let query = db
-    .select({
-      id: healthCentersTable.id,
-      nameAr: healthCentersTable.nameAr,
-      nameEn: healthCentersTable.nameEn,
-      sectorId: healthCentersTable.sectorId,
-    })
-    .from(healthCentersTable);
+  const { sectorId } = params.data;
 
-  const centers = params.data.sectorId
-    ? await query.where(eq(healthCentersTable.sectorId, params.data.sectorId)).orderBy(healthCentersTable.nameAr)
-    : await query.orderBy(healthCentersTable.nameAr);
+  let centers;
+  if (sectorId) {
+    centers = await db.select().from(healthCentersTable).where(eq(healthCentersTable.sectorId, sectorId)).orderBy(healthCentersTable.nameAr);
+  } else {
+    centers = await db.select().from(healthCentersTable).orderBy(healthCentersTable.nameAr);
+  }
 
   const sectors = await db.select().from(sectorsTable);
   const sectorMap = new Map(sectors.map((s) => [s.id, s]));
 
-  const result = centers.map((c) => ({
+  res.json(centers.map((c) => ({
     id: c.id,
     nameAr: c.nameAr,
     nameEn: c.nameEn ?? null,
     sectorId: c.sectorId,
     sectorNameAr: sectorMap.get(c.sectorId)?.nameAr ?? null,
-  }));
-
-  res.json(result);
+  })));
 });
 
 // ─── POST /health-centers (admin only) ────────────────────────────────────────
 const CreateHealthCenterBody = z.object({
-  nameAr: z.string().min(2, "اسم المركز باللعربية مطلوب"),
+  nameAr: z.string().min(2, "الاسم بالعربية مطلوب"),
   nameEn: z.string().optional(),
-  sectorId: z.number().int().positive("يرجى اختيار القطاع"),
+  sectorId: z.number().int().positive(),
 });
 
 router.post("/health-centers", requireRole("admin"), async (req, res): Promise<void> => {
@@ -158,24 +189,31 @@ router.post("/health-centers", requireRole("admin"), async (req, res): Promise<v
     return;
   }
 
-  // Verify sector exists
-  const [sector] = await db.select().from(sectorsTable).where(eq(sectorsTable.id, parsed.data.sectorId)).limit(1);
-  if (!sector) {
-    res.status(400).json({ error: "القطاع المحدد غير موجود" });
-    return;
-  }
-
   const [center] = await db
     .insert(healthCentersTable)
-    .values(parsed.data)
+    .values({
+      nameAr: parsed.data.nameAr,
+      nameEn: parsed.data.nameEn ?? null,
+      sectorId: parsed.data.sectorId,
+    })
     .returning();
+
+  logAudit({
+    ...buildAuditParams(req),
+    action: "CREATE",
+    resourceType: "health_center",
+    resourceId: String(center!.id),
+    newValue: center,
+  }).catch(() => {});
+
+  const [sector] = await db.select().from(sectorsTable).where(eq(sectorsTable.id, center!.sectorId)).limit(1);
 
   res.status(201).json({
     id: center!.id,
     nameAr: center!.nameAr,
     nameEn: center!.nameEn ?? null,
     sectorId: center!.sectorId,
-    sectorNameAr: sector.nameAr,
+    sectorNameAr: sector?.nameAr ?? null,
   });
 });
 
@@ -193,6 +231,10 @@ router.patch("/health-centers/:id", requireRole("admin"), async (req, res): Prom
   const parsed = UpdateHealthCenterBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
+  // Fetch current for audit oldValue
+  const [existing] = await db.select().from(healthCentersTable).where(eq(healthCentersTable.id, id)).limit(1);
+  if (!existing) { res.status(404).json({ error: "Not found" }); return; }
+
   const updateData: Record<string, unknown> = {};
   if (parsed.data.nameAr) updateData["nameAr"] = parsed.data.nameAr;
   if (parsed.data.nameEn !== undefined) updateData["nameEn"] = parsed.data.nameEn;
@@ -206,6 +248,15 @@ router.patch("/health-centers/:id", requireRole("admin"), async (req, res): Prom
 
   if (!center) { res.status(404).json({ error: "Not found" }); return; }
 
+  logAudit({
+    ...buildAuditParams(req),
+    action: "UPDATE",
+    resourceType: "health_center",
+    resourceId: String(center.id),
+    oldValue: existing,
+    newValue: center,
+  }).catch(() => {});
+
   const [sector] = await db.select().from(sectorsTable).where(eq(sectorsTable.id, center.sectorId)).limit(1);
 
   res.json({
@@ -217,29 +268,13 @@ router.patch("/health-centers/:id", requireRole("admin"), async (req, res): Prom
   });
 });
 
-// ─── DELETE /hospitals/:id (admin only) ──────────────────────────────────────
-router.delete("/hospitals/:id", requireRole("admin"), async (req, res): Promise<void> => {
-  const id = parseInt(String(req.params["id"] ?? ""));
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
-
-  // Check no patients reference a health center in a sector using this hospital
-  // (Hospital is linked via sectors, not directly to patients)
-  const [hospital] = await db.select().from(hospitalsTable).where(eq(hospitalsTable.id, id)).limit(1);
-  if (!hospital) { res.status(404).json({ error: "Not found" }); return; }
-
-  await db.delete(hospitalsTable).where(eq(hospitalsTable.id, id));
-  res.status(204).send();
-});
-
 // ─── DELETE /health-centers/:id (admin only) ─────────────────────────────────
 router.delete("/health-centers/:id", requireRole("admin"), async (req, res): Promise<void> => {
   const id = parseInt(String(req.params["id"] ?? ""));
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
 
   // Check no patients are registered at this health center
-  const { patientsTable: pt } = await import("@workspace/db");
-  const { count: countFn } = await import("drizzle-orm");
-  const [usage] = await db.select({ n: countFn() }).from(pt).where(eq(pt.healthCenterId, id));
+  const [usage] = await db.select({ n: count() }).from(patientsTable).where(eq(patientsTable.healthCenterId, id));
   if ((usage?.n ?? 0) > 0) {
     res.status(409).json({
       error: `لا يمكن حذف المركز لأن ${usage!.n} حالة مسجلة فيه. انقل الحالات أولاً.`,
@@ -248,7 +283,19 @@ router.delete("/health-centers/:id", requireRole("admin"), async (req, res): Pro
     return;
   }
 
+  const [existing] = await db.select().from(healthCentersTable).where(eq(healthCentersTable.id, id)).limit(1);
+  if (!existing) { res.status(404).json({ error: "Not found" }); return; }
+
   await db.delete(healthCentersTable).where(eq(healthCentersTable.id, id));
+
+  logAudit({
+    ...buildAuditParams(req),
+    action: "DELETE",
+    resourceType: "health_center",
+    resourceId: String(id),
+    oldValue: existing,
+  }).catch(() => {});
+
   res.status(204).send();
 });
 

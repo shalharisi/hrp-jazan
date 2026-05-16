@@ -1,4 +1,4 @@
-import type { Request, Response, NextFunction } from "express";
+import type { Request } from "express";
 import { db, auditLogsTable } from "@workspace/db";
 
 export async function logAudit(params: {
@@ -30,65 +30,18 @@ export async function logAudit(params: {
 }
 
 /**
- * Lightweight audit middleware for POST routes (CREATE).
- * Records newValue from request body.
+ * Extract common audit fields from a request.
+ * Spread into logAudit() and add action/resourceType/resourceId/oldValue/newValue.
  *
- * For PATCH (UPDATE) routes with oldValue tracking, use logAudit() directly
- * inside the route handler after fetching the existing record, so you can
- * capture both oldValue and newValue accurately.
+ * Example:
+ *   logAudit({ ...buildAuditParams(req), action: "CREATE", resourceType: "patient", ... })
  */
-export function auditMiddleware(resourceType: string) {
-  return (req: Request, _res: Response, next: NextFunction): void => {
-    const method = req.method.toUpperCase();
-
-    // Only auto-log POST (CREATE). PATCH/DELETE should log inline with old/new values.
-    if (method !== "POST") {
-      next();
-      return;
-    }
-
-    const userId = req.user?.userId;
-    const username = req.user?.username;
-    const ipAddress = (req.headers["x-forwarded-for"] as string)?.split(",")[0].trim() ?? req.socket?.remoteAddress;
-    const userAgent = req.headers["user-agent"];
-
-    logAudit({
-      userId,
-      username,
-      action: "CREATE",
-      resourceType,
-      resourceId: String(req.params["id"] ?? ""),
-      ipAddress,
-      userAgent,
-      newValue: req.body,
-    }).catch(() => {});
-
-    next();
-  };
-}
-
-/**
- * Build audit log params from a request for inline usage in route handlers.
- * Call after you have fetched both oldRecord and the updated result.
- */
-export function buildAuditParams(
-  req: Request,
-  action: "UPDATE" | "DELETE" | "CREATE",
-  resourceType: string,
-  resourceId: string | number,
-  oldValue: unknown,
-  newValue: unknown
-) {
+export function buildAuditParams(req: Request) {
   const ipAddress = (req.headers["x-forwarded-for"] as string)?.split(",")[0].trim() ?? req.socket?.remoteAddress;
   return {
     userId: req.user?.userId,
     username: req.user?.username,
-    action,
-    resourceType,
-    resourceId: String(resourceId),
     ipAddress,
     userAgent: req.headers["user-agent"],
-    oldValue,
-    newValue,
   };
 }

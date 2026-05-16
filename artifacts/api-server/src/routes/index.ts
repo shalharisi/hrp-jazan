@@ -11,7 +11,6 @@ import usersRouter from "./users";
 import auditLogsRouter from "./audit-logs";
 import exportRouter from "./export";
 import { requireAuth } from "../lib/auth";
-import { auditMiddleware } from "../lib/audit";
 
 const router: IRouter = Router();
 
@@ -28,11 +27,11 @@ router.use(dashboardRouter);
 router.use(alertsRouter);
 
 // Patient / pregnancy / appointment routers —
-// Each router enforces write-access internally for mutation methods.
+// Each router enforces write-access and audit logging internally.
 // GET routes remain accessible to all authenticated users including viewers.
-router.use(auditMiddleware("patients"), patientsRouter);
-router.use(auditMiddleware("pregnancies"), pregnanciesRouter);
-router.use(auditMiddleware("appointments"), appointmentsRouter);
+router.use(patientsRouter);
+router.use(pregnanciesRouter);
+router.use(appointmentsRouter);
 
 // Export routes (admin / coordinator / doctor)
 router.use(exportRouter);
