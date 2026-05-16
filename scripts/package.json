@@ -8,6 +8,7 @@
     "seed-users": "tsx ./src/seed-users.ts",
     "import-excel": "tsx ./src/import-excel.ts",
     "fix-health-centers": "tsx ./src/fix-health-centers.ts",
+    "delete-test-data": "tsx ./src/delete-test-data.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
