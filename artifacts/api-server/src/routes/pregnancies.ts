@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, pregnanciesTable, patientsTable, hospitalsTable, appointmentsTable } from "@workspace/db";
+import { db, pregnanciesTable, patientsTable, hospitalsTable, appointmentsTable, healthCentersTable } from "@workspace/db";
 import { eq, and, sql, count } from "drizzle-orm";
 import {
   ListPregnanciesQueryParams,
@@ -10,6 +10,7 @@ import {
 } from "@workspace/api-zod";
 import { calculateCompliance } from "../lib/compliance";
 import { requireWriteAccess, coordinatorSectorGuard } from "../lib/auth";
+import { logAudit } from "../lib/audit";
 
 const router: IRouter = Router();
 
@@ -46,8 +47,13 @@ function serializePregnancy(
 
 // GET /pregnancies
 router.get("/pregnancies", async (req, res): Promise<void> => {
-  // Coordinator sector enforcement: override sectorId from JWT, ignore client-supplied value
-  if (req.user?.role === "coordinator" && req.user.sectorId) {
+  // Coordinator sector enforcement
+  if (req.user?.role === "coordinator") {
+    if (!req.user.sectorId) {
+      res.status(403).json({ error: "حسابك لم يُعيَّن له قطاع بعد — يرجى التواصل مع مسؤول النظام", code: "NO_SECTOR_ASSIGNED" });
+      return;
+    }
+    // Override any client-supplied sectorId with the coordinator's own sector
     req.query["sectorId"] = String(req.user.sectorId);
   }
 
@@ -174,6 +180,22 @@ router.get("/pregnancies/:id", async (req, res): Promise<void> => {
   }
 
   const [patient] = await db.select().from(patientsTable).where(eq(patientsTable.id, pregnancy.patientId)).limit(1);
+
+  // Coordinator sector enforcement: verify patient's health center is in coordinator's sector
+  if (req.user?.role === "coordinator") {
+    if (!req.user.sectorId) {
+      res.status(403).json({ error: "حسابك لم يُعيَّن له قطاع", code: "NO_SECTOR_ASSIGNED" });
+      return;
+    }
+    if (patient) {
+      const { db: _db, healthCentersTable: hcTable } = await import("@workspace/db");
+      const [hc] = await _db.select().from(hcTable).where(eq(hcTable.id, patient.healthCenterId)).limit(1);
+      if (!hc || String(hc.sectorId) !== String(req.user.sectorId)) {
+        res.status(403).json({ error: "لا يمكنك الوصول إلى بيانات قطاع آخر", code: "SECTOR_FORBIDDEN" });
+        return;
+      }
+    }
+  }
   const hospital = pregnancy.referredHospitalId
     ? (await db.select().from(hospitalsTable).where(eq(hospitalsTable.id, pregnancy.referredHospitalId)).limit(1))[0]
     : undefined;
@@ -237,11 +259,27 @@ router.patch("/pregnancies/:id", requireWriteAccess, async (req, res): Promise<v
     return;
   }
 
-  // Get current to compute compliance
+  // Get current to compute compliance, audit oldValue, and sector check
   const [current] = await db.select().from(pregnanciesTable).where(eq(pregnanciesTable.id, params.data.id)).limit(1);
   if (!current) {
     res.status(404).json({ error: "Pregnancy not found" });
     return;
+  }
+
+  // Coordinator sector enforcement: verify the patient's sector matches
+  if (req.user?.role === "coordinator") {
+    if (!req.user.sectorId) {
+      res.status(403).json({ error: "حسابك لم يُعيَّن له قطاع", code: "NO_SECTOR_ASSIGNED" });
+      return;
+    }
+    const [patientForSector] = await db.select().from(patientsTable).where(eq(patientsTable.id, current.patientId)).limit(1);
+    if (patientForSector) {
+      const [hc] = await db.select().from(healthCentersTable).where(eq(healthCentersTable.id, patientForSector.healthCenterId)).limit(1);
+      if (!hc || String(hc.sectorId) !== String(req.user.sectorId)) {
+        res.status(403).json({ error: "لا يمكنك تعديل بيانات قطاع آخر", code: "SECTOR_FORBIDDEN" });
+        return;
+      }
+    }
   }
 
   const visitDate = parsed.data.visitDate ?? current.visitDate;
@@ -273,6 +311,20 @@ router.patch("/pregnancies/:id", requireWriteAccess, async (req, res): Promise<v
     res.status(404).json({ error: "Pregnancy not found" });
     return;
   }
+
+  // Audit log with old and new values
+  const ipAddress = (req.headers["x-forwarded-for"] as string)?.split(",")[0].trim() ?? req.socket?.remoteAddress;
+  logAudit({
+    userId: req.user?.userId,
+    username: req.user?.username,
+    action: "UPDATE",
+    resourceType: "pregnancy",
+    resourceId: String(pregnancy.id),
+    ipAddress,
+    userAgent: req.headers["user-agent"],
+    oldValue: current,
+    newValue: pregnancy,
+  }).catch(() => {});
 
   const [patient] = await db.select().from(patientsTable).where(eq(patientsTable.id, pregnancy.patientId)).limit(1);
   const hospital = pregnancy.referredHospitalId

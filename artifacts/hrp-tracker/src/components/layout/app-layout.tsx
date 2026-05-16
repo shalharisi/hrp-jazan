@@ -205,8 +205,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <span>
               © 2026{" "}
               {lang === "ar"
-                ? "وزارة الصحة – المملكة العربية السعودية"
-                : "Ministry of Health – Kingdom of Saudi Arabia"}
+                ? "تجمع جازان الصحي"
+                : "Jazan Health Cluster"}
             </span>
             <div className="flex items-center gap-3">
               <Link

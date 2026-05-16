@@ -43,7 +43,7 @@ export default function LoginPage() {
           {ar ? "المملكة العربية السعودية" : "Kingdom of Saudi Arabia"}
         </span>
         <span className="text-white/80 text-xs">
-          {ar ? "وزارة الصحة" : "Ministry of Health"}
+          {ar ? "تجمع جازان الصحي" : "Jazan Health Cluster"}
         </span>
       </div>
 
@@ -159,8 +159,8 @@ export default function LoginPage() {
       {/* Government footer */}
       <div className="text-center py-3 text-white/50 text-xs">
         {ar
-          ? "© 2026 وزارة الصحة – المملكة العربية السعودية. جميع الحقوق محفوظة."
-          : "© 2026 Ministry of Health – Kingdom of Saudi Arabia. All rights reserved."}
+          ? "© 2026 تجمع جازان الصحي. جميع الحقوق محفوظة."
+          : "© 2026 Jazan Health Cluster. All rights reserved."}
       </div>
     </div>
   );

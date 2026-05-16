@@ -9,14 +9,20 @@ import {
   CreatePatientBody,
   UpdatePatientBody,
 } from "@workspace/api-zod";
-import { requireWriteAccess, coordinatorSectorGuard } from "../lib/auth";
+import { requireWriteAccess, coordinatorSectorGuard, isCoordinatorSectorMatch } from "../lib/auth";
+import { logAudit } from "../lib/audit";
 
 const router: IRouter = Router();
 
 // GET /patients
 router.get("/patients", async (req, res): Promise<void> => {
-  // Coordinator sector enforcement: override sectorId from JWT, ignore client-supplied value
-  if (req.user?.role === "coordinator" && req.user.sectorId) {
+  // Coordinator sector enforcement
+  if (req.user?.role === "coordinator") {
+    if (!req.user.sectorId) {
+      res.status(403).json({ error: "حسابك لم يُعيَّن له قطاع بعد — يرجى التواصل مع مسؤول النظام", code: "NO_SECTOR_ASSIGNED" });
+      return;
+    }
+    // Override any client-supplied sectorId with the coordinator's own sector
     req.query["sectorId"] = String(req.user.sectorId);
   }
 
@@ -242,6 +248,13 @@ router.get("/patients/:id", async (req, res): Promise<void> => {
 
   const [center] = await db.select().from(healthCentersTable).where(eq(healthCentersTable.id, patient.healthCenterId)).limit(1);
   const [sector] = center ? await db.select().from(sectorsTable).where(eq(sectorsTable.id, center.sectorId)).limit(1) : [undefined];
+
+  // Coordinator sector enforcement: verify this patient belongs to the coordinator's sector
+  if (!isCoordinatorSectorMatch(req.user!.role, req.user!.sectorId, center?.sectorId)) {
+    res.status(403).json({ error: "لا يمكنك الوصول إلى بيانات قطاع آخر", code: "SECTOR_FORBIDDEN" });
+    return;
+  }
+
   const pregCount = await db.select({ count: count() }).from(pregnanciesTable).where(eq(pregnanciesTable.patientId, patient.id));
 
   const dob = patient.dateOfBirth ? new Date(patient.dateOfBirth) : null;
@@ -279,6 +292,20 @@ router.patch("/patients/:id", requireWriteAccess, async (req, res): Promise<void
     return;
   }
 
+  // Fetch current record (for oldValue audit and sector check)
+  const [existing] = await db.select().from(patientsTable).where(eq(patientsTable.id, params.data.id)).limit(1);
+  if (!existing) {
+    res.status(404).json({ error: "Patient not found" });
+    return;
+  }
+
+  // Coordinator sector enforcement: verify this patient belongs to the coordinator's sector
+  const [existingCenter] = await db.select().from(healthCentersTable).where(eq(healthCentersTable.id, existing.healthCenterId)).limit(1);
+  if (!isCoordinatorSectorMatch(req.user!.role, req.user!.sectorId, existingCenter?.sectorId)) {
+    res.status(403).json({ error: "لا يمكنك تعديل بيانات قطاع آخر", code: "SECTOR_FORBIDDEN" });
+    return;
+  }
+
   const updateData: Record<string, unknown> = {};
   if (parsed.data.nameAr != null) updateData.nameAr = parsed.data.nameAr;
   if (parsed.data.nameEn !== undefined) updateData.nameEn = parsed.data.nameEn;
@@ -297,6 +324,20 @@ router.patch("/patients/:id", requireWriteAccess, async (req, res): Promise<void
     res.status(404).json({ error: "Patient not found" });
     return;
   }
+
+  // Audit log with old and new values
+  const ipAddress = (req.headers["x-forwarded-for"] as string)?.split(",")[0].trim() ?? req.socket?.remoteAddress;
+  logAudit({
+    userId: req.user?.userId,
+    username: req.user?.username,
+    action: "UPDATE",
+    resourceType: "patient",
+    resourceId: String(patient.id),
+    ipAddress,
+    userAgent: req.headers["user-agent"],
+    oldValue: existing,
+    newValue: patient,
+  }).catch(() => {});
 
   const [center] = await db.select().from(healthCentersTable).where(eq(healthCentersTable.id, patient.healthCenterId)).limit(1);
   const [sector] = center ? await db.select().from(sectorsTable).where(eq(sectorsTable.id, center.sectorId)).limit(1) : [undefined];

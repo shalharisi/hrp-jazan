@@ -29,15 +29,20 @@ export async function logAudit(params: {
   }
 }
 
+/**
+ * Lightweight audit middleware for POST routes (CREATE).
+ * Records newValue from request body.
+ *
+ * For PATCH (UPDATE) routes with oldValue tracking, use logAudit() directly
+ * inside the route handler after fetching the existing record, so you can
+ * capture both oldValue and newValue accurately.
+ */
 export function auditMiddleware(resourceType: string) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     const method = req.method.toUpperCase();
-    let action: string;
 
-    if (method === "POST") action = "CREATE";
-    else if (method === "PATCH" || method === "PUT") action = "UPDATE";
-    else if (method === "DELETE") action = "DELETE";
-    else {
+    // Only auto-log POST (CREATE). PATCH/DELETE should log inline with old/new values.
+    if (method !== "POST") {
       next();
       return;
     }
@@ -50,7 +55,7 @@ export function auditMiddleware(resourceType: string) {
     logAudit({
       userId,
       username,
-      action,
+      action: "CREATE",
       resourceType,
       resourceId: String(req.params["id"] ?? ""),
       ipAddress,
@@ -59,5 +64,31 @@ export function auditMiddleware(resourceType: string) {
     }).catch(() => {});
 
     next();
+  };
+}
+
+/**
+ * Build audit log params from a request for inline usage in route handlers.
+ * Call after you have fetched both oldRecord and the updated result.
+ */
+export function buildAuditParams(
+  req: Request,
+  action: "UPDATE" | "DELETE" | "CREATE",
+  resourceType: string,
+  resourceId: string | number,
+  oldValue: unknown,
+  newValue: unknown
+) {
+  const ipAddress = (req.headers["x-forwarded-for"] as string)?.split(",")[0].trim() ?? req.socket?.remoteAddress;
+  return {
+    userId: req.user?.userId,
+    username: req.user?.username,
+    action,
+    resourceType,
+    resourceId: String(resourceId),
+    ipAddress,
+    userAgent: req.headers["user-agent"],
+    oldValue,
+    newValue,
   };
 }

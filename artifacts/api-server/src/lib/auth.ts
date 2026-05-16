@@ -135,8 +135,14 @@ export function requireWriteAccess(req: Request, res: Response, next: NextFuncti
 
 /**
  * Enforce sector-based data scoping for coordinator role.
- * Coordinators can only see/modify data within their assigned sector.
- * Admin and doctor have unrestricted access.
+ *
+ * Rules:
+ * - Coordinators MUST have a sectorId assigned. If not, access is denied.
+ * - GET list requests: sectorId query param is overridden with user's sectorId.
+ * - Mutations: body sectorId must match user's sectorId (or absent — caller injects it).
+ *
+ * Note: record-level (by-id) sector checks are done inline in individual route handlers
+ * because they require a DB lookup to determine the record's sector.
  */
 export function coordinatorSectorGuard(req: Request, res: Response, next: NextFunction): void {
   if (!req.user) {
@@ -151,21 +157,24 @@ export function coordinatorSectorGuard(req: Request, res: Response, next: NextFu
   }
 
   const userSectorId = req.user.sectorId;
+
+  // Coordinators without an assigned sector cannot access sector-scoped resources
   if (!userSectorId) {
-    // Coordinator with no sector assigned — allow through (unrestricted)
+    res.status(403).json({
+      error: "حسابك لم يُعيَّن له قطاع بعد — يرجى التواصل مع مسؤول النظام",
+      code: "NO_SECTOR_ASSIGNED",
+    });
+    return;
+  }
+
+  // For list GET requests: inject the coordinator's sectorId (override client value)
+  if (req.method.toUpperCase() === "GET") {
+    req.query["sectorId"] = String(userSectorId);
     next();
     return;
   }
 
-  // For GET requests with sectorId query param — enforce it matches the user's sector
-  if (req.method.toUpperCase() === "GET" && req.query["sectorId"]) {
-    if (String(req.query["sectorId"]) !== String(userSectorId)) {
-      res.status(403).json({ error: "لا يمكنك الوصول إلى بيانات قطاع آخر", code: "SECTOR_FORBIDDEN" });
-      return;
-    }
-  }
-
-  // For mutation requests — reject if body targets a different sector
+  // For mutation requests: reject if body explicitly targets a different sector
   if (["POST", "PATCH", "PUT"].includes(req.method.toUpperCase())) {
     if (req.body && typeof req.body === "object") {
       if (req.body.sectorId && String(req.body.sectorId) !== String(userSectorId)) {
@@ -176,4 +185,18 @@ export function coordinatorSectorGuard(req: Request, res: Response, next: NextFu
   }
 
   next();
+}
+
+/**
+ * Verify that a patient's health center belongs to the coordinator's sector.
+ * Used inline in GET /patients/:id and PATCH /patients/:id handlers.
+ */
+export function isCoordinatorSectorMatch(
+  userRole: UserRole,
+  userSectorId: string | null | undefined,
+  patientSectorId: number | string | null | undefined
+): boolean {
+  if (userRole !== "coordinator") return true; // non-coordinators pass
+  if (!userSectorId) return false; // coordinator without sector — deny
+  return String(patientSectorId) === String(userSectorId);
 }
