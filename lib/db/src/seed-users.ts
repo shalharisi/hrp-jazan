@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 
 const seedUsers = [
   { username: "admin",       password: "admin123",  role: "admin"       as const, nameAr: "مدير النظام",                nameEn: "System Administrator" },
-  { username: "coordinator", password: "coord123",  role: "coordinator" as const, nameAr: "منسق الحمل عالي الخطورة", nameEn: "HRP Coordinator"       },
+  { username: "coordinator", password: "coord123",  role: "coordinator" as const, nameAr: "منسق الحمل عالي الخطورة", nameEn: "HRP Coordinator", sectorId: "1" },
   { username: "doctor",      password: "doc123",    role: "doctor"      as const, nameAr: "طبيب النساء والولادة",       nameEn: "OB/GYN Physician"      },
   { username: "viewer",      password: "view123",   role: "viewer"      as const, nameAr: "مستخدم للعرض",               nameEn: "Read-only User"        },
 ];

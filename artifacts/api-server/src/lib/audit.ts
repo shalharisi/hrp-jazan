@@ -24,8 +24,15 @@ export async function logAudit(params: {
       oldValue: params.oldValue ?? null,
       newValue: params.newValue ?? null,
     });
-  } catch {
-    // Audit logging failures must not break the request
+  } catch (err) {
+    // Audit logging failures must never break the request, but must be visible.
+    // eslint-disable-next-line no-console
+    console.error("[audit] logAudit failed — record dropped:", {
+      action: params.action,
+      resourceType: params.resourceType,
+      resourceId: params.resourceId,
+      error: err instanceof Error ? err.message : String(err),
+    });
   }
 }
 

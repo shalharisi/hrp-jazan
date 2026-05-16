@@ -54,6 +54,24 @@ router.get("/appointments", async (req, res): Promise<void> => {
   if (hospitalId) conditions.push(eq(appointmentsTable.hospitalId, hospitalId));
   if (attended !== undefined && attended !== null) conditions.push(eq(appointmentsTable.attended, attended));
 
+  // ── Coordinator sector isolation on reads ──
+  // Only return appointments whose pregnancy belongs to a patient in the coordinator's sector.
+  if (req.user?.role === "coordinator") {
+    if (!req.user.sectorId) {
+      res.status(403).json({ error: "حسابك لم يُعيَّن له قطاع بعد", code: "NO_SECTOR_ASSIGNED" });
+      return;
+    }
+    const sectorId = req.user.sectorId;
+    conditions.push(
+      sql`${appointmentsTable.pregnancyId} IN (
+        SELECT pr.id FROM pregnancies pr
+        JOIN patients pa ON pr.patient_id = pa.id
+        JOIN health_centers hc ON pa.health_center_id = hc.id
+        WHERE hc.sector_id = ${sectorId}
+      )`
+    );
+  }
+
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
   const appointments = await db.select().from(appointmentsTable).where(whereClause).orderBy(appointmentsTable.appointmentDate);
 
@@ -172,9 +190,9 @@ router.patch("/appointments/:id", requireWriteAccess, async (req, res): Promise<
 
   // If appointment date changed, recalculate compliance on pregnancy
   if (parsed.data.appointmentDate) {
-    const [pregnancy] = await db.select().from(pregnanciesTable).where(eq(pregnanciesTable.id, appointment.pregnancyId)).limit(1);
-    if (pregnancy) {
-      const { compliance, workingDays } = calculateCompliance(pregnancy.visitDate, parsed.data.appointmentDate);
+    const [preg] = await db.select().from(pregnanciesTable).where(eq(pregnanciesTable.id, appointment.pregnancyId)).limit(1);
+    if (preg) {
+      const { compliance, workingDays } = calculateCompliance(preg.visitDate, parsed.data.appointmentDate);
       await db
         .update(pregnanciesTable)
         .set({ appointmentDate: parsed.data.appointmentDate, compliance, workingDaysToAppointment: workingDays })

@@ -4,7 +4,19 @@ import { sql } from "drizzle-orm";
 
 const router: IRouter = Router();
 
-router.get("/alerts", async (_req, res): Promise<void> => {
+router.get("/alerts", async (req, res): Promise<void> => {
+  // Coordinator: restrict to their sector only. Admin/doctor/viewer: global view.
+  const isCoordinator = req.user?.role === "coordinator";
+  if (isCoordinator && !req.user?.sectorId) {
+    res.status(403).json({ error: "حسابك لم يُعيَّن له قطاع بعد", code: "NO_SECTOR_ASSIGNED" });
+    return;
+  }
+  const sectorFilter = isCoordinator ? req.user!.sectorId : null;
+
+  const sectorClause = sectorFilter
+    ? sql`AND hc.sector_id = ${sectorFilter}`
+    : sql``;
+
   const [vteRows, criticalRows, missedRows] = await Promise.all([
     // VTE high risk without Enoxaparin
     db.execute(sql`
@@ -17,7 +29,9 @@ router.get("/alerts", async (_req, res): Promise<void> => {
         pr.created_at
       FROM pregnancies pr
       JOIN patients pa ON pr.patient_id = pa.id
+      JOIN health_centers hc ON pa.health_center_id = hc.id
       WHERE pr.is_vte_high_risk = true AND pr.enoxaparin_prescribed = false
+      ${sectorClause}
       ORDER BY pr.created_at DESC
       LIMIT 50
     `),
@@ -32,8 +46,10 @@ router.get("/alerts", async (_req, res): Promise<void> => {
         pr.created_at
       FROM pregnancies pr
       JOIN patients pa ON pr.patient_id = pa.id
+      JOIN health_centers hc ON pa.health_center_id = hc.id
       WHERE pr.risk_level = 'critical'
       AND NOT EXISTS (SELECT 1 FROM appointments a WHERE a.pregnancy_id = pr.id)
+      ${sectorClause}
       ORDER BY pr.created_at DESC
       LIMIT 50
     `),
@@ -49,7 +65,9 @@ router.get("/alerts", async (_req, res): Promise<void> => {
       FROM appointments a
       JOIN pregnancies pr ON a.pregnancy_id = pr.id
       JOIN patients pa ON pr.patient_id = pa.id
+      JOIN health_centers hc ON pa.health_center_id = hc.id
       WHERE a.attended = false
+      ${sectorClause}
       ORDER BY a.appointment_date DESC
       LIMIT 50
     `),
