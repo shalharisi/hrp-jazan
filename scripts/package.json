@@ -7,6 +7,7 @@
     "hello": "tsx ./src/hello.ts",
     "seed-users": "tsx ./src/seed-users.ts",
     "import-excel": "tsx ./src/import-excel.ts",
+    "fix-health-centers": "tsx ./src/fix-health-centers.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
