@@ -93,6 +93,20 @@ if (!existsSync(outputHashPath)) {
   process.exit(1);
 }
 
+const missingDirs = generatedDirs.filter((d) => !existsSync(d));
+if (missingDirs.length > 0) {
+  console.error(
+    "check:codegen — generated output directories are missing entirely:"
+  );
+  for (const d of missingDirs) {
+    console.error(`  missing: ${d}`);
+  }
+  console.error(
+    "  Run: pnpm --filter @workspace/api-spec run codegen"
+  );
+  process.exit(1);
+}
+
 const storedOutputHash = readFileSync(outputHashPath, "utf8").trim();
 const currentOutputHash = hashGeneratedOutput();
 
