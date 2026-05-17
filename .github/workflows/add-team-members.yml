@@ -1,0 +1,107 @@
+name: Add Members to GitHub Team
+
+# Run this workflow once per team to populate the @jazan-health teams with
+# the real clinical, backend, frontend, and admin staff.
+#
+# Prerequisites:
+#   • An ORG_ADMIN_PAT secret must exist in this repository with `admin:org`
+#     scope (the same secret used by the Create GitHub Teams workflow).
+#
+# Usage:
+#   Actions → Add Members to GitHub Team → Run workflow
+#   Fill in the team slug and a comma-separated list of GitHub usernames.
+#
+# Idempotent: running the workflow again for the same username/team is safe;
+# it updates the membership rather than creating a duplicate entry.
+
+on:
+  workflow_dispatch:
+    inputs:
+      team_slug:
+        description: >
+          Team slug (one of: maintainers, backend-leads, frontend-leads,
+          clinical-leads, admins)
+        required: true
+        type: choice
+        options:
+          - maintainers
+          - backend-leads
+          - frontend-leads
+          - clinical-leads
+          - admins
+      usernames:
+        description: >
+          Comma-separated GitHub usernames to add, e.g.
+          "ahmedali,sara-dev,khaled99"
+        required: true
+      role:
+        description: Team role for the new members
+        required: true
+        type: choice
+        options:
+          - member
+          - maintainer
+        default: member
+
+permissions:
+  contents: read
+
+jobs:
+  add-members:
+    name: Add members to @jazan-health/${{ inputs.team_slug }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add each username to the team
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.ORG_ADMIN_PAT }}
+          script: |
+            const org      = "jazan-health";
+            const teamSlug = "${{ inputs.team_slug }}";
+            const role     = "${{ inputs.role }}";
+
+            // Parse the comma-separated username list; ignore empty tokens.
+            const usernames = "${{ inputs.usernames }}"
+              .split(",")
+              .map(u => u.trim())
+              .filter(Boolean);
+
+            if (usernames.length === 0) {
+              core.setFailed("No usernames provided — nothing to do.");
+              return;
+            }
+
+            console.log(`Team : @${org}/${teamSlug}`);
+            console.log(`Role : ${role}`);
+            console.log(`Users: ${usernames.join(", ")}`);
+            console.log("");
+
+            let failed = 0;
+
+            for (const username of usernames) {
+              try {
+                await github.rest.teams.addOrUpdateMembershipForUserInOrg({
+                  org,
+                  team_slug: teamSlug,
+                  username,
+                  role,
+                });
+                console.log(`✓  Added '${username}' as ${role} of @${org}/${teamSlug}`);
+              } catch (err) {
+                console.error(`✗  Failed to add '${username}': ${err.message}`);
+                failed++;
+              }
+            }
+
+            console.log("");
+
+            if (failed > 0) {
+              core.setFailed(`${failed} username(s) could not be added. See the log above.`);
+            } else {
+              console.log(`All ${usernames.length} member(s) added successfully.`);
+              console.log("");
+              console.log("Next steps:");
+              console.log("  • Verify membership at https://github.com/orgs/jazan-health/teams");
+              console.log("  • Open a PR that touches .github/CODEOWNERS to confirm the");
+              console.log("    validate-codeowners CI check resolves every team entry.");
+            }

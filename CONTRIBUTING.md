@@ -51,7 +51,40 @@ The workflow creates all five teams (if they do not already exist) and adds `@Sh
 | `clinical-leads` | Clinical informatics / patient-safety reviewers |
 | `admins` | Organisation and repository administrators |
 
-After the teams are created, add the appropriate members via **Settings → Teams** on GitHub, then run the **Setup Branch Protection** workflow (see below) so CODEOWNERS rules take effect.
+After the teams are created, add the appropriate members using the **Add Members to GitHub Team** workflow described in the next section, then run the **Setup Branch Protection** workflow (see below) so CODEOWNERS rules take effect.
+
+### Adding Members to Each Team
+
+Use the **Add Members to GitHub Team** workflow to populate each team with real staff. The workflow requires the same `ORG_ADMIN_PAT` secret used above.
+
+1. Go to **Actions → Add Members to GitHub Team** and click **Run workflow**.
+2. Choose the **team slug** from the dropdown.
+3. Enter one or more **GitHub usernames**, comma-separated (e.g. `ahmedali,sara-dev,khaled99`).
+4. Choose the **role**: `member` (reviewer only) or `maintainer` (can also manage the team itself).
+5. Repeat for each team until all five are populated with at least one real staff member.
+
+The workflow is idempotent — running it again for the same user/team simply updates their membership without creating duplicates.
+
+**Post-run checklist** — after running the workflow for each team, confirm:
+- [ ] `maintainers` — at least one real member listed at `https://github.com/orgs/jazan-health/teams/maintainers/members`
+- [ ] `backend-leads` — at least one real member listed at `https://github.com/orgs/jazan-health/teams/backend-leads/members`
+- [ ] `frontend-leads` — at least one real member listed at `https://github.com/orgs/jazan-health/teams/frontend-leads/members`
+- [ ] `clinical-leads` — at least one real member listed at `https://github.com/orgs/jazan-health/teams/clinical-leads/members`
+- [ ] `admins` — at least one real member listed at `https://github.com/orgs/jazan-health/teams/admins/members`
+
+#### Team roster
+
+Fill in this table with the actual GitHub handles for each role and commit it back to `CONTRIBUTING.md` after populating the teams:
+
+| Team slug | Role | GitHub handles |
+|---|---|---|
+| `maintainers` | Project leads — fallback reviewers for all paths | *(add @handles here)* |
+| `backend-leads` | API, database, and server-side engineers | *(add @handles here)* |
+| `frontend-leads` | Web and mobile UI engineers | *(add @handles here)* |
+| `clinical-leads` | Clinical informatics / patient-safety reviewers | *(add @handles here)* |
+| `admins` | Organisation and repository administrators | *(add @handles here)* |
+
+> **Verification:** Open a draft PR that modifies `.github/CODEOWNERS` (even a whitespace change). The **Validate CODEOWNERS** CI check will attempt to resolve every `@jazan-health/<team>` entry via the GitHub API. All five checks must show `✓` before the entry is considered live. Add a `GH_PAT` secret (classic PAT with `read:org` scope) to the repository so the validator can look up org teams — see the *CODEOWNERS team validation* section below.
 
 ### Configuring Branch Protection (repository admin)
 
