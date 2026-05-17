@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -42,7 +43,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { getListAppointmentsQueryKey } from "@workspace/api-client-react";
 
-type DateFilter = "today" | "week" | "all";
+type DateFilter = "today" | "week" | "all" | "custom";
 type StatusFilter = "all" | "scheduled" | "attended" | "absent" | "needs_action";
 
 function localDateStr(d: Date): string {
@@ -52,7 +53,11 @@ function localDateStr(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-function getDateRange(filter: DateFilter): { start: string; end: string } | null {
+function getDateRange(
+  filter: DateFilter,
+  customStart?: string,
+  customEnd?: string
+): { start: string; end: string } | null {
   const now = new Date();
   const todayStr = localDateStr(now);
 
@@ -70,6 +75,9 @@ function getDateRange(filter: DateFilter): { start: string; end: string } | null
       start: localDateStr(weekStart),
       end: localDateStr(weekEnd),
     };
+  }
+  if (filter === "custom" && customStart && customEnd) {
+    return { start: customStart, end: customEnd };
   }
   return null;
 }
@@ -118,10 +126,20 @@ function attendedLabel(attended: boolean | null | undefined, lang: string): stri
   return lang === "ar" ? "مجدول" : "Scheduled";
 }
 
-function buildExportFilename(dateFilter: DateFilter, statusFilter: StatusFilter, sectorName: string | null): string {
+function buildExportFilename(
+  dateFilter: DateFilter,
+  statusFilter: StatusFilter,
+  sectorName: string | null,
+  customStart?: string,
+  customEnd?: string
+): string {
   const today = localDateStr(new Date());
   const parts: string[] = ["appointments"];
-  if (dateFilter !== "all") parts.push(dateFilter);
+  if (dateFilter === "custom" && customStart && customEnd) {
+    parts.push(customStart, customEnd);
+  } else if (dateFilter !== "all") {
+    parts.push(dateFilter);
+  }
   if (statusFilter !== "all") parts.push(statusFilter.replace(/_/g, "-"));
   if (sectorName) parts.push("sector", sectorName.replace(/\s+/g, "-"));
   parts.push(today);
@@ -134,7 +152,9 @@ function exportAppointmentsToCsv(
   headers: { patient: string; nationalId: string; sector: string; hospital: string; date: string; status: string; note: string },
   dateFilter: DateFilter,
   statusFilter: StatusFilter,
-  sectorName: string | null
+  sectorName: string | null,
+  customStart?: string,
+  customEnd?: string
 ) {
   const cols = [
     headers.patient,
@@ -175,7 +195,7 @@ function exportAppointmentsToCsv(
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = buildExportFilename(dateFilter, statusFilter, sectorName);
+  link.download = buildExportFilename(dateFilter, statusFilter, sectorName, customStart, customEnd);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -215,6 +235,8 @@ export default function AppointmentsPage() {
   const [dateFilter, setDateFilter] = useState<DateFilter>(
     initialStatus === "needs_action" ? "all" : "week"
   );
+  const [customStart, setCustomStart] = useState<string>("");
+  const [customEnd, setCustomEnd] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialStatus);
   const [sectorFilter, setSectorFilter] = useState<string>("all");
   const [dialogState, setDialogState] = useState<AttendanceDialogState>(null);
@@ -252,7 +274,7 @@ export default function AppointmentsPage() {
     if (!appointments) return [];
     let list = [...appointments];
 
-    const range = getDateRange(dateFilter);
+    const range = getDateRange(dateFilter, customStart, customEnd);
     if (range) {
       list = list.filter((a) => a.appointmentDate >= range.start && a.appointmentDate <= range.end);
     }
@@ -269,7 +291,7 @@ export default function AppointmentsPage() {
     }
 
     return list;
-  }, [appointments, dateFilter, statusFilter, sectorFilter]);
+  }, [appointments, dateFilter, customStart, customEnd, statusFilter, sectorFilter]);
 
   const handleMarkAttendance = (appt: Appointment, marking: "attended" | "absent") => {
     setDialogState({ appointment: appt, marking });
@@ -313,6 +335,10 @@ export default function AppointmentsPage() {
   const dateFilterLabel = (() => {
     if (dateFilter === "today") return t("appointments.dateToday");
     if (dateFilter === "week") return t("appointments.dateWeek");
+    if (dateFilter === "custom") {
+      if (customStart && customEnd) return `${customStart} – ${customEnd}`;
+      return t("appointments.dateCustom");
+    }
     return t("appointments.dateAll");
   })();
 
@@ -473,7 +499,16 @@ export default function AppointmentsPage() {
         <CardContent className="p-4 flex flex-wrap gap-3 items-end">
           <div className="flex flex-col gap-1">
             <Label className="text-xs text-muted-foreground">{t("appointments.filterDate")}</Label>
-            <Select value={dateFilter} onValueChange={(v) => setDateFilter(v as DateFilter)}>
+            <Select
+              value={dateFilter}
+              onValueChange={(v) => {
+                setDateFilter(v as DateFilter);
+                if (v !== "custom") {
+                  setCustomStart("");
+                  setCustomEnd("");
+                }
+              }}
+            >
               <SelectTrigger className="w-44 h-9">
                 <SelectValue />
               </SelectTrigger>
@@ -481,9 +516,34 @@ export default function AppointmentsPage() {
                 <SelectItem value="today">{t("appointments.dateToday")}</SelectItem>
                 <SelectItem value="week">{t("appointments.dateWeek")}</SelectItem>
                 <SelectItem value="all">{t("appointments.dateAll")}</SelectItem>
+                <SelectItem value="custom">{t("appointments.dateCustom")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+          {dateFilter === "custom" && (
+            <>
+              <div className="flex flex-col gap-1">
+                <Label className="text-xs text-muted-foreground">{t("appointments.dateFrom")}</Label>
+                <Input
+                  type="date"
+                  className="h-9 w-36"
+                  value={customStart}
+                  onChange={(e) => setCustomStart(e.target.value)}
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <Label className="text-xs text-muted-foreground">{t("appointments.dateTo")}</Label>
+                <Input
+                  type="date"
+                  className="h-9 w-36"
+                  value={customEnd}
+                  min={customStart || undefined}
+                  onChange={(e) => setCustomEnd(e.target.value)}
+                />
+              </div>
+            </>
+          )}
 
           <div className="flex flex-col gap-1">
             <Label className="text-xs text-muted-foreground">{t("appointments.filterStatus")}</Label>
@@ -551,7 +611,9 @@ export default function AppointmentsPage() {
                 },
                 dateFilter,
                 statusFilter,
-                activeSectorName
+                activeSectorName,
+                customStart || undefined,
+                customEnd || undefined
               );
             }}
           >
