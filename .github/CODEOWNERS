@@ -1,0 +1,66 @@
+# CODEOWNERS — Jazan HRP Tracking Platform
+#
+# GitHub automatically requests reviews from the listed owners whenever a pull
+# request touches the matched paths.  Branch protection is configured to
+# *require* at least one code-owner approval before any PR can be merged into
+# main (see setup-branch-protection.yml and CONTRIBUTING.md).
+#
+# Format: <path-pattern>  <owner> [<owner> …]
+# Patterns follow .gitignore glob rules; LATER rules override earlier ones.
+# Place broader patterns first and more specific patterns last so that specific
+# rules win.
+#
+# Teams must be referenced as @org/team-slug; individual users as @username.
+#
+# Replace the placeholder team slugs below with your actual GitHub organisation
+# and team slugs before running the branch-protection setup workflow.
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Fallback — everything not matched by a more specific rule below
+# ──────────────────────────────────────────────────────────────────────────────
+*                                       @jazan-health/maintainers
+
+# ──────────────────────────────────────────────────────────────────────────────
+# API contract (OpenAPI spec + generated client/schemas)
+# Changing the spec affects every consumer; backend lead approval required.
+# ──────────────────────────────────────────────────────────────────────────────
+lib/api-spec/                           @jazan-health/backend-leads
+lib/api-zod/                            @jazan-health/backend-leads
+lib/api-client-react/                   @jazan-health/backend-leads
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Database schema
+# Schema changes are irreversible in production; backend lead approval required.
+# ──────────────────────────────────────────────────────────────────────────────
+lib/db/                                 @jazan-health/backend-leads
+
+# ──────────────────────────────────────────────────────────────────────────────
+# API server (broad rule — backend leads own all server code)
+# ──────────────────────────────────────────────────────────────────────────────
+artifacts/api-server/                   @jazan-health/backend-leads
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Frontend (web tracker)
+# ──────────────────────────────────────────────────────────────────────────────
+artifacts/hrp-tracker/                  @jazan-health/frontend-leads
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Mobile app
+# ──────────────────────────────────────────────────────────────────────────────
+artifacts/hrp-mobile/                   @jazan-health/frontend-leads
+
+# ──────────────────────────────────────────────────────────────────────────────
+# CI / GitHub configuration
+# Workflow and branch-protection changes must be reviewed by repository admins.
+# ──────────────────────────────────────────────────────────────────────────────
+.github/                                @jazan-health/admins
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Clinical / compliance logic  (MUST come after the broad api-server rule above)
+# Changes here affect patient-safety rules (booking compliance, risk alerts).
+# Both the clinical informatics lead AND the backend lead must approve — list
+# both teams on the same line because GitHub applies only the LAST matching
+# rule; multiple owners on one line are all required.
+# ──────────────────────────────────────────────────────────────────────────────
+artifacts/api-server/src/lib/compliance.ts    @jazan-health/clinical-leads @jazan-health/backend-leads
+artifacts/api-server/src/routes/alerts.ts     @jazan-health/clinical-leads @jazan-health/backend-leads

@@ -17,6 +17,22 @@ Both checks run automatically on every pull request via the CI workflow. A PR ca
 
 At least **1 approving review** from a team member is required before a PR can be merged. Approvals are automatically dismissed when new commits are pushed to the PR branch, ensuring the reviewer always sees the final state of the code.
 
+### Code owners
+
+Critical areas of the codebase are protected by a [CODEOWNERS](.github/CODEOWNERS) file. When a pull request touches one of these paths, GitHub automatically requests a review from the designated team, and **that code-owner approval is required before the PR can be merged**:
+
+| Path(s) | Owning team | Why |
+|---|---|---|
+| `artifacts/api-server/src/lib/compliance.ts`, `artifacts/api-server/src/routes/alerts.ts` | `@jazan-health/clinical-leads` | Patient-safety rules — booking compliance and risk alerts |
+| `lib/api-spec/`, `lib/api-zod/`, `lib/api-client-react/` | `@jazan-health/backend-leads` | API contract; changes affect every consumer |
+| `lib/db/` | `@jazan-health/backend-leads` | Database schema changes are irreversible in production |
+| `artifacts/api-server/` | `@jazan-health/backend-leads` | API route handlers |
+| `artifacts/hrp-tracker/`, `artifacts/hrp-mobile/` | `@jazan-health/frontend-leads` | Web and mobile frontends |
+| `.github/` | `@jazan-health/admins` | CI workflows and branch-protection configuration |
+| `*` (everything else) | `@jazan-health/maintainers` | General fallback |
+
+To update ownership rules, edit `.github/CODEOWNERS` and open a PR — the `.github/` rule means admins must approve that change too.
+
 ### Configuring Branch Protection (repository admin)
 
 Branch protection rules must be set in GitHub repository settings. Run the automated setup workflow to apply them, or configure them manually.
@@ -36,6 +52,7 @@ Branch protection rules must be set in GitHub repository settings. Run the autom
 3. Enable **Require a pull request before merging**.
    - Set **Required approving reviews** to **1**.
    - Enable **Dismiss stale pull request approvals when new commits are pushed**.
+   - Enable **Require review from Code Owners**.
 4. Enable **Require status checks to pass before merging**.
 5. Search for and add both required checks:
    - `Check API codegen is up to date` (job id: `check-codegen`)
