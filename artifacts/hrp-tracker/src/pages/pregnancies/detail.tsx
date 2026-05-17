@@ -1,7 +1,11 @@
 import React, { useState } from "react";
 import { useParams, Link } from "wouter";
 import { useI18n } from "@/lib/i18n-context";
-import { useGetPregnancy, useUpdatePregnancy, useListHospitals, PregnancyUpdateRiskLevel, PregnancyUpdateReferralRecommendation } from "@workspace/api-client-react";
+import {
+  useGetPregnancy, useUpdatePregnancy, useListHospitals,
+  useCreateAppointment, useUpdateAppointment,
+  PregnancyUpdateRiskLevel, PregnancyUpdateReferralRecommendation
+} from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +16,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RiskBadge, ComplianceBadge, ReferralBadge } from "@/components/ui/status-badges";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, X, Save, User, Calendar, Phone } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Pencil, X, Save, Plus, CheckCircle2, XCircle, RotateCcw } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 
@@ -89,6 +94,55 @@ export default function PregnancyDetail() {
 
   const { data: hospitals } = useListHospitals();
   const updatePregnancy = useUpdatePregnancy();
+  const createAppointmentMutation = useCreateAppointment();
+  const updateAppointmentMutation = useUpdateAppointment();
+
+  // ── Attendance dialog state ────────────────────────────────────────────
+  const [attendDlg, setAttendDlg] = useState<{
+    open: boolean;
+    appointmentId: number | null;
+    attended: boolean;
+    note: string;
+  }>({ open: false, appointmentId: null, attended: true, note: "" });
+
+  // ── Add appointment form state ────────────────────────────────────────
+  const [showAddAppt, setShowAddAppt] = useState(false);
+  const [newAppt, setNewAppt] = useState({ date: "", hospitalId: "" });
+
+  function openAttendDlg(apptId: number, attended: boolean) {
+    setAttendDlg({ open: true, appointmentId: apptId, attended, note: "" });
+  }
+
+  function saveAttendance() {
+    if (attendDlg.appointmentId == null) return;
+    updateAppointmentMutation.mutate(
+      { id: attendDlg.appointmentId, data: { attended: attendDlg.attended, attendanceNote: attendDlg.note || null } },
+      {
+        onSuccess: () => {
+          toast({ title: t("appt.updateSuccess" as any) });
+          setAttendDlg({ open: false, appointmentId: null, attended: true, note: "" });
+          refetch();
+        },
+        onError: () => toast({ title: "خطأ", description: t("general.saveError"), variant: "destructive" }),
+      }
+    );
+  }
+
+  function submitNewAppt() {
+    if (!newAppt.date || !newAppt.hospitalId) return;
+    createAppointmentMutation.mutate(
+      { data: { pregnancyId, hospitalId: Number(newAppt.hospitalId), appointmentDate: newAppt.date } },
+      {
+        onSuccess: () => {
+          toast({ title: t("appt.addSuccess" as any) });
+          setShowAddAppt(false);
+          setNewAppt({ date: "", hospitalId: "" });
+          refetch();
+        },
+        onError: () => toast({ title: "خطأ", description: t("general.saveError"), variant: "destructive" }),
+      }
+    );
+  }
 
   const [form, setForm] = useState<EditForm>({
     visitDate: "", lmpDate: "", gestationalAge: "", riskLevel: "", referralRecommendation: "",
@@ -434,8 +488,67 @@ export default function PregnancyDetail() {
 
       {/* Appointments */}
       <Card>
-        <CardHeader><CardTitle>المواعيد في المستشفى</CardTitle></CardHeader>
-        <CardContent>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>المواعيد في المستشفى</CardTitle>
+            <Button
+              size="sm"
+              variant="outline"
+              style={{ borderColor: "#006633", color: "#006633" }}
+              onClick={() => setShowAddAppt(v => !v)}
+            >
+              <Plus className="w-4 h-4 ms-1" />
+              {t("appt.addAppointment" as any)}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* ── Add appointment inline form ── */}
+          {showAddAppt && (
+            <div className="rounded-lg border border-dashed p-4 space-y-3 bg-muted/30" style={{ borderColor: "#006633" }}>
+              <p className="text-sm font-medium" style={{ color: "#006633" }}>{t("appt.addAppointment" as any)}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">{t("pregnancy.appointmentDate")}</Label>
+                  <Input
+                    type="date"
+                    value={newAppt.date}
+                    onChange={e => setNewAppt(v => ({ ...v, date: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">{t("pregnancy.referredHospital")}</Label>
+                  <Select value={newAppt.hospitalId} onValueChange={v => setNewAppt(prev => ({ ...prev, hospitalId: v }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("appt.selectHospital" as any)} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {hospitals?.map(h => (
+                        <SelectItem key={h.id} value={String(h.id)}>{h.nameAr}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  style={{ background: "#006633", color: "#fff" }}
+                  onClick={submitNewAppt}
+                  disabled={createAppointmentMutation.isPending || !newAppt.date || !newAppt.hospitalId}
+                >
+                  <Save className="w-4 h-4 ms-1" />
+                  {t("general.save")}
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => { setShowAddAppt(false); setNewAppt({ date: "", hospitalId: "" }); }}>
+                  <X className="w-4 h-4 ms-1" />
+                  {t("general.cancel")}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Appointments table ── */}
           <Table>
             <TableHeader>
               <TableRow>
@@ -443,26 +556,73 @@ export default function PregnancyDetail() {
                 <TableHead>{t("pregnancy.referredHospital")}</TableHead>
                 <TableHead>{t("pregnancy.attendance")}</TableHead>
                 <TableHead>{t("pregnancy.attendanceNote")}</TableHead>
+                <TableHead className="w-[160px]">{t("general.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {!appointments || appointments.length === 0 ? (
-                <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">{t("general.noData")}</TableCell></TableRow>
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-6">
+                    {t("general.noData")}
+                  </TableCell>
+                </TableRow>
               ) : (
                 appointments.map(apt => (
                   <TableRow key={apt.id}>
-                    <TableCell>{new Date(apt.appointmentDate).toLocaleDateString("ar-SA")}</TableCell>
+                    <TableCell className="font-medium">
+                      {new Date(apt.appointmentDate).toLocaleDateString("ar-SA")}
+                    </TableCell>
                     <TableCell>{apt.hospitalNameAr ?? "—"}</TableCell>
                     <TableCell>
                       {apt.attended === true ? (
-                        <Badge className="bg-green-100 text-green-800">✅ حضر</Badge>
+                        <Badge className="bg-green-100 text-green-800">✅ {t("appt.attended" as any)}</Badge>
                       ) : apt.attended === false ? (
-                        <Badge className="bg-red-100 text-red-800">❌ غائب</Badge>
+                        <Badge className="bg-red-100 text-red-800">❌ {t("appt.absent" as any)}</Badge>
                       ) : (
-                        <Badge variant="outline">⏳ مجدول</Badge>
+                        <Badge variant="outline">⏳ {t("appt.scheduled" as any)}</Badge>
                       )}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{apt.attendanceNote ?? "—"}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{apt.attendanceNote ?? "—"}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-1 flex-wrap">
+                        {apt.attended !== true && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-xs border-green-600 text-green-700 hover:bg-green-50"
+                            onClick={() => openAttendDlg(apt.id, true)}
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 ms-1" />
+                            {t("appt.registerAttendance" as any)}
+                          </Button>
+                        )}
+                        {apt.attended !== false && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-xs border-red-500 text-red-600 hover:bg-red-50"
+                            onClick={() => openAttendDlg(apt.id, false)}
+                          >
+                            <XCircle className="w-3.5 h-3.5 ms-1" />
+                            {t("appt.registerAbsence" as any)}
+                          </Button>
+                        )}
+                        {apt.attended !== null && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 text-xs text-muted-foreground"
+                            title="إعادة تعيين"
+                            onClick={() => updateAppointmentMutation.mutate(
+                              { id: apt.id, data: { attended: null, attendanceNote: null } },
+                              { onSuccess: () => { toast({ title: "تم إعادة التعيين" }); refetch(); } }
+                            )}
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -470,6 +630,66 @@ export default function PregnancyDetail() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* ── Attendance Dialog ── */}
+      <Dialog open={attendDlg.open} onOpenChange={open => setAttendDlg(v => ({ ...v, open }))}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("appt.attendanceDialogTitle" as any)}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="flex gap-3">
+              <button
+                onClick={() => setAttendDlg(v => ({ ...v, attended: true }))}
+                className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 p-3 text-sm font-medium transition-colors ${
+                  attendDlg.attended
+                    ? "border-green-600 bg-green-50 text-green-700"
+                    : "border-muted hover:border-green-300"
+                }`}
+              >
+                <CheckCircle2 className="w-5 h-5" />
+                {t("appt.attended" as any)}
+              </button>
+              <button
+                onClick={() => setAttendDlg(v => ({ ...v, attended: false }))}
+                className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 p-3 text-sm font-medium transition-colors ${
+                  !attendDlg.attended
+                    ? "border-red-500 bg-red-50 text-red-600"
+                    : "border-muted hover:border-red-300"
+                }`}
+              >
+                <XCircle className="w-5 h-5" />
+                {t("appt.registerAbsence" as any)}
+              </button>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm">{t("pregnancy.attendanceNote")}</Label>
+              <Textarea
+                rows={3}
+                placeholder={t("appt.attendanceNotePlaceholder" as any)}
+                value={attendDlg.note}
+                onChange={e => setAttendDlg(v => ({ ...v, note: e.target.value }))}
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setAttendDlg(v => ({ ...v, open: false }))}
+            >
+              {t("general.cancel")}
+            </Button>
+            <Button
+              style={{ background: "#006633", color: "#fff" }}
+              onClick={saveAttendance}
+              disabled={updateAppointmentMutation.isPending}
+            >
+              <Save className="w-4 h-4 ms-1" />
+              {t("appt.saveAttendance" as any)}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
