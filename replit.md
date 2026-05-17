@@ -69,9 +69,19 @@ High-Risk Pregnancy Tracking Platform for Jazan Health Cluster 2026 — a biling
 - No emojis in UI labels (except compliance status indicators ✅/❌/⏳)
 - Logo: artifacts/hrp-tracker/src/assets/logo.jpg
 
+## Pre-commit hook
+
+A `simple-git-hooks` pre-commit hook runs `pnpm run check:codegen` automatically before every commit. It exits non-zero if `openapi.yaml` has been modified without re-running codegen, blocking the commit until the generated files are brought back in sync.
+
+To install the hook in a fresh clone, run:
+
+```bash
+pnpm install   # triggers the `prepare` script which calls simple-git-hooks
+```
+
 ## Gotchas
 
-- After editing OpenAPI spec, always run `pnpm --filter @workspace/api-spec run codegen` before editing routes
+- After editing OpenAPI spec, always run `pnpm --filter @workspace/api-spec run codegen` before editing routes — the pre-commit hook enforces this automatically
 - DB schema changes require `pnpm --filter @workspace/db run push`
 - The `@assets` Vite alias points to workspace-root `attached_assets/` — for images, copy to `artifacts/hrp-tracker/src/assets/` instead to avoid Vite fs.strict issues
 - API routes must handle path prefix `/api/` — artifact.toml routes to port 8080 at path `/api`
