@@ -2057,18 +2057,25 @@ export default function UserGuide() {
                       )}
                       {lang === "ar" ? section.ar : section.en}
                     </button>
-                    {section.subsections.map((sub, idx) => (
+                    {section.subsections.map((sub, idx) => {
+                      const subId = `${section.id}-${idx}`;
+                      const isActiveSub = activeSubsection === subId;
+                      return (
                       <button
                         key={idx}
                         onClick={() => {
-                          scrollTo(`${section.id}-${idx}`);
+                          scrollTo(subId);
                           setShowJumpMenu(false);
                         }}
-                        className="block w-full px-4 ps-8 py-1.5 text-start text-xs text-muted-foreground hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+                        className={`block w-full px-4 ps-8 py-1.5 text-start text-xs transition-colors ${isActiveSub ? "bg-emerald-50 text-emerald-700 font-medium" : "text-muted-foreground hover:bg-emerald-50 hover:text-emerald-700"}`}
                       >
+                        {isActiveSub && (
+                          <span className="inline-block w-1 h-1 rounded-full bg-emerald-400 me-1.5 mb-0.5 align-middle" />
+                        )}
                         {lang === "ar" ? sub.ar : sub.en}
                       </button>
-                    ))}
+                      );
+                    })}
                   </div>
                 );
               })}
