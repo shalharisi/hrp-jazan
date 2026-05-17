@@ -153,6 +153,7 @@ function startWatcher(): void {
 
   console.log(`👁  المسارات التي تتم مراقبتها:`);
   console.log(`    • ${SCREENSHOTS_DIR}  (ملفات PNG)`);
+  console.log(`    • ${INDEX_JSON}`);
   console.log(`    • ${GUIDE_SOURCE}`);
   console.log(`    (أي تغيير سيُعيد بناء المستند بعد ${DEBOUNCE_MS}ms)`);
   if (OPEN_FLAG) {
@@ -165,6 +166,14 @@ function startWatcher(): void {
       scheduleRebuild(filename, eventType);
     }
   });
+
+  if (fs.existsSync(INDEX_JSON)) {
+    fs.watch(INDEX_JSON, { persistent: true }, (_eventType, filename) => {
+      scheduleRebuild(filename ?? path.basename(INDEX_JSON), "change");
+    });
+  } else {
+    console.warn(`⚠  لم يُعثر على ${INDEX_JSON} — لن تتم مراقبته حتى تتم إعادة تشغيل المراقب`);
+  }
 
   fs.watch(GUIDE_SOURCE, { persistent: true }, (eventType, filename) => {
     scheduleRebuild(filename ?? path.basename(GUIDE_SOURCE), eventType ?? "change");
