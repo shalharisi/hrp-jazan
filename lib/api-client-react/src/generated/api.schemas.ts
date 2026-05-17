@@ -580,6 +580,13 @@ export type AuthRefresh200 = {
   accessToken: string;
 };
 
+export type AuthChangePasswordBody = {
+  username: string;
+  currentPassword: string;
+  /** @minLength 8 */
+  newPassword: string;
+};
+
 export type ListAuditLogsParams = {
 userId?: number;
 action?: string;

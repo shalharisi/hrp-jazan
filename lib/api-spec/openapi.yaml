@@ -107,6 +107,38 @@ paths:
               schema:
                 $ref: "#/components/schemas/UserProfile"
 
+  /auth/change-password:
+    post:
+      operationId: authChangePassword
+      tags: [auth]
+      summary: Change password using current credentials (no session required)
+      description: >
+        Public endpoint. Requires the current username and current password to verify identity,
+        then updates the password to the new value. Suitable for use on the login page.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, currentPassword, newPassword]
+              properties:
+                username:
+                  type: string
+                currentPassword:
+                  type: string
+                newPassword:
+                  type: string
+                  minLength: 8
+      responses:
+        "200":
+          description: Password changed successfully
+        "400":
+          description: Invalid input or new password too short
+        "401":
+          description: Incorrect username or current password
+
   /auth/consent:
     post:
       operationId: authConsent

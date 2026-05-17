@@ -59,6 +59,22 @@ export const AuthMeResponse = zod.object({
 
 
 /**
+ * Public endpoint. Requires the current username and current password to verify identity, then updates the password to the new value. Suitable for use on the login page.
+
+ * @summary Change password using current credentials (no session required)
+ */
+export const authChangePasswordBodyNewPasswordMin = 8;
+
+
+
+export const AuthChangePasswordBody = zod.object({
+  "username": zod.string(),
+  "currentPassword": zod.string(),
+  "newPassword": zod.string().min(authChangePasswordBodyNewPasswordMin)
+})
+
+
+/**
  * @summary List all users (admin only)
  */
 export const ListUsersResponseItem = zod.object({

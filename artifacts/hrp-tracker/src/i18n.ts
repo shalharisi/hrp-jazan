@@ -244,6 +244,17 @@ export const translations = {
     "guide.generatingElsewhere": "جارٍ إنشاء الدليل حاليًا في علامة تبويب أخرى. يرجى الانتظار حتى تكتمل العملية.",
     "guide.generatingBadge": "جارٍ إنشاء الدليل…",
     "guide.lastDuration": "آخر إنشاء استغرق {n} ثانية",
+
+    // Change password (login page)
+    "auth.changePassword": "تغيير كلمة المرور",
+    "auth.backToLogin": "العودة لتسجيل الدخول",
+    "auth.currentPassword": "كلمة المرور الحالية",
+    "auth.newPassword": "كلمة المرور الجديدة (8 أحرف على الأقل)",
+    "auth.confirmNewPassword": "تأكيد كلمة المرور الجديدة",
+    "auth.changePasswordBtn": "تغيير كلمة المرور",
+    "auth.changePasswordSuccess": "تم تغيير كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة.",
+    "auth.passwordMismatch": "كلمة المرور الجديدة وتأكيدها غير متطابقين",
+    "auth.passwordTooShort": "كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل",
   },
   en: {
     // Navigation
@@ -492,6 +503,17 @@ export const translations = {
     "guide.generatingElsewhere": "Guide generation is already in progress. Please wait for it to complete.",
     "guide.generatingBadge": "Generating guide…",
     "guide.lastDuration": "Last generation took {n} s",
+
+    // Change password (login page)
+    "auth.changePassword": "Change Password",
+    "auth.backToLogin": "Back to Login",
+    "auth.currentPassword": "Current Password",
+    "auth.newPassword": "New Password (min. 8 characters)",
+    "auth.confirmNewPassword": "Confirm New Password",
+    "auth.changePasswordBtn": "Change Password",
+    "auth.changePasswordSuccess": "Password changed successfully. You can now sign in with your new password.",
+    "auth.passwordMismatch": "New password and confirmation do not match",
+    "auth.passwordTooShort": "New password must be at least 8 characters",
   },
 } as const;
 

@@ -24,6 +24,7 @@ import type {
   Appointment,
   AppointmentInput,
   AppointmentUpdate,
+  AuthChangePasswordBody,
   AuthLoginBody,
   AuthRefresh200,
   ComplianceStats,
@@ -359,6 +360,79 @@ export function useAuthMe<TData = Awaited<ReturnType<typeof authMe>>, TError = E
 
 
 
+
+export const getAuthChangePasswordUrl = () => {
+
+
+
+
+  return `/api/auth/change-password`
+}
+
+/**
+ * Public endpoint. Requires the current username and current password to verify identity, then updates the password to the new value. Suitable for use on the login page.
+
+ * @summary Change password using current credentials (no session required)
+ */
+export const authChangePassword = async (authChangePasswordBody: AuthChangePasswordBody, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getAuthChangePasswordUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      authChangePasswordBody,)
+  }
+);}
+
+
+
+
+export const getAuthChangePasswordMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authChangePassword>>, TError,{data: BodyType<AuthChangePasswordBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof authChangePassword>>, TError,{data: BodyType<AuthChangePasswordBody>}, TContext> => {
+
+const mutationKey = ['authChangePassword'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof authChangePassword>>, {data: BodyType<AuthChangePasswordBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  authChangePassword(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AuthChangePasswordMutationResult = NonNullable<Awaited<ReturnType<typeof authChangePassword>>>
+    export type AuthChangePasswordMutationBody = BodyType<AuthChangePasswordBody>
+    export type AuthChangePasswordMutationError = ErrorType<void>
+
+    /**
+ * @summary Change password using current credentials (no session required)
+ */
+export const useAuthChangePassword = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authChangePassword>>, TError,{data: BodyType<AuthChangePasswordBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof authChangePassword>>,
+        TError,
+        {data: BodyType<AuthChangePasswordBody>},
+        TContext
+      > => {
+      return useMutation(getAuthChangePasswordMutationOptions(options));
+    }
 
 export const getAuthConsentUrl = () => {
 

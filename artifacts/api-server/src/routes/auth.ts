@@ -180,6 +180,65 @@ router.get("/auth/me", requireAuth, async (req, res): Promise<void> => {
   });
 });
 
+// POST /api/auth/change-password — public endpoint (verifies current password)
+const ChangePasswordBody = z.object({
+  username: z.string().min(1),
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8, "كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل"),
+});
+
+router.post("/auth/change-password", async (req, res): Promise<void> => {
+  const parsed = ChangePasswordBody.safeParse(req.body);
+  if (!parsed.success) {
+    const msg = parsed.error.errors[0]?.message ?? "بيانات غير صحيحة";
+    res.status(400).json({ error: msg });
+    return;
+  }
+
+  const { username, currentPassword, newPassword } = parsed.data;
+
+  const [user] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.username, username))
+    .limit(1);
+
+  if (!user || !user.isActive) {
+    res.status(401).json({ error: "اسم المستخدم أو كلمة المرور الحالية غير صحيحة" });
+    return;
+  }
+
+  const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!valid) {
+    await logAudit({
+      userId: user.id,
+      username: user.username,
+      action: "CHANGE_PASSWORD_FAILED",
+      resourceType: "auth",
+      ipAddress:
+        (req.headers["x-forwarded-for"] as string)?.split(",")[0] ?? req.socket?.remoteAddress,
+      userAgent: req.headers["user-agent"],
+    });
+    res.status(401).json({ error: "اسم المستخدم أو كلمة المرور الحالية غير صحيحة" });
+    return;
+  }
+
+  const newHash = await bcrypt.hash(newPassword, 12);
+  await db.update(usersTable).set({ passwordHash: newHash }).where(eq(usersTable.id, user.id));
+
+  await logAudit({
+    userId: user.id,
+    username: user.username,
+    action: "CHANGE_PASSWORD",
+    resourceType: "auth",
+    ipAddress:
+      (req.headers["x-forwarded-for"] as string)?.split(",")[0] ?? req.socket?.remoteAddress,
+    userAgent: req.headers["user-agent"],
+  });
+
+  res.json({ success: true });
+});
+
 // POST /api/auth/consent
 router.post("/auth/consent", requireAuth, async (req, res): Promise<void> => {
   await db

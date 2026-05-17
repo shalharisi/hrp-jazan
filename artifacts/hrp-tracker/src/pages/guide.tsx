@@ -981,8 +981,8 @@ const appendixSections: Section[] = [
               {
                 qAr: "كيف أتواصل مع الدعم التقني؟",
                 qEn: "How do I contact technical support?",
-                aAr: "عبر البريد الإلكتروني: his@jazan-health.gov.sa أو الهاتف الداخلي في ساعات الدوام (الأحد – الخميس).",
-                aEn: "Via email: his@jazan-health.gov.sa or the internal phone during working hours (Sunday – Thursday).",
+                aAr: "تواصل مع الدعم التقني عبر الجوال: 0504115576 في ساعات الدوام (الأحد – الخميس).",
+                aEn: "Contact technical support via mobile: 0504115576 during working hours (Sunday – Thursday).",
               },
             ],
           },
