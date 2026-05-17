@@ -1127,7 +1127,9 @@ export default function UserGuide() {
   const [lastDuration, setLastDuration] = useState<number | null>(() => getLastStoredDuration());
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
-  const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [activeSection, setActiveSection] = useState<string | null>(
+    () => localStorage.getItem(GUIDE_POSITION_KEY) ?? null
+  );
   const [activeSubsection, setActiveSubsection] = useState<string | null>(null);
   // Tracks whether the current generating state was triggered by the button (SSE stream
   // is active) vs detected from the server's status response (startup auto-generation).
