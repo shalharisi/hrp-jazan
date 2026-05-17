@@ -25,8 +25,21 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Verify generated files match OpenAPI spec
-        run: pnpm run check:codegen
+      - name: Run codegen
+        run: pnpm --filter @workspace/api-spec run codegen
+
+      - name: Fail if generated files are out of sync
+        run: |
+          if ! git diff --quiet -- lib/api-client-react/src/generated lib/api-zod/src/generated lib/api-spec/.codegen-hash lib/api-spec/.codegen-output-hash; then
+            echo ""
+            echo "ERROR: openapi.yaml was changed but the generated files were not updated."
+            echo "Run 'pnpm --filter @workspace/api-spec run codegen' locally and commit the result."
+            echo ""
+            echo "=== diff of out-of-sync generated files ==="
+            git diff -- lib/api-client-react/src/generated lib/api-zod/src/generated lib/api-spec/.codegen-hash lib/api-spec/.codegen-output-hash
+            exit 1
+          fi
+          echo "Generated files are in sync with openapi.yaml."
 
   typecheck:
     name: TypeScript typecheck
