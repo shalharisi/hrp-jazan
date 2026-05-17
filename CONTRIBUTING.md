@@ -78,11 +78,11 @@ Fill in this table with the actual GitHub handles for each role and commit it ba
 
 | Team slug | Role | GitHub handles |
 |---|---|---|
-| `maintainers` | Project leads — fallback reviewers for all paths | *(add @handles here)* |
-| `backend-leads` | API, database, and server-side engineers | *(add @handles here)* |
-| `frontend-leads` | Web and mobile UI engineers | *(add @handles here)* |
-| `clinical-leads` | Clinical informatics / patient-safety reviewers | *(add @handles here)* |
-| `admins` | Organisation and repository administrators | *(add @handles here)* |
+| `maintainers` | Project leads — fallback reviewers for all paths | @Shalharisi |
+| `backend-leads` | API, database, and server-side engineers | @Shalharisi |
+| `frontend-leads` | Web and mobile UI engineers | @Shalharisi |
+| `clinical-leads` | Clinical informatics / patient-safety reviewers | @Shalharisi |
+| `admins` | Organisation and repository administrators | @Shalharisi |
 
 > **Verification:** Open a draft PR that modifies `.github/CODEOWNERS` (even a whitespace change). The **Validate CODEOWNERS** CI check will attempt to resolve every `@jazan-health/<team>` entry via the GitHub API. All five checks must show `✓` before the entry is considered live. Add a `GH_PAT` secret (classic PAT with `read:org` scope) to the repository so the validator can look up org teams — see the *CODEOWNERS team validation* section below.
 
