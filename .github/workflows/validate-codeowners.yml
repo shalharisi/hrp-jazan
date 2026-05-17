@@ -149,8 +149,21 @@ jobs:
               done
               unset reported
 
+              # Build the deduplicated owner list (preserving first-seen order)
+              declare -A dedup_seen
+              dedup_owners=()
+              for (( i=1; i<${#fields[@]}; i++ )); do
+                tok="${fields[$i]}"
+                if [[ -z "${dedup_seen[$tok]+_}" ]]; then
+                  dedup_seen[$tok]=1
+                  dedup_owners+=("$tok")
+                fi
+              done
+              unset dedup_seen
+
               echo "✗  Line $lineno: '${fields[0]}' — duplicate owner(s): ${unique_dupes[*]}"
-              echo "   Full rule: $line"
+              echo "   Full rule:      $line"
+              echo "   Suggested fix:  ${fields[0]} ${dedup_owners[*]}"
               echo "   Listing the same reviewer twice is redundant and misleading;"
               echo "   GitHub requests each owner only once regardless."
               failed=1
