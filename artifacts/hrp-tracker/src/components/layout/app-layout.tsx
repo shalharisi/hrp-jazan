@@ -2,6 +2,7 @@ import React from "react";
 import { Link, useLocation } from "wouter";
 import { useI18n } from "../../lib/i18n-context";
 import { useAuth } from "../../lib/auth-context";
+import { useGuideGenerationStatus } from "../../lib/use-guide-generation-status";
 import {
   Sidebar,
   SidebarContent,
@@ -34,12 +35,14 @@ import {
   FileDown,
   Database,
   CalendarDays,
+  Loader2,
 } from "lucide-react";
 import logoPath from "../../assets/branding.jpg";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { lang, setLang, t } = useI18n();
   const { user, logout, isAdmin } = useAuth();
+  const guideGenerating = useGuideGenerationStatus();
   const [location] = useLocation();
 
   const navItems = [
@@ -187,6 +190,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <Shield className="w-3 h-3" aria-hidden="true" />
                 {lang === "ar" ? "نظام آمن ومشفّر" : "Secure & Encrypted"}
               </div>
+              {guideGenerating && (
+                <div
+                  className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium text-amber-800 bg-amber-100 border border-amber-300"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" />
+                  {t("guide.generatingBadge")}
+                </div>
+              )}
             </div>
 
             <div className="text-xs text-muted-foreground hidden md:block">
