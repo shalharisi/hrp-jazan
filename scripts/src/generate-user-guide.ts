@@ -1756,6 +1756,14 @@ ${body}
 </html>`;
 }
 
+// ── Custom error for missing browser ─────────────────────────────────────────
+class NoBrowserError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "NoBrowserError";
+  }
+}
+
 // ── Resolve Puppeteer executable ─────────────────────────────────────────────
 // Resolution order (no hardcoded Nix store hashes — those change on upgrade):
 //   1. PUPPETEER_EXECUTABLE_PATH env var (explicit override)
@@ -1793,7 +1801,7 @@ async function resolvePuppeteerExecutable(): Promise<string> {
     if (p && fs.existsSync(p)) return p;
   } catch { /* puppeteer didn't download a browser — continue */ }
 
-  throw new Error(
+  throw new NoBrowserError(
     "No Chromium/Chrome executable found.\n" +
     "Fix options (choose one):\n" +
     "  • Install Chromium via Nix/system package manager so `chromium` is on PATH\n" +
@@ -1841,10 +1849,19 @@ async function buildPdf(): Promise<Buffer> {
 
   if (generatePdf) {
     console.log("📄 جاري إنشاء دليل المستخدم (PDF)...");
-    const pdfBuffer = await buildPdf();
-    fs.writeFileSync(PDF_OUTPUT_PATH, pdfBuffer);
-    const pdfSizeKB = Math.round(pdfBuffer.length / 1024);
-    console.log(`✅ تم إنشاء ملف PDF: ${PDF_OUTPUT_PATH}`);
-    console.log(`   الحجم: ${pdfSizeKB} كيلوبايت`);
+    try {
+      const pdfBuffer = await buildPdf();
+      fs.writeFileSync(PDF_OUTPUT_PATH, pdfBuffer);
+      const pdfSizeKB = Math.round(pdfBuffer.length / 1024);
+      console.log(`✅ تم إنشاء ملف PDF: ${PDF_OUTPUT_PATH}`);
+      console.log(`   الحجم: ${pdfSizeKB} كيلوبايت`);
+    } catch (err) {
+      if (err instanceof NoBrowserError) {
+        console.warn("⚠️  تخطي إنشاء PDF: لا يوجد متصفح متاح.");
+        console.warn(err.message);
+      } else {
+        throw err;
+      }
+    }
   }
 })();
