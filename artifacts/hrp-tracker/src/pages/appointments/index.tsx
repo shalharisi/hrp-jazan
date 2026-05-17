@@ -37,6 +37,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { CalendarCheck2, CalendarX2, Clock, ExternalLink, CalendarDays, Download, AlertCircle, Printer, X } from "lucide-react";
+import { RiskBadge } from "@/components/ui/status-badges";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { getListAppointmentsQueryKey } from "@workspace/api-client-react";
@@ -587,6 +588,7 @@ export default function AppointmentsPage() {
                     <TableHead>{t("appointments.colHospital")}</TableHead>
                     <TableHead>{t("appointments.colDate")}</TableHead>
                     <TableHead>{t("appointments.colStatus")}</TableHead>
+                    <TableHead>{t("appointments.colRisk")}</TableHead>
                     <TableHead className="print-only">{t("appointments.colAttendanceNote")}</TableHead>
                     <TableHead className="text-center no-print">{t("appointments.colActions")}</TableHead>
                   </TableRow>
@@ -617,6 +619,9 @@ export default function AppointmentsPage() {
                         </TableCell>
                         <TableCell>
                           <StatusBadge attended={appt.attended} />
+                        </TableCell>
+                        <TableCell>
+                          <RiskBadge level={appt.riskLevel ?? undefined} />
                         </TableCell>
                         <TableCell className="print-only text-sm text-gray-700">
                           {appt.attendanceNote ?? ""}
