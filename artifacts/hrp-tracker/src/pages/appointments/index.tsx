@@ -586,6 +586,13 @@ export default function AppointmentsPage() {
                     riskValue: t("appointments.printAll"),
                   }
                 );
+                toast({
+                  title: t("appointments.urgentBannerExportToast").replace(
+                    "{count}",
+                    String(bannerExportRows.length)
+                  ),
+                  duration: 3000,
+                });
               }}
             >
               <Download className="w-3 h-3" />
