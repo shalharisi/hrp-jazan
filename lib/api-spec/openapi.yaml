@@ -661,6 +661,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteAppointment
+      tags: [appointments]
+      summary: Delete (cancel) an appointment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Appointment deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   # ─── Dashboard ────────────────────────────────────────────────────────────
   /dashboard/summary:
@@ -1274,6 +1293,8 @@ components:
       properties:
         appointmentDate:
           type: string
+        hospitalId:
+          type: integer
         attended:
           type: ["boolean", "null"]
         attendanceNote:

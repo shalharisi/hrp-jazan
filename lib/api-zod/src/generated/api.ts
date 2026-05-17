@@ -639,6 +639,7 @@ export const UpdateAppointmentParams = zod.object({
 
 export const UpdateAppointmentBody = zod.object({
   "appointmentDate": zod.string().optional(),
+  "hospitalId": zod.number().optional(),
   "attended": zod.boolean().nullish(),
   "attendanceNote": zod.string().nullish()
 })
@@ -657,6 +658,14 @@ export const UpdateAppointmentResponse = zod.object({
   "sectorId": zod.number().nullish(),
   "sectorNameAr": zod.string().nullish(),
   "riskLevel": zod.union([zod.literal('low'),zod.literal('medium'),zod.literal('high'),zod.literal('critical'),zod.literal(null)]).nullish().describe('Risk level of the associated pregnancy')
+})
+
+
+/**
+ * @summary Delete (cancel) an appointment
+ */
+export const DeleteAppointmentParams = zod.object({
+  "id": zod.coerce.number()
 })
 
 

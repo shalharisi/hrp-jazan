@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import {
   useCreateAppointment,
+  useDeleteAppointment,
   useListAppointments,
   useListHospitals,
   useListPregnancies,
@@ -94,9 +95,16 @@ export default function AppointmentsScreen() {
   const [selectedHospitalId, setSelectedHospitalId] = useState<number | null>(null);
   const [newApptDate, setNewApptDate] = useState("");
 
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingApptId, setEditingApptId] = useState<number | null>(null);
+  const [editDate, setEditDate] = useState("");
+  const [editHospitalId, setEditHospitalId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+
   const { data, isLoading, isError, refetch } = useListAppointments();
   const updateAppt = useUpdateAppointment();
   const createAppt = useCreateAppointment();
+  const deleteAppt = useDeleteAppointment();
 
   const { data: pregnanciesData } = useListPregnancies({ limit: 200 });
   const { data: hospitalsData } = useListHospitals();
@@ -252,6 +260,64 @@ export default function AppointmentsScreen() {
       default:
         return null;
     }
+  }
+
+  function handleOpenEdit(item: (typeof all)[0]) {
+    setEditingApptId(item.id);
+    setEditDate(item.appointmentDate.slice(0, 10));
+    setEditHospitalId(item.hospitalId ?? null);
+    setShowEditModal(true);
+  }
+
+  function handleCloseEdit() {
+    setShowEditModal(false);
+    setEditingApptId(null);
+    setEditDate("");
+    setEditHospitalId(null);
+  }
+
+  function handleSaveEdit() {
+    if (!editingApptId || !editDate.trim() || !editHospitalId) return;
+    updateAppt.mutate(
+      { id: editingApptId, data: { appointmentDate: editDate.trim(), hospitalId: editHospitalId } },
+      {
+        onSuccess: () => {
+          handleCloseEdit();
+          refetch();
+          Alert.alert(t("appt.editSuccess"));
+        },
+        onError: () => {
+          Alert.alert(t("appt.editError"));
+        },
+      }
+    );
+  }
+
+  function handleDeleteAppt(id: number) {
+    Alert.alert(t("appt.cancel"), t("appt.cancelConfirm"), [
+      { text: t("general.cancel"), style: "cancel" },
+      {
+        text: t("appt.cancel"),
+        style: "destructive",
+        onPress: () => {
+          setDeletingId(id);
+          deleteAppt.mutate(
+            { id },
+            {
+              onSuccess: () => {
+                setDeletingId(null);
+                refetch();
+                Alert.alert(t("appt.cancelSuccess"));
+              },
+              onError: () => {
+                setDeletingId(null);
+                Alert.alert(t("appt.cancelError"));
+              },
+            }
+          );
+        },
+      },
+    ]);
   }
 
   function resetNewApptForm() {
@@ -590,6 +656,40 @@ export default function AppointmentsScreen() {
                     </Pressable>
                   )}
                 </View>
+                <View style={[styles.actionRow, isRTL && styles.rowReverse]}>
+                  <Pressable
+                    style={[styles.actionBtn, styles.editBtn]}
+                    onPress={(e) => {
+                      e.stopPropagation?.();
+                      handleOpenEdit(item);
+                    }}
+                    disabled={deletingId === item.id}
+                  >
+                    <Ionicons name="pencil-outline" size={14} color={colors.primary} />
+                    <Text style={[styles.actionBtnText, { color: colors.primary }]}>
+                      {t("appt.edit")}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.actionBtn, styles.deleteBtn]}
+                    onPress={(e) => {
+                      e.stopPropagation?.();
+                      handleDeleteAppt(item.id);
+                    }}
+                    disabled={deletingId === item.id}
+                  >
+                    {deletingId === item.id ? (
+                      <ActivityIndicator size="small" color="#b91c1c" />
+                    ) : (
+                      <>
+                        <Ionicons name="trash-outline" size={14} color="#b91c1c" />
+                        <Text style={[styles.actionBtnText, { color: "#b91c1c" }]}>
+                          {t("appt.cancel")}
+                        </Text>
+                      </>
+                    )}
+                  </Pressable>
+                </View>
               </Pressable>
             );
           }}
@@ -617,6 +717,103 @@ export default function AppointmentsScreen() {
           refreshing={isLoading && all.length === 0}
         />
       )}
+
+      {/* Edit Appointment Modal */}
+      <Modal
+        visible={showEditModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={handleCloseEdit}
+      >
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <View
+            style={[
+              styles.modalContainer,
+              { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 },
+            ]}
+          >
+            <View style={[styles.modalHeader, isRTL && styles.rowReverse]}>
+              <Text style={[styles.modalTitle, isRTL && styles.rtlText]}>
+                {t("appt.editTitle")}
+              </Text>
+              <Pressable
+                style={styles.closeBtn}
+                onPress={handleCloseEdit}
+                hitSlop={8}
+              >
+                <Ionicons name="close" size={22} color={colors.foreground} />
+              </Pressable>
+            </View>
+
+            <ScrollView
+              style={{ flex: 1 }}
+              contentContainerStyle={styles.modalContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              <Text style={[styles.sectionLabel, isRTL && styles.rtlText]}>
+                {t("appointments.selectHospital")}
+              </Text>
+              <View style={styles.hospitalGrid}>
+                {allHospitals.map((h) => (
+                  <Pressable
+                    key={h.id}
+                    style={[
+                      styles.hospitalChip,
+                      editHospitalId === h.id && styles.hospitalChipActive,
+                    ]}
+                    onPress={() => setEditHospitalId(h.id)}
+                  >
+                    <Text
+                      style={[
+                        styles.hospitalChipText,
+                        editHospitalId === h.id && styles.hospitalChipTextActive,
+                        isRTL && styles.rtlText,
+                      ]}
+                      numberOfLines={2}
+                    >
+                      {h.nameAr}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              <Text style={[styles.sectionLabel, isRTL && styles.rtlText]}>
+                {t("appointments.selectDate")}
+              </Text>
+              <TextInput
+                style={[styles.dateInput, isRTL && styles.rtlText]}
+                placeholder="2026-01-15"
+                placeholderTextColor={colors.mutedForeground}
+                value={editDate}
+                onChangeText={setEditDate}
+                keyboardType="numeric"
+                maxLength={10}
+                textAlign={isRTL ? "right" : "left"}
+              />
+
+              <Pressable
+                style={[
+                  styles.submitBtn,
+                  (!editHospitalId || !isValidIsoDate(editDate.trim()) || updateAppt.isPending) &&
+                    styles.submitBtnDisabled,
+                ]}
+                onPress={handleSaveEdit}
+                disabled={!editHospitalId || !isValidIsoDate(editDate.trim()) || updateAppt.isPending}
+              >
+                {updateAppt.isPending ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.submitBtnText}>{t("appt.save")}</Text>
+                )}
+              </Pressable>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
       <Modal
         visible={showNewModal}
@@ -1077,6 +1274,18 @@ function makeStyles(colors: ReturnType<typeof useColors>, isRTL: boolean) {
       borderColor: colors.primary,
     },
     missedBtn: {
+      backgroundColor: "#fee2e2",
+      borderColor: "#fecaca",
+    },
+    editBtn: {
+      flexDirection: "row",
+      gap: 4,
+      backgroundColor: colors.primary + "12",
+      borderColor: colors.primary + "40",
+    },
+    deleteBtn: {
+      flexDirection: "row",
+      gap: 4,
       backgroundColor: "#fee2e2",
       borderColor: "#fecaca",
     },

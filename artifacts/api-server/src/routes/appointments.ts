@@ -220,6 +220,7 @@ router.patch("/appointments/:id", requireWriteAccess, async (req, res): Promise<
 
   const updateData: Record<string, unknown> = {};
   if (parsed.data.appointmentDate != null) updateData.appointmentDate = parsed.data.appointmentDate;
+  if (parsed.data.hospitalId != null) updateData.hospitalId = parsed.data.hospitalId;
   if (parsed.data.attended !== undefined) updateData.attended = parsed.data.attended;
   if (parsed.data.attendanceNote !== undefined) updateData.attendanceNote = parsed.data.attendanceNote;
 
@@ -258,6 +259,78 @@ router.patch("/appointments/:id", requireWriteAccess, async (req, res): Promise<
 
   const [hospital] = await db.select().from(hospitalsTable).where(eq(hospitalsTable.id, appointment.hospitalId)).limit(1);
   res.json(serializeAppointment(appointment, hospital));
+});
+
+// DELETE /appointments/:id — requires write access (not viewer)
+router.delete("/appointments/:id", requireWriteAccess, async (req, res): Promise<void> => {
+  const params = UpdateAppointmentParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const [existing] = await db.select().from(appointmentsTable).where(eq(appointmentsTable.id, params.data.id)).limit(1);
+  if (!existing) {
+    res.status(404).json({ error: "Appointment not found" });
+    return;
+  }
+
+  // ── Coordinator sector enforcement ──
+  if (req.user?.role === "coordinator") {
+    if (!req.user.sectorId) {
+      res.status(403).json({ error: "حسابك لم يُعيَّن له قطاع", code: "NO_SECTOR_ASSIGNED" });
+      return;
+    }
+    const pregnancySectorId = await getPregnancySectorId(existing.pregnancyId);
+    if (pregnancySectorId === null || String(pregnancySectorId) !== String(req.user.sectorId)) {
+      res.status(403).json({ error: "لا يمكنك حذف موعد من قطاع آخر", code: "SECTOR_FORBIDDEN" });
+      return;
+    }
+  }
+
+  await db.delete(appointmentsTable).where(eq(appointmentsTable.id, params.data.id));
+
+  // Reconcile pregnancy-level booking state after deletion
+  const remaining = await db
+    .select()
+    .from(appointmentsTable)
+    .where(eq(appointmentsTable.pregnancyId, existing.pregnancyId))
+    .orderBy(appointmentsTable.appointmentDate);
+
+  const [pregnancy] = await db
+    .select()
+    .from(pregnanciesTable)
+    .where(eq(pregnanciesTable.id, existing.pregnancyId))
+    .limit(1);
+
+  if (pregnancy) {
+    if (remaining.length === 0) {
+      // No appointments left — reset pregnancy booking state to pending
+      await db
+        .update(pregnanciesTable)
+        .set({ appointmentDate: null, compliance: "pending", workingDaysToAppointment: null })
+        .where(eq(pregnanciesTable.id, existing.pregnancyId));
+    } else {
+      // Use the latest remaining appointment to recalculate compliance
+      const latest = remaining[remaining.length - 1];
+      const { compliance, workingDays } = calculateCompliance(pregnancy.visitDate, latest.appointmentDate);
+      await db
+        .update(pregnanciesTable)
+        .set({ appointmentDate: latest.appointmentDate, compliance, workingDaysToAppointment: workingDays })
+        .where(eq(pregnanciesTable.id, existing.pregnancyId));
+    }
+  }
+
+  // Audit log
+  logAudit({
+    ...buildAuditParams(req),
+    action: "DELETE",
+    resourceType: "appointment",
+    resourceId: String(existing.id),
+    oldValue: existing,
+  }).catch(() => {});
+
+  res.status(204).end();
 });
 
 export default router;

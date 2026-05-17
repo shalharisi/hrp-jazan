@@ -461,6 +461,7 @@ export interface AppointmentInput {
 
 export interface AppointmentUpdate {
   appointmentDate?: string;
+  hospitalId?: number;
   /** @nullable */
   attended?: boolean | null;
   /** @nullable */
