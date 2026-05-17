@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Link } from "wouter";
 import { useI18n } from "@/lib/i18n-context";
 import { useAuth } from "@/lib/auth-context";
@@ -268,6 +268,26 @@ export default function AppointmentsPage() {
       return 0;
     }
   });
+
+  useEffect(() => {
+    if (!user) {
+      setDismissedCount(0);
+      return;
+    }
+    try {
+      const stored = localStorage.getItem(BANNER_STORAGE_KEY);
+      if (!stored) {
+        setDismissedCount(0);
+        return;
+      }
+      const parsed = parseInt(stored, 10);
+      if (Number.isFinite(parsed)) {
+        setDismissedCount(parsed);
+      }
+    } catch {
+      // ignore
+    }
+  }, [user, BANNER_STORAGE_KEY]);
 
   const dismissBanner = (count: number) => {
     try {
