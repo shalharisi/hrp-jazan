@@ -12,6 +12,8 @@ const API = `${BASE}/api`;
 
 const GUIDE_DURATION_KEY = "guideExpectedDuration";
 const FALLBACK_DURATION_S = 20;
+const GUIDE_BC_CHANNEL = "hrp-guide-generation";
+const GUIDE_LS_SIGNAL_KEY = "hrp-guide-generation-signal";
 
 function getExpectedDuration(): number {
   try {
@@ -1108,6 +1110,60 @@ export default function UserGuide() {
 
   const GUIDE_SESSION_KEY = "guide-last-section";
 
+  const bcRef = useRef<BroadcastChannel | null>(null);
+
+  // Broadcast "generation done" to other same-origin tabs (BroadcastChannel with
+  // localStorage storage-event as fallback for browsers that don't support it).
+  const broadcastGenerationDone = () => {
+    if (bcRef.current) {
+      try {
+        bcRef.current.postMessage({ type: "guide-generation-done" });
+      } catch {
+        // ignore
+      }
+    }
+    // localStorage fallback: toggling the value triggers a storage event in other tabs.
+    try {
+      localStorage.setItem(GUIDE_LS_SIGNAL_KEY, String(Date.now()));
+    } catch {
+      // ignore
+    }
+  };
+
+  // Listen for cross-tab "done" signals and immediately re-fetch status.
+  useEffect(() => {
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel(GUIDE_BC_CHANNEL);
+      bcRef.current = bc;
+      bc.onmessage = (ev: MessageEvent) => {
+        if (ev.data?.type === "guide-generation-done") {
+          fetchStatus();
+        }
+      };
+    } catch {
+      bcRef.current = null;
+    }
+
+    const onStorage = (ev: StorageEvent) => {
+      if (ev.key === GUIDE_LS_SIGNAL_KEY) {
+        fetchStatus();
+      }
+    };
+    window.addEventListener("storage", onStorage);
+
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      try {
+        bc?.close();
+      } catch {
+        // ignore
+      }
+      bcRef.current = null;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     const onScroll = () => setShowBackToTop(window.scrollY > 400);
     onScroll();
@@ -1243,6 +1299,7 @@ export default function UserGuide() {
         } catch {
           // ignore
         }
+        broadcastGenerationDone();
         await new Promise<void>((resolve) => setTimeout(resolve, 600));
         setGenerateResult("success");
         fetchStatus();
