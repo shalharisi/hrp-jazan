@@ -21,6 +21,7 @@ import { useColors } from "@/hooks/useColors";
 
 type DateFilter = "today" | "week" | "all";
 type AttendanceFilter = "all" | "pending" | "attended" | "missed" | "needs_action";
+type RiskFilter = "all" | "critical" | "high" | "medium" | "low";
 
 function localDateStr(d: Date): string {
   const y = d.getFullYear();
@@ -56,6 +57,7 @@ export default function AppointmentsScreen() {
   const [dateFilter, setDateFilter] = useState<DateFilter>("today");
   const [attendanceFilter, setAttendanceFilter] =
     useState<AttendanceFilter>("all");
+  const [riskFilter, setRiskFilter] = useState<RiskFilter>("all");
   const [updatingId, setUpdatingId] = useState<number | null>(null);
 
   const { data, isLoading, isError, refetch } = useListAppointments();
@@ -90,6 +92,7 @@ export default function AppointmentsScreen() {
         if (attendanceFilter === "pending" && a.attended !== null) return false;
         if (attendanceFilter === "attended" && a.attended !== true) return false;
         if (attendanceFilter === "missed" && a.attended !== false) return false;
+        if (riskFilter !== "all" && a.riskLevel !== riskFilter) return false;
         return true;
       })
       .sort((a, b) => {
@@ -98,7 +101,7 @@ export default function AppointmentsScreen() {
         if (riskA !== riskB) return riskA - riskB;
         return a.appointmentDate.localeCompare(b.appointmentDate);
       });
-  }, [all, dateFilter, attendanceFilter, today, week.start, week.end]);
+  }, [all, dateFilter, attendanceFilter, riskFilter, today, week.start, week.end]);
 
   const styles = makeStyles(colors, isRTL);
 
@@ -114,6 +117,14 @@ export default function AppointmentsScreen() {
     { key: "pending", label: t("appt.pending") },
     { key: "attended", label: t("appt.attended") },
     { key: "missed", label: t("appt.missed") },
+  ];
+
+  const riskFilterTabs: { key: RiskFilter; label: string }[] = [
+    { key: "all", label: t("cases.all") },
+    { key: "critical", label: t("risk.critical") },
+    { key: "high", label: t("risk.high") },
+    { key: "medium", label: t("risk.medium") },
+    { key: "low", label: t("risk.low") },
   ];
 
   function handleMarkAttendance(id: number, attended: boolean) {
@@ -151,6 +162,26 @@ export default function AppointmentsScreen() {
     if (attended === false)
       return { label: t("appt.missed"), bg: "#fee2e2", color: "#b91c1c" };
     return { label: t("appt.pending"), bg: "#fef9c3", color: "#92400e" };
+  }
+
+  function getRiskActiveStyle(key: Exclude<RiskFilter, "all">) {
+    const bgs: Record<Exclude<RiskFilter, "all">, string> = {
+      critical: "#7f1d1d",
+      high: "#fef2f2",
+      medium: "#fff7ed",
+      low: "#f0fdf4",
+    };
+    return { backgroundColor: bgs[key], borderColor: bgs[key] };
+  }
+
+  function getRiskActiveTextStyle(key: Exclude<RiskFilter, "all">) {
+    const colors: Record<Exclude<RiskFilter, "all">, string> = {
+      critical: "#fef2f2",
+      high: "#b91c1c",
+      medium: "#c2410c",
+      low: "#15803d",
+    };
+    return { color: colors[key] };
   }
 
   function getRiskBadge(riskLevel: string | null | undefined) {
@@ -262,6 +293,34 @@ export default function AppointmentsScreen() {
                 attendanceFilter === tab.key && styles.filterTabSmallTextActive,
                 tab.key === "needs_action" && styles.filterTabNeedsActionText,
                 tab.key === "needs_action" && attendanceFilter === "needs_action" && styles.filterTabNeedsActionTextActive,
+              ]}
+            >
+              {tab.label}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <View style={[styles.filterRow, isRTL && styles.rowReverse]}>
+        {riskFilterTabs.map((tab) => (
+          <Pressable
+            key={tab.key}
+            style={[
+              styles.filterTabSmall,
+              riskFilter === tab.key && styles.filterTabSmallActive,
+              riskFilter === tab.key &&
+                tab.key !== "all" &&
+                getRiskActiveStyle(tab.key),
+            ]}
+            onPress={() => setRiskFilter(tab.key)}
+          >
+            <Text
+              style={[
+                styles.filterTabSmallText,
+                riskFilter === tab.key && styles.filterTabSmallTextActive,
+                riskFilter === tab.key &&
+                  tab.key !== "all" &&
+                  getRiskActiveTextStyle(tab.key),
               ]}
             >
               {tab.label}
