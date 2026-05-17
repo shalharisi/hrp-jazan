@@ -5,8 +5,8 @@ import {
   useListAlerts,
   useListAppointments,
 } from "@workspace/api-client-react";
-import { router } from "expo-router";
-import React, { useMemo, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -61,6 +61,13 @@ export default function DashboardScreen() {
   }, [appointments.data, today]);
 
   const showUrgentBanner = !bannerDismissed && needsActionCount > URGENT_THRESHOLD;
+
+  const { refetch: refetchAppointments } = appointments;
+  useFocusEffect(
+    useCallback(() => {
+      refetchAppointments();
+    }, [refetchAppointments])
+  );
 
   const isLoading = summary.isLoading;
   const refetch = () => {
