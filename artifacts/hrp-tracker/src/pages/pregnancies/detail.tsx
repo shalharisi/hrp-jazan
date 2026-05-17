@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useParams, Link } from "wouter";
 import { useI18n } from "@/lib/i18n-context";
+import type { TranslationKey } from "@/i18n";
 import {
   useGetPregnancy,
   useUpdatePregnancy,
@@ -781,7 +782,7 @@ export default function PregnancyDetail() {
                   <SelectContent>
                     {["low", "medium", "high", "critical"].map((l) => (
                       <SelectItem key={l} value={l}>
-                        {t(`risk.${l}` as any)}
+                        {t(`risk.${l}` as TranslationKey)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -808,7 +809,10 @@ export default function PregnancyDetail() {
                 label={t("pregnancy.gestationalAge")}
                 value={p.gestationalAge != null ? `${p.gestationalAge} أسبوع` : "—"}
               />
-              <InfoRow label={t("pregnancy.riskLevel")} value={t(`risk.${p.riskLevel}` as any)} />
+              <InfoRow
+                label={t("pregnancy.riskLevel")}
+                value={t(`risk.${p.riskLevel}` as TranslationKey)}
+              />
               <InfoRow label={t("pregnancy.doctorName")} value={p.doctorName ?? "—"} />
             </div>
           )}
@@ -960,7 +964,7 @@ export default function PregnancyDetail() {
                   <SelectContent>
                     {["follow_at_center", "follow_at_hospital", "transfer_kfch"].map((r) => (
                       <SelectItem key={r} value={r}>
-                        {t(`referral.${r}` as any)}
+                        {t(`referral.${r}` as TranslationKey)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1037,7 +1041,7 @@ export default function PregnancyDetail() {
               />
               <InfoRow
                 label={t("pregnancy.referralRecommendation")}
-                value={t(`referral.${p.referralRecommendation}` as any)}
+                value={t(`referral.${p.referralRecommendation}` as TranslationKey)}
               />
               <InfoRow
                 label={t("pregnancy.referredHospital")}
@@ -1051,7 +1055,7 @@ export default function PregnancyDetail() {
               />
               <InfoRow
                 label={t("pregnancy.compliance")}
-                value={t(`compliance.${p.compliance}` as any)}
+                value={t(`compliance.${p.compliance}` as TranslationKey)}
               />
               {p.workingDaysToAppointment != null && (
                 <InfoRow label="أيام العمل للموعد" value={`${p.workingDaysToAppointment} يوم`} />

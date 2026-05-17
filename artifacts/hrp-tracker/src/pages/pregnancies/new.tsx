@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useLocation } from "wouter";
 import { useI18n } from "@/lib/i18n-context";
+import type { TranslationKey } from "@/i18n";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -318,7 +319,7 @@ export default function PregnancyNew() {
                         <SelectContent>
                           {Object.values(PregnancyInputRiskLevel).map((l) => (
                             <SelectItem key={l} value={l}>
-                              {t(`risk.${l}` as any)}
+                              {t(`risk.${l}` as TranslationKey)}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -525,7 +526,7 @@ export default function PregnancyNew() {
                       <SelectContent>
                         {Object.values(PregnancyInputReferralRecommendation).map((r) => (
                           <SelectItem key={r} value={r}>
-                            {t(`referral.${r}` as any)}
+                            {t(`referral.${r}` as TranslationKey)}
                           </SelectItem>
                         ))}
                       </SelectContent>

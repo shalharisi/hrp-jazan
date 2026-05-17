@@ -572,7 +572,10 @@ async function buildDocument(screenshots?: Map<string, Buffer>, captureOrder?: C
       "عند فتح رابط المنظومة يظهر للمستخدم شاشة تسجيل الدخول الآمنة. " +
         "تعرض الشاشة شعار تجمع جازان الصحي، واسم المنظومة، وحقلَي اسم المستخدم وكلمة المرور.",
     ),
-    ...screenshotPlaceholder("شاشة تسجيل الدخول – منظومة تتبع الحمل عالي الخطورة", screenshots?.get("شاشة تسجيل الدخول – منظومة تتبع الحمل عالي الخطورة")),
+    ...screenshotPlaceholder(
+      "شاشة تسجيل الدخول – منظومة تتبع الحمل عالي الخطورة",
+      screenshots?.get("شاشة تسجيل الدخول – منظومة تتبع الحمل عالي الخطورة"),
+    ),
     sectionHeading("2.2 خطوات تسجيل الدخول", 2),
     bullet("أدخِل اسم المستخدم المُخصَّص لك في حقل «اسم المستخدم»"),
     bullet("أدخِل كلمة المرور السرية في حقل «كلمة المرور»"),
@@ -603,7 +606,10 @@ async function buildDocument(screenshots?: Map<string, Buffer>, captureOrder?: C
       "لوحة المعلومات هي الصفحة الرئيسية التي تعرض فور تسجيل الدخول. " +
         "تُلخِّص الوضع الصحي الحالي لجميع حالات الحمل عالي الخطورة في المنطقة من خلال بطاقات إحصائية ومخططات بيانية.",
     ),
-    ...screenshotPlaceholder("لوحة المعلومات الرئيسية مع البطاقات الإحصائية والمخططات", screenshots?.get("لوحة المعلومات الرئيسية مع البطاقات الإحصائية والمخططات")),
+    ...screenshotPlaceholder(
+      "لوحة المعلومات الرئيسية مع البطاقات الإحصائية والمخططات",
+      screenshots?.get("لوحة المعلومات الرئيسية مع البطاقات الإحصائية والمخططات"),
+    ),
     sectionHeading("3.1 البطاقات الإحصائية الأربع", 2),
     infoTable(
       [
@@ -623,12 +629,18 @@ async function buildDocument(screenshots?: Map<string, Buffer>, captureOrder?: C
       "مخطط دائري يوضح توزيع الحالات حسب مستوى الخطورة الأربعة: " +
         "منخفض (أخضر)، متوسط (أصفر)، عالٍ (برتقالي)، حرج (أحمر).",
     ),
-    ...screenshotPlaceholder("المخطط الدائري – توزيع مستويات الخطورة", screenshots?.get("المخطط الدائري – توزيع مستويات الخطورة")),
+    ...screenshotPlaceholder(
+      "المخطط الدائري – توزيع مستويات الخطورة",
+      screenshots?.get("المخطط الدائري – توزيع مستويات الخطورة"),
+    ),
     sectionHeading("3.2.2 الالتزام بالمواعيد (Bar Chart)", 3),
     rtlPara(
       "مخطط أعمدة يعرض عدد الحالات الملتزمة (أخضر)، غير الملتزمة (أحمر)، والمعلقة (رمادي) انتظارًا لموعد.",
     ),
-    ...screenshotPlaceholder("مخطط الأعمدة – حالة الالتزام بالمواعيد", screenshots?.get("مخطط الأعمدة – حالة الالتزام بالمواعيد")),
+    ...screenshotPlaceholder(
+      "مخطط الأعمدة – حالة الالتزام بالمواعيد",
+      screenshots?.get("مخطط الأعمدة – حالة الالتزام بالمواعيد"),
+    ),
     sectionHeading("3.3 شريط التنبيه العاجل", 2),
     rtlPara(
       "يظهر شريط تنبيه برتقالي في أعلى الصفحة عندما يتجاوز عدد المواعيد المنقضية غير المُسجَّل حضورها حدَّ الإنذار (الافتراضي: 5 مواعيد). " +
@@ -648,7 +660,10 @@ async function buildDocument(screenshots?: Map<string, Buffer>, captureOrder?: C
       "تعرض صفحة «المرضى» قائمةً كاملةً بجميع الحوامل المُسجَّلات. " +
         "تشمل كل بطاقة: الاسم، رقم الهوية الوطنية، رقم الجوال، المركز الصحي، والقطاع.",
     ),
-    ...screenshotPlaceholder("قائمة المرضى مع خيارات البحث والتصفية", screenshots?.get("قائمة المرضى مع خيارات البحث والتصفية")),
+    ...screenshotPlaceholder(
+      "قائمة المرضى مع خيارات البحث والتصفية",
+      screenshots?.get("قائمة المرضى مع خيارات البحث والتصفية"),
+    ),
     sectionHeading("4.2 البحث والتصفية", 2),
     infoTable(
       [
@@ -664,7 +679,10 @@ async function buildDocument(screenshots?: Map<string, Buffer>, captureOrder?: C
     rtlPara(
       "اضغط زر «تسجيل مريضة جديدة» (الأخضر) في أعلى يمين الصفحة. " + "ستنتقل إلى نموذج التسجيل.",
     ),
-    ...screenshotPlaceholder("نموذج تسجيل مريضة جديدة", screenshots?.get("نموذج تسجيل مريضة جديدة")),
+    ...screenshotPlaceholder(
+      "نموذج تسجيل مريضة جديدة",
+      screenshots?.get("نموذج تسجيل مريضة جديدة"),
+    ),
     sectionHeading("4.3.1 الحقول المطلوبة", 3),
     infoTable([
       ["رقم الهوية الوطنية (*)", "10 أرقام فقط – لا يمكن تكراره في المنظومة"],
@@ -710,7 +728,10 @@ async function buildDocument(screenshots?: Map<string, Buffer>, captureOrder?: C
       "أدخِل رقم الهوية الوطنية (10 أرقام) في حقل البحث، ثم اضغط «بحث». " +
         "إذا وُجدت المريضة في النظام ستظهر بياناتها، وإلا سيظهر تنبيه «غير موجودة».",
     ),
-    ...screenshotPlaceholder("البحث عن مريضة برقم الهوية قبل تسجيل حالة حمل", screenshots?.get("البحث عن مريضة برقم الهوية قبل تسجيل حالة حمل")),
+    ...screenshotPlaceholder(
+      "البحث عن مريضة برقم الهوية قبل تسجيل حالة حمل",
+      screenshots?.get("البحث عن مريضة برقم الهوية قبل تسجيل حالة حمل"),
+    ),
     sectionHeading("5.2 مستويات تصنيف الخطورة", 2),
     infoTable(
       [
@@ -799,7 +820,10 @@ async function buildDocument(screenshots?: Map<string, Buffer>, captureOrder?: C
       "صفحة المواعيد هي المحور الرئيسي لمتابعة حضور الحوامل في المستشفيات. " +
         "تعرض جميع المواعيد المحجوزة مع إمكانية التصفية والبحث وتسجيل الحضور والتصدير.",
     ),
-    ...screenshotPlaceholder("صفحة المواعيد – القائمة الكاملة مع خيارات التصفية", screenshots?.get("صفحة المواعيد – القائمة الكاملة مع خيارات التصفية")),
+    ...screenshotPlaceholder(
+      "صفحة المواعيد – القائمة الكاملة مع خيارات التصفية",
+      screenshots?.get("صفحة المواعيد – القائمة الكاملة مع خيارات التصفية"),
+    ),
     sectionHeading("6.1 خيارات التصفية", 2),
     infoTable(
       [
@@ -819,7 +843,10 @@ async function buildDocument(screenshots?: Map<string, Buffer>, captureOrder?: C
     bullet("اضغط أيقونة ✅ لتسجيل الحضور، أو ❌ لتسجيل الغياب"),
     bullet("تظهر نافذة تأكيد تتيح لك إضافة ملاحظة حضور (مثل: «حضرت متأخرة» أو «اعتذرت لظرف طارئ»)"),
     bullet("اضغط «حفظ» لتثبيت حالة الحضور"),
-    ...screenshotPlaceholder("نافذة تسجيل الحضور مع حقل الملاحظة", screenshots?.get("نافذة تسجيل الحضور مع حقل الملاحظة")),
+    ...screenshotPlaceholder(
+      "نافذة تسجيل الحضور مع حقل الملاحظة",
+      screenshots?.get("نافذة تسجيل الحضور مع حقل الملاحظة"),
+    ),
     sectionHeading("6.3 الإحصاءات الآنية", 2),
     rtlPara("يعرض أعلى الصفحة ثلاث بطاقات إحصائية تُحدَّث فور تطبيق أي فلتر:"),
     bullet("عدد المواعيد المجدولة (⏳)"),
@@ -838,7 +865,10 @@ async function buildDocument(screenshots?: Map<string, Buffer>, captureOrder?: C
     rtlPara(
       "اضغط زر «طباعة» لفتح نافذة طباعة جاهزة تعرض جدول المواعيد مع ملخص الفلاتر المطبقة وتاريخ الطباعة.",
     ),
-    ...screenshotPlaceholder("نافذة طباعة جدول المواعيد", screenshots?.get("نافذة طباعة جدول المواعيد")),
+    ...screenshotPlaceholder(
+      "نافذة طباعة جدول المواعيد",
+      screenshots?.get("نافذة طباعة جدول المواعيد"),
+    ),
     sectionHeading("6.6 شارة مستوى الخطورة في المواعيد", 2),
     rtlPara(
       "تظهر بجانب كل موعد شارة ملونة تعكس مستوى خطورة الحالة: أحمر غامق للحرج، برتقالي للعالي، أصفر للمتوسط، أخضر للمنخفض. " +
@@ -855,7 +885,10 @@ async function buildDocument(screenshots?: Map<string, Buffer>, captureOrder?: C
     rtlPara(
       "صفحة التنبيهات تعرض الحالات التي تستوجب تدخلًا عاجلًا. تُحسَب التنبيهات تلقائيًا في كل طلب دون الحاجة لجدولة وظائف مستقلة.",
     ),
-    ...screenshotPlaceholder("صفحة التنبيهات – قائمة الحالات الحرجة", screenshots?.get("صفحة التنبيهات – قائمة الحالات الحرجة")),
+    ...screenshotPlaceholder(
+      "صفحة التنبيهات – قائمة الحالات الحرجة",
+      screenshots?.get("صفحة التنبيهات – قائمة الحالات الحرجة"),
+    ),
     sectionHeading("7.1 أنواع التنبيهات", 2),
     infoTable(
       [
@@ -891,7 +924,10 @@ async function buildDocument(screenshots?: Map<string, Buffer>, captureOrder?: C
       "صفحة التقارير توفر أدوات تصدير بيانات المنظومة بصيغة CSV (متوافقة مع Excel) وطباعة/حفظ كـ PDF، " +
         "لاستخدامها في التحليل والتقارير الدورية. تتاح هذه الميزة للمديرين والمنسقين والأطباء فقط.",
     ),
-    ...screenshotPlaceholder("صفحة التقارير – خيارات تصدير بيانات المرضى والحالات", screenshots?.get("صفحة التقارير – خيارات تصدير بيانات المرضى والحالات")),
+    ...screenshotPlaceholder(
+      "صفحة التقارير – خيارات تصدير بيانات المرضى والحالات",
+      screenshots?.get("صفحة التقارير – خيارات تصدير بيانات المرضى والحالات"),
+    ),
     sectionHeading("8.1 تقرير بيانات المرضى (CSV)", 2),
     rtlPara(
       "اضغط «تنزيل» في بطاقة «بيانات المرضى» للحصول على ملف CSV (يفتح مباشرةً في Excel) يحتوي على:",
@@ -926,7 +962,10 @@ async function buildDocument(screenshots?: Map<string, Buffer>, captureOrder?: C
         "يُنشئ النظام صفحة مُنسَّقة بالعربية تحتوي على كامل البيانات، ثم تفتح نافذة الطباعة تلقائيًا. " +
         "اختر «حفظ كـ PDF» أو «طباعة» حسب الحاجة.",
     ),
-    ...screenshotPlaceholder("نافذة تصدير PDF لملف مريضة – البيانات الكاملة", screenshots?.get("نافذة تصدير PDF لملف مريضة – البيانات الكاملة")),
+    ...screenshotPlaceholder(
+      "نافذة تصدير PDF لملف مريضة – البيانات الكاملة",
+      screenshots?.get("نافذة تصدير PDF لملف مريضة – البيانات الكاملة"),
+    ),
     sectionHeading("8.5 ملاحظات تقنية للتصدير", 2),
     noteBox(
       "ملفات CSV مُشفَّرة بـ UTF-8 مع BOM لضمان ظهور النص العربي بشكل صحيح في Excel. " +
@@ -1000,20 +1039,29 @@ async function buildDocument(screenshots?: Map<string, Buffer>, captureOrder?: C
     rtlPara(
       "تسجيل الدخول في التطبيق يستخدم نفس بيانات اعتماد المنظومة الإلكترونية (اسم المستخدم + كلمة المرور).",
     ),
-    ...screenshotPlaceholder("شاشة تسجيل الدخول في التطبيق المحمول", screenshots?.get("شاشة تسجيل الدخول في التطبيق المحمول")),
+    ...screenshotPlaceholder(
+      "شاشة تسجيل الدخول في التطبيق المحمول",
+      screenshots?.get("شاشة تسجيل الدخول في التطبيق المحمول"),
+    ),
     sectionHeading("10.3 الشاشات الرئيسية للتطبيق", 2),
     sectionHeading("10.3.1 لوحة المعلومات (Dashboard)", 3),
     rtlPara(
       "تعرض ملخصًا سريعًا للإحصاءات: إجمالي المرضى، الحالات الحرجة، نسبة الالتزام. " +
         "تظهر التنبيهات العاجلة في الأعلى بشريط برتقالي.",
     ),
-    ...screenshotPlaceholder("لوحة معلومات التطبيق المحمول", screenshots?.get("لوحة معلومات التطبيق المحمول")),
+    ...screenshotPlaceholder(
+      "لوحة معلومات التطبيق المحمول",
+      screenshots?.get("لوحة معلومات التطبيق المحمول"),
+    ),
     sectionHeading("10.3.2 المواعيد في التطبيق", 3),
     rtlPara(
       "تعرض شاشة المواعيد جميع المواعيد مع خيارات التصفية الأساسية. " +
         "يمكن الضغط على أي موعد لعرض تفاصيله وتسجيل الحضور.",
     ),
-    ...screenshotPlaceholder("شاشة المواعيد في التطبيق المحمول", screenshots?.get("شاشة المواعيد في التطبيق المحمول")),
+    ...screenshotPlaceholder(
+      "شاشة المواعيد في التطبيق المحمول",
+      screenshots?.get("شاشة المواعيد في التطبيق المحمول"),
+    ),
     sectionHeading("10.3.3 حجز موعد من التطبيق", 3),
     bullet("افتح ملف المريضة أو الحالة"),
     bullet("اضغط «حجز موعد جديد»"),
@@ -2317,8 +2365,7 @@ interface DemoSeedResult {
 async function seedDemoData(): Promise<DemoSeedResult> {
   // Lazily import DB modules so that non-screenshot runs (plain Word/PDF
   // generation) do not require DATABASE_URL to be set.
-  const { db, patientsTable, pregnanciesTable, healthCentersTable } =
-    await import("@workspace/db");
+  const { db, patientsTable, pregnanciesTable, healthCentersTable } = await import("@workspace/db");
   const { eq } = await import("drizzle-orm");
 
   // Find or create the demo patient
@@ -2338,10 +2385,7 @@ async function seedDemoData(): Promise<DemoSeedResult> {
     console.log(`  ♻ مريضة تجريبية موجودة مسبقًا (id=${patientId})`);
   } else {
     // Pick the first available health center
-    const [hc] = await db
-      .select({ id: healthCentersTable.id })
-      .from(healthCentersTable)
-      .limit(1);
+    const [hc] = await db.select({ id: healthCentersTable.id }).from(healthCentersTable).limit(1);
     const healthCenterId = hc?.id ?? 1;
 
     const [inserted] = await db
@@ -2399,22 +2443,18 @@ async function seedDemoData(): Promise<DemoSeedResult> {
 
   console.log(
     `  📋 IDs للقطات الشاشة: patient=${patientId} pregnancy=${pregnancyId} ` +
-    `(أُنشئ في هذه الجلسة: مريضة=${createdPatient} حمل=${createdPregnancyId !== null})`
+      `(أُنشئ في هذه الجلسة: مريضة=${createdPatient} حمل=${createdPregnancyId !== null})`,
   );
 
   const cleanup = async (): Promise<void> => {
     // Only delete rows that this run actually created, to avoid removing
     // pre-existing data if the demo national ID happened to already exist.
     if (createdPregnancyId !== null) {
-      await db
-        .delete(pregnanciesTable)
-        .where(eq(pregnanciesTable.id, createdPregnancyId));
+      await db.delete(pregnanciesTable).where(eq(pregnanciesTable.id, createdPregnancyId));
       console.log(`  🗑 حُذفت حالة الحمل التجريبية (id=${createdPregnancyId})`);
     }
     if (createdPatient) {
-      await db
-        .delete(patientsTable)
-        .where(eq(patientsTable.id, patientId));
+      await db.delete(patientsTable).where(eq(patientsTable.id, patientId));
       console.log(`  🗑 حُذفت المريضة التجريبية (id=${patientId})`);
     }
     if (!createdPatient && createdPregnancyId === null) {
@@ -2474,7 +2514,7 @@ async function captureScreenshots(
       }
       captureOrder.push({ order, key, filename });
       console.log(`  ${ts()} ✓ ${snapCount}/${TOTAL_SCREENSHOTS} ${key}`);
-    } catch (e) {
+    } catch {
       console.warn(`  ${ts()} ✗ ${snapCount}/${TOTAL_SCREENSHOTS} فشل أخذ اللقطة: ${key}`);
     }
   };
@@ -2512,11 +2552,11 @@ async function captureScreenshots(
     await snap("لوحة المعلومات الرئيسية مع البطاقات الإحصائية والمخططات");
 
     // Scroll to charts area
-    await (page as any).evaluate('window.scrollBy(0, 350)');
+    await page.evaluate("window.scrollBy(0, 350)");
     await new Promise<void>((r) => setTimeout(r, 600));
     await snap("المخطط الدائري – توزيع مستويات الخطورة");
 
-    await (page as any).evaluate('window.scrollBy(0, 350)');
+    await page.evaluate("window.scrollBy(0, 350)");
     await new Promise<void>((r) => setTimeout(r, 600));
     await snap("مخطط الأعمدة – حالة الالتزام بالمواعيد");
 
@@ -2532,28 +2572,41 @@ async function captureScreenshots(
     let firstPatientId: string | null = null;
     let firstPregnancyId: string | null = null;
     try {
-      const patientsResp = await (page as any).evaluate(async (base: string) => {
+      type PatientListResp = {
+        data?: Array<{ id: unknown }>;
+        patients?: Array<{ id: unknown }>;
+      } | null;
+      type PregnancyListResp = {
+        data?: Array<{ id: unknown }>;
+        pregnancies?: Array<{ id: unknown }>;
+      } | null;
+
+      const patientsResp = (await page.evaluate(async (base: string) => {
         const r = await fetch(`${base}/api/patients?page=1&limit=1`);
         return r.ok ? r.json() : null;
-      }, baseUrl);
+      }, baseUrl)) as PatientListResp;
       if (patientsResp?.data?.[0]?.id) firstPatientId = String(patientsResp.data[0].id);
       if (patientsResp?.patients?.[0]?.id) firstPatientId = String(patientsResp.patients[0].id);
 
       if (firstPatientId) {
-        const pregResp = await (page as any).evaluate(async (base: string, pid: string) => {
-          const r = await fetch(`${base}/api/pregnancies?patientId=${pid}&limit=1`);
-          return r.ok ? r.json() : null;
-        }, baseUrl, firstPatientId);
+        const pregResp = (await page.evaluate(
+          async (base: string, pid: string) => {
+            const r = await fetch(`${base}/api/pregnancies?patientId=${pid}&limit=1`);
+            return r.ok ? r.json() : null;
+          },
+          baseUrl,
+          firstPatientId,
+        )) as PregnancyListResp;
         if (pregResp?.data?.[0]?.id) firstPregnancyId = String(pregResp.data[0].id);
         if (pregResp?.pregnancies?.[0]?.id) firstPregnancyId = String(pregResp.pregnancies[0].id);
       }
 
       // Try a general pregnancies endpoint
       if (!firstPregnancyId) {
-        const allPreg = await (page as any).evaluate(async (base: string) => {
+        const allPreg = (await page.evaluate(async (base: string) => {
           const r = await fetch(`${base}/api/pregnancies?page=1&limit=1`);
           return r.ok ? r.json() : null;
-        }, baseUrl);
+        }, baseUrl)) as PregnancyListResp;
         if (allPreg?.data?.[0]?.id) firstPregnancyId = String(allPreg.data[0].id);
       }
     } catch {
@@ -2604,8 +2657,10 @@ async function captureScreenshots(
         }
         void pdfBtn;
       } catch {
-        screenshots.set("نافذة تصدير PDF لملف مريضة – البيانات الكاملة",
-          screenshots.get("تفاصيل حالة الحمل – وضع العرض مع زر تصدير PDF") ?? Buffer.alloc(0));
+        screenshots.set(
+          "نافذة تصدير PDF لملف مريضة – البيانات الكاملة",
+          screenshots.get("تفاصيل حالة الحمل – وضع العرض مع زر تصدير PDF") ?? Buffer.alloc(0),
+        );
       }
     }
 
@@ -2632,12 +2687,16 @@ async function captureScreenshots(
         }
       }
       if (!opened) {
-        screenshots.set("نافذة تسجيل الحضور مع حقل الملاحظة",
-          screenshots.get("صفحة المواعيد – القائمة الكاملة مع خيارات التصفية") ?? Buffer.alloc(0));
+        screenshots.set(
+          "نافذة تسجيل الحضور مع حقل الملاحظة",
+          screenshots.get("صفحة المواعيد – القائمة الكاملة مع خيارات التصفية") ?? Buffer.alloc(0),
+        );
       }
     } catch {
-      screenshots.set("نافذة تسجيل الحضور مع حقل الملاحظة",
-        screenshots.get("صفحة المواعيد – القائمة الكاملة مع خيارات التصفية") ?? Buffer.alloc(0));
+      screenshots.set(
+        "نافذة تسجيل الحضور مع حقل الملاحظة",
+        screenshots.get("صفحة المواعيد – القائمة الكاملة مع خيارات التصفية") ?? Buffer.alloc(0),
+      );
     }
 
     // Try to open print dialog (capture page state right before dialog fires)
@@ -2648,7 +2707,7 @@ async function captureScreenshots(
         const txt = await page.evaluate((el) => el.textContent ?? "", btn);
         if (txt.includes("طباعة") || txt.includes("Print")) {
           // Intercept print: capture before the window opens
-          await (page as any).evaluate('window.print = function() {}');
+          await page.evaluate("window.print = function() {}");
           await btn.click();
           await new Promise<void>((r) => setTimeout(r, 800));
           await snap("نافذة طباعة جدول المواعيد");
@@ -2656,12 +2715,16 @@ async function captureScreenshots(
         }
       }
       if (!screenshots.has("نافذة طباعة جدول المواعيد")) {
-        screenshots.set("نافذة طباعة جدول المواعيد",
-          screenshots.get("صفحة المواعيد – القائمة الكاملة مع خيارات التصفية") ?? Buffer.alloc(0));
+        screenshots.set(
+          "نافذة طباعة جدول المواعيد",
+          screenshots.get("صفحة المواعيد – القائمة الكاملة مع خيارات التصفية") ?? Buffer.alloc(0),
+        );
       }
     } catch {
-      screenshots.set("نافذة طباعة جدول المواعيد",
-        screenshots.get("صفحة المواعيد – القائمة الكاملة مع خيارات التصفية") ?? Buffer.alloc(0));
+      screenshots.set(
+        "نافذة طباعة جدول المواعيد",
+        screenshots.get("صفحة المواعيد – القائمة الكاملة مع خيارات التصفية") ?? Buffer.alloc(0),
+      );
     }
 
     // ── Alerts ──────────────────────────────────────────────────────────────
@@ -2702,12 +2765,20 @@ async function captureScreenshots(
         }
       }
       if (!screenshots.has("شاشة المواعيد في التطبيق المحمول")) {
-        screenshots.set("شاشة المواعيد في التطبيق المحمول",
-          screenshots.get("لوحة معلومات التطبيق المحمول") ?? Buffer.alloc(0));
+        screenshots.set(
+          "شاشة المواعيد في التطبيق المحمول",
+          screenshots.get("لوحة معلومات التطبيق المحمول") ?? Buffer.alloc(0),
+        );
       }
     } catch {
-      screenshots.set("لوحة معلومات التطبيق المحمول", screenshots.get("شاشة تسجيل الدخول في التطبيق المحمول") ?? Buffer.alloc(0));
-      screenshots.set("شاشة المواعيد في التطبيق المحمول", screenshots.get("شاشة تسجيل الدخول في التطبيق المحمول") ?? Buffer.alloc(0));
+      screenshots.set(
+        "لوحة معلومات التطبيق المحمول",
+        screenshots.get("شاشة تسجيل الدخول في التطبيق المحمول") ?? Buffer.alloc(0),
+      );
+      screenshots.set(
+        "شاشة المواعيد في التطبيق المحمول",
+        screenshots.get("شاشة تسجيل الدخول في التطبيق المحمول") ?? Buffer.alloc(0),
+      );
     }
   } finally {
     await browser.close();
@@ -2772,8 +2843,13 @@ function progress(step: string): void {
   const generatePdf = !args.includes("--no-pdf");
   const useScreenshots = args.includes("--screenshots");
   const screenshotsOnly = args.includes("--screenshots-only");
-  const baseUrl = args.find((a) => a.startsWith("--base-url="))?.split("=")[1] ?? "http://localhost:80";
-  const outputScreenshotsDir = args.find((a) => a.startsWith("--output-screenshots-dir="))?.split("=").slice(1).join("=");
+  const baseUrl =
+    args.find((a) => a.startsWith("--base-url="))?.split("=")[1] ?? "http://localhost:80";
+  const outputScreenshotsDir = args
+    .find((a) => a.startsWith("--output-screenshots-dir="))
+    ?.split("=")
+    .slice(1)
+    .join("=");
   let pdfStatus: "produced" | "skipped" | "disabled" = "disabled";
 
   if (screenshotsOnly) {

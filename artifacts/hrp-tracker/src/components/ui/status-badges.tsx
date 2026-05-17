@@ -2,6 +2,7 @@ import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { PregnancyRiskLevel, PregnancyCompliance } from "@workspace/api-client-react";
 import { useI18n } from "@/lib/i18n-context";
+import type { TranslationKey } from "@/i18n";
 
 export function RiskBadge({ level }: { level?: string }) {
   const { t } = useI18n();
@@ -17,7 +18,7 @@ export function RiskBadge({ level }: { level?: string }) {
 
   return (
     <Badge variant="outline" className={variants[level] || ""}>
-      {t(`risk.${level}` as any) || level}
+      {t(`risk.${level}` as TranslationKey) || level}
     </Badge>
   );
 }
@@ -47,7 +48,7 @@ export function ComplianceBadge({ status }: { status?: string }) {
   return (
     <Badge variant="outline" className={c?.cls || ""}>
       {c?.icon && <span className="mr-1 rtl:ml-1 rtl:mr-0">{c.icon}</span>}
-      {t(`compliance.${status}` as any) || status}
+      {t(`compliance.${status}` as TranslationKey) || status}
     </Badge>
   );
 }
@@ -57,6 +58,8 @@ export function ReferralBadge({ recommendation }: { recommendation?: string }) {
   if (!recommendation) return null;
 
   return (
-    <Badge variant="secondary">{t(`referral.${recommendation}` as any) || recommendation}</Badge>
+    <Badge variant="secondary">
+      {t(`referral.${recommendation}` as TranslationKey) || recommendation}
+    </Badge>
   );
 }

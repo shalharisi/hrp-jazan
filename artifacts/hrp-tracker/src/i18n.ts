@@ -221,9 +221,11 @@ export const translations = {
     "guide.downloadPdf": "تحميل كـ PDF",
     "guide.downloadWord": "تحميل كـ Word",
     "guide.filesNotReady": "ملفات الدليل غير متاحة بعد. يرجى تشغيل سكريبت إنشاء الدليل أولاً.",
-    "guide.filesNotReadyAdmin": "لم تُولَّد ملفات الدليل بعد. لإنشائها، شغِّل الأمر التالي من مجلد المشروع:",
+    "guide.filesNotReadyAdmin":
+      "لم تُولَّد ملفات الدليل بعد. لإنشائها، شغِّل الأمر التالي من مجلد المشروع:",
     "guide.filesNotReadyAdminCmd": "pnpm --filter @workspace/scripts run generate-guide",
-    "guide.filesNotReadyUser": "دليل المستخدم سيكون متاحًا قريبًا. يرجى التواصل مع مسؤول النظام إذا كنت بحاجة إليه.",
+    "guide.filesNotReadyUser":
+      "دليل المستخدم سيكون متاحًا قريبًا. يرجى التواصل مع مسؤول النظام إذا كنت بحاجة إليه.",
     "guide.generateBtn": "إنشاء الدليل الآن",
     "guide.generating": "جارٍ إنشاء الدليل...",
     "guide.generateSuccess": "تم إنشاء الدليل بنجاح. يمكنك تحميله الآن.",

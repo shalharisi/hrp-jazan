@@ -1223,36 +1223,38 @@ export default function UserGuide() {
             {checking ? (
               <p className="text-sm text-muted-foreground">{t("guide.checking")}</p>
             ) : anyAvailable ? (
-              <div className={`flex gap-4 flex-wrap ${lang === "ar" ? "flex-row-reverse justify-end" : ""}`}>
-                  {status?.pdf && (
-                    <div className="flex flex-col gap-1">
-                      <Button asChild variant="default">
-                        <a href={`${API}/downloads/user-guide.pdf`} download>
-                          {t("guide.downloadPdf")}
-                        </a>
-                      </Button>
-                      {status.pdfMtime && (
-                        <p className="text-xs text-muted-foreground">
-                          {t("guide.lastGenerated")} {formatMtime(status.pdfMtime)}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                  {status?.docx && (
-                    <div className="flex flex-col gap-1">
-                      <Button asChild variant="outline">
-                        <a href={`${API}/downloads/user-guide.docx`} download>
-                          {t("guide.downloadWord")}
-                        </a>
-                      </Button>
-                      {status.docxMtime && (
-                        <p className="text-xs text-muted-foreground">
-                          {t("guide.lastGenerated")} {formatMtime(status.docxMtime)}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
+              <div
+                className={`flex gap-4 flex-wrap ${lang === "ar" ? "flex-row-reverse justify-end" : ""}`}
+              >
+                {status?.pdf && (
+                  <div className="flex flex-col gap-1">
+                    <Button asChild variant="default">
+                      <a href={`${API}/downloads/user-guide.pdf`} download>
+                        {t("guide.downloadPdf")}
+                      </a>
+                    </Button>
+                    {status.pdfMtime && (
+                      <p className="text-xs text-muted-foreground">
+                        {t("guide.lastGenerated")} {formatMtime(status.pdfMtime)}
+                      </p>
+                    )}
+                  </div>
+                )}
+                {status?.docx && (
+                  <div className="flex flex-col gap-1">
+                    <Button asChild variant="outline">
+                      <a href={`${API}/downloads/user-guide.docx`} download>
+                        {t("guide.downloadWord")}
+                      </a>
+                    </Button>
+                    {status.docxMtime && (
+                      <p className="text-xs text-muted-foreground">
+                        {t("guide.lastGenerated")} {formatMtime(status.docxMtime)}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
             ) : isAdmin || user?.role === "coordinator" ? (
               <div className="space-y-3">
                 <p className="text-sm text-amber-700">{t("guide.filesNotReadyAdmin")}</p>
@@ -1273,14 +1275,8 @@ export default function UserGuide() {
                     <AlertDescription>{t("guide.generateError")}</AlertDescription>
                   </Alert>
                 )}
-                <Button
-                  onClick={handleGenerate}
-                  disabled={generating}
-                  variant="secondary"
-                >
-                  {generating && (
-                    <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                  )}
+                <Button onClick={handleGenerate} disabled={generating} variant="secondary">
+                  {generating && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
                   {generating ? t("guide.generating") : t("guide.generateBtn")}
                 </Button>
                 {generating && (

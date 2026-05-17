@@ -7,9 +7,7 @@ import { execSync } from "child_process";
 // shell command) so it never starts this script, but we exit early here as an
 // additional safeguard in case the production run command is changed in future.
 if (process.env.NODE_ENV === "production") {
-  console.error(
-    "watch:codegen — refusing to run in production (NODE_ENV=production). Exiting."
-  );
+  console.error("watch:codegen — refusing to run in production (NODE_ENV=production). Exiting.");
   process.exit(1);
 }
 

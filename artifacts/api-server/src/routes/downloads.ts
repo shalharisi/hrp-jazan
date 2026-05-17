@@ -79,7 +79,9 @@ router.get("/downloads/user-guide/status", (req, res): void => {
 //   { error: true }    — generation failed
 router.post("/downloads/user-guide/generate", requireRole("admin"), (req, res): void => {
   if (guideGenerating) {
-    res.status(409).json({ error: "Guide generation is already in progress. Please wait and try again." });
+    res
+      .status(409)
+      .json({ error: "Guide generation is already in progress. Please wait and try again." });
     return;
   }
 
