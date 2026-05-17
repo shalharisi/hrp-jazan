@@ -234,6 +234,11 @@ export const translations = {
     "guide.elapsed": "الوقت المنقضي: {n} ث",
     "guide.remaining": "الوقت المتبقي تقريبًا: {n} ث",
     "guide.lastGenerated": "آخر إنشاء:",
+    "guide.step.screenshots": "جارٍ التقاط لقطات الشاشة...",
+    "guide.step.build_docx": "جارٍ بناء محتوى ملف Word...",
+    "guide.step.write_docx": "جارٍ حفظ ملف Word...",
+    "guide.step.build_pdf": "جارٍ إنشاء ملف PDF...",
+    "guide.step.write_pdf": "جارٍ حفظ ملف PDF...",
   },
   en: {
     // Navigation
@@ -474,6 +479,11 @@ export const translations = {
     "guide.elapsed": "Elapsed: {n} s",
     "guide.remaining": "~{n} s remaining",
     "guide.lastGenerated": "Last generated:",
+    "guide.step.screenshots": "Capturing screenshots...",
+    "guide.step.build_docx": "Building Word document content...",
+    "guide.step.write_docx": "Saving Word file...",
+    "guide.step.build_pdf": "Rendering PDF...",
+    "guide.step.write_pdf": "Saving PDF file...",
   },
 } as const;
 

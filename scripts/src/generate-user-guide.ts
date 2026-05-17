@@ -2736,6 +2736,13 @@ async function captureScreenshots(
   return screenshots;
 }
 
+// ── Progress reporting ────────────────────────────────────────────────────────
+// Lines prefixed with "PROGRESS:" are parsed by the API server and forwarded
+// as SSE events to the browser so users see named steps instead of a spinner.
+function progress(step: string): void {
+  console.log(`PROGRESS:${step}`);
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 (async () => {
   const startTime = Date.now();
@@ -2771,6 +2778,7 @@ async function captureScreenshots(
     if (outputScreenshotsDir) {
       console.log(`💾 ستُحفظ لقطات الشاشة أيضًا في: ${outputScreenshotsDir}`);
     }
+    progress("screenshots");
     try {
       screenshots = await captureScreenshots(baseUrl, outputScreenshotsDir);
     } catch (e) {
@@ -2778,8 +2786,11 @@ async function captureScreenshots(
     }
   }
 
+  progress("build_docx");
   console.log(`${ts()} 📝 بناء مستند Word...`);
   const buffer = await buildDocument(screenshots);
+
+  progress("write_docx");
   fs.writeFileSync(OUTPUT_PATH, buffer);
   const sizeKB = Math.round(buffer.length / 1024);
   console.log(`✅ تم إنشاء ملف Word: ${OUTPUT_PATH}`);
@@ -2787,9 +2798,12 @@ async function captureScreenshots(
 
   let pdfSizeKB = 0;
   if (generatePdf) {
+    progress("build_pdf");
     console.log(`${ts()} 📄 إنشاء دليل المستخدم (PDF)...`);
     try {
       const pdfBuffer = await buildPdf();
+
+      progress("write_pdf");
       fs.writeFileSync(PDF_OUTPUT_PATH, pdfBuffer);
       pdfSizeKB = Math.round(pdfBuffer.length / 1024);
       console.log(`✅ تم إنشاء ملف PDF: ${PDF_OUTPUT_PATH}`);

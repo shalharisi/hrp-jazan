@@ -71,7 +71,12 @@ router.get("/downloads/user-guide/status", (req, res): void => {
   });
 });
 
-// POST /api/downloads/user-guide/generate — admin only; triggers guide generation on demand
+// POST /api/downloads/user-guide/generate — admin only; triggers guide generation on demand.
+// Streams Server-Sent Events so the client can display named progress steps.
+// Each event is a JSON object:
+//   { step: string }   — a named progress step emitted by the script
+//   { done: true }     — generation completed successfully
+//   { error: true }    — generation failed
 router.post("/downloads/user-guide/generate", requireRole("admin"), (req, res): void => {
   if (guideGenerating) {
     res.status(409).json({ error: "Guide generation is already in progress. Please wait and try again." });
@@ -80,28 +85,53 @@ router.post("/downloads/user-guide/generate", requireRole("admin"), (req, res): 
 
   guideGenerating = true;
 
+  // Set SSE headers so the client can read events as they arrive.
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders();
+
+  const sendEvent = (data: object): void => {
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  };
+
   const child = spawn("pnpm", ["--filter", "@workspace/scripts", "run", "generate-guide"], {
     cwd: WORKSPACE_ROOT,
     stdio: "pipe",
   });
 
+  // Buffer stdout and emit SSE for every PROGRESS: line the script writes.
+  let stdoutBuf = "";
+  child.stdout?.on("data", (chunk: Buffer) => {
+    stdoutBuf += chunk.toString();
+    const lines = stdoutBuf.split("\n");
+    stdoutBuf = lines.pop() ?? "";
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith("PROGRESS:")) {
+        const step = trimmed.slice("PROGRESS:".length);
+        sendEvent({ step });
+      }
+    }
+  });
+
   child.on("close", (code) => {
     guideGenerating = false;
-    if (res.headersSent) return;
     if (code === 0) {
       req.log.info("User guide generated successfully via admin trigger");
-      res.json({ ok: true });
+      sendEvent({ done: true });
     } else {
       req.log.error({ code }, "Guide generation script exited with non-zero code");
-      res.status(500).json({ error: "Guide generation failed", code });
+      sendEvent({ error: true, code });
     }
+    res.end();
   });
 
   child.on("error", (err) => {
     guideGenerating = false;
-    if (res.headersSent) return;
     req.log.error({ err }, "Failed to spawn guide generation script");
-    res.status(500).json({ error: "Failed to start guide generation", detail: err.message });
+    sendEvent({ error: true, detail: err.message });
+    res.end();
   });
 });
 

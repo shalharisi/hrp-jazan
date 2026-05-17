@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
+import { type TranslationKey } from "@/i18n";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 const API = `${BASE}/api`;
@@ -353,6 +354,7 @@ export default function UserGuide() {
   const [generateResult, setGenerateResult] = useState<"success" | "error" | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
+  const [currentStep, setCurrentStep] = useState<string | null>(null);
 
   const fetchStatus = () => {
     setChecking(true);
@@ -380,21 +382,74 @@ export default function UserGuide() {
   const handleGenerate = async () => {
     setGenerating(true);
     setGenerateResult(null);
+    setCurrentStep(null);
     startTimeRef.current = Date.now();
     try {
       const res = await fetch(`${API}/downloads/user-guide/generate`, { method: "POST" });
-      if (res.ok) {
-        const elapsed = Math.max(1, Math.round((Date.now() - (startTimeRef.current ?? Date.now())) / 1000));
-        setElapsedSeconds(elapsed);
+      if (!res.ok) {
+        setGenerateResult("error");
+        return;
+      }
+
+      const computeElapsed = () =>
+        Math.max(1, Math.round((Date.now() - (startTimeRef.current ?? Date.now())) / 1000));
+
+      // Stream SSE events from the server; fall back gracefully if body is unavailable.
+      if (res.body) {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = "";
+        let settled = false;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          const lines = buf.split("\n");
+          buf = lines.pop() ?? "";
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed.startsWith("data:")) continue;
+            try {
+              const event = JSON.parse(trimmed.slice(5).trim()) as {
+                step?: string;
+                done?: boolean;
+                error?: boolean;
+              };
+              if (event.step) {
+                setCurrentStep(event.step);
+              } else if (event.done) {
+                settled = true;
+                setElapsedSeconds(computeElapsed());
+                setGenerateResult("success");
+                fetchStatus();
+              } else if (event.error) {
+                settled = true;
+                setGenerateResult("error");
+              }
+            } catch {
+              // ignore malformed lines
+            }
+          }
+        }
+
+        // If the stream ended without an explicit done/error event, treat as success.
+        if (!settled) {
+          setElapsedSeconds(computeElapsed());
+          setGenerateResult("success");
+          fetchStatus();
+        }
+      } else {
+        // No streaming support — treat the completed response as success.
+        setElapsedSeconds(computeElapsed());
         setGenerateResult("success");
         fetchStatus();
-      } else {
-        setGenerateResult("error");
       }
     } catch {
       setGenerateResult("error");
     } finally {
       setGenerating(false);
+      setCurrentStep(null);
     }
   };
 
@@ -498,7 +553,11 @@ export default function UserGuide() {
                       <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
                         <div className="h-full bg-primary/60 rounded-full animate-[progress_2s_ease-in-out_infinite]" />
                       </div>
-                      <p className="text-xs text-muted-foreground">{t("guide.generatingHint")}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {currentStep
+                          ? t(`guide.step.${currentStep}` as TranslationKey)
+                          : t("guide.generatingHint")}
+                      </p>
                       {elapsedSeconds !== null && (
                         <p className="text-xs text-muted-foreground font-mono">
                           {t("guide.elapsed").replace("{n}", String(elapsedSeconds))}
