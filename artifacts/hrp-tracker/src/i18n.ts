@@ -241,6 +241,7 @@ export const translations = {
     "guide.step.write_docx": "جارٍ حفظ ملف Word...",
     "guide.step.build_pdf": "جارٍ إنشاء ملف PDF...",
     "guide.step.write_pdf": "جارٍ حفظ ملف PDF...",
+    "guide.generatingElsewhere": "جارٍ إنشاء الدليل حاليًا في علامة تبويب أخرى. يرجى الانتظار حتى تكتمل العملية.",
   },
   en: {
     // Navigation
@@ -486,6 +487,7 @@ export const translations = {
     "guide.step.write_docx": "Saving Word file...",
     "guide.step.build_pdf": "Rendering PDF...",
     "guide.step.write_pdf": "Saving PDF file...",
+    "guide.generatingElsewhere": "Guide generation is already in progress. Please wait for it to complete.",
   },
 } as const;
 

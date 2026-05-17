@@ -68,6 +68,7 @@ router.get("/downloads/user-guide/status", (req, res): void => {
     pdf: pdfExists,
     docxMtime: docxExists ? fs.statSync(DOCX_PATH).mtime.toISOString() : null,
     pdfMtime: pdfExists ? fs.statSync(PDF_PATH).mtime.toISOString() : null,
+    generating: guideGenerating,
   });
 });
 

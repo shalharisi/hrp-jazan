@@ -12,7 +12,7 @@ const API = `${BASE}/api`;
 
 const EXPECTED_DURATION_S = 20;
 
-type FileStatus = { docx: boolean; pdf: boolean; docxMtime?: string | null; pdfMtime?: string | null } | null;
+type FileStatus = { docx: boolean; pdf: boolean; docxMtime?: string | null; pdfMtime?: string | null; generating?: boolean } | null;
 
 // ─── Bilingual cell and row types ─────────────────────────────────────────────
 type BiStr = string | { ar: string; en: string };
@@ -1110,6 +1110,19 @@ export default function UserGuide() {
       .finally(() => setChecking(false));
   };
 
+  // Poll status every 3 s while another tab/session is generating, so this page
+  // updates automatically once the generation completes.
+  useEffect(() => {
+    if (!status?.generating || generating) return;
+    const id = setInterval(() => {
+      fetch(`${API}/downloads/user-guide/status`)
+        .then((res) => res.json())
+        .then((data: FileStatus) => setStatus(data))
+        .catch(() => {/* ignore transient errors */});
+    }, 3000);
+    return () => clearInterval(id);
+  }, [status?.generating, generating]);
+
   useEffect(() => {
     if (!generating) return;
     setElapsedSeconds(0);
@@ -1327,8 +1340,20 @@ export default function UserGuide() {
                     <AlertDescription>{t("guide.generateError")}</AlertDescription>
                   </Alert>
                 )}
-                <Button onClick={handleGenerate} disabled={generating} variant="secondary">
-                  {generating && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+                {status?.generating && !generating && (
+                  <Alert className="border-amber-200 bg-amber-50 text-amber-800">
+                    <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+                    <AlertDescription>{t("guide.generatingElsewhere")}</AlertDescription>
+                  </Alert>
+                )}
+                <Button
+                  onClick={handleGenerate}
+                  disabled={generating || (status?.generating ?? false)}
+                  variant="secondary"
+                >
+                  {(generating || status?.generating) && (
+                    <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                  )}
                   {generating ? t("guide.generating") : t("guide.generateBtn")}
                 </Button>
                 {generating && (
