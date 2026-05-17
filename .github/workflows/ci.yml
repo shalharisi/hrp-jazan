@@ -7,34 +7,19 @@ on:
     branches: ["**"]
 
 jobs:
-  # Lightweight guard: reads the actual commit message from git so the check
-  # works for both `push` events (where github.event.head_commit is populated)
-  # and `pull_request` synchronize events (where it is not).
+  # Lightweight guard: uses the detect-bot-commit composite action to check
+  # whether the HEAD commit is an automated bot commit that should skip CI.
+  # Works for both `push` events and `pull_request` synchronize events (where
+  # GitHub's native [skip ci] support does not apply).
   # All downstream jobs depend on this output and skip when proceed == 'false'.
   should-run:
-    name: Detect bot CODEOWNERS commit
+    name: Detect bot commit
     runs-on: ubuntu-latest
     outputs:
-      proceed: ${{ steps.detect.outputs.proceed }}
+      proceed: ${{ steps.guard.outputs.proceed }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - id: detect
-        name: Check commit message
-        env:
-          ACTOR: ${{ github.actor }}
-        run: |
-          msg=$(git log -1 --format="%s" "$GITHUB_SHA")
-          echo "Actor : $ACTOR"
-          echo "Commit: $msg"
-          if [[ "$ACTOR" == "github-actions[bot]" && "$msg" == *"auto-update CODEOWNERS"* ]]; then
-            echo "proceed=false" >> "$GITHUB_OUTPUT"
-            echo "Bot CODEOWNERS commit detected — downstream CI jobs will be skipped."
-          else
-            echo "proceed=true" >> "$GITHUB_OUTPUT"
-          fi
+      - id: guard
+        uses: ./.github/actions/detect-bot-commit
 
   check-codegen:
     name: Check API codegen is up to date

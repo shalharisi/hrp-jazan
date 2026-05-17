@@ -1,0 +1,56 @@
+name: Detect Bot Commit
+description: >
+  Determines whether the current commit is an automated bot commit that should
+  skip CI.  Sets the `proceed` output to `false` when the triggering actor is
+  a known automated bot account (github-actions[bot], dependabot[bot],
+  renovate[bot]).
+
+  This covers the pull_request synchronize case where GitHub's native
+  [skip ci] support does not apply, and extends the guard beyond the original
+  CODEOWNERS-only check to all known bot actors.
+
+  To add more bots in the future, append their GitHub login to the KNOWN_BOTS
+  array inside the `detect` step — no changes to ci.yml are needed.
+
+outputs:
+  proceed:
+    description: "'true' to run CI, 'false' to skip all downstream jobs."
+    value: ${{ steps.detect.outputs.proceed }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 1
+
+    - id: detect
+      name: Check actor against known bot list
+      shell: bash
+      env:
+        ACTOR: ${{ github.actor }}
+      run: |
+        # Add new bot logins here to extend the skip list.
+        # Expected behavior per actor:
+        #   github-actions[bot] — maintenance commits (CODEOWNERS updates, etc.)
+        #   dependabot[bot]     — automated dependency-update commits / PRs
+        #   renovate[bot]       — automated dependency-update commits / PRs
+        KNOWN_BOTS=(
+          "github-actions[bot]"
+          "dependabot[bot]"
+          "renovate[bot]"
+        )
+
+        msg=$(git log -1 --format="%s" "$GITHUB_SHA")
+        echo "Actor : $ACTOR"
+        echo "Commit: $msg"
+
+        for bot in "${KNOWN_BOTS[@]}"; do
+          if [[ "$ACTOR" == "$bot" ]]; then
+            echo "proceed=false" >> "$GITHUB_OUTPUT"
+            echo "Known bot actor '$ACTOR' detected — downstream CI jobs will be skipped."
+            exit 0
+          fi
+        done
+
+        echo "proceed=true" >> "$GITHUB_OUTPUT"
