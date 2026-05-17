@@ -195,6 +195,7 @@ export const translations = {
     "appointments.printDate": "تاريخ الطباعة",
     "appointments.urgentBanner": "تنبيه عاجل: يوجد {count} موعد ماضٍ لم يُسجَّل فيه الحضور بعد — يستوجب متابعة فورية.",
     "appointments.urgentBannerAction": "عرض المواعيد بحاجة إجراء",
+    "appointments.urgentBannerExport": "تصدير القائمة",
     "appointments.urgentBannerDismiss": "إغلاق",
 
     // Settings tab (reference page)
@@ -401,6 +402,7 @@ export const translations = {
     "appointments.printDate": "Print Date",
     "appointments.urgentBanner": "Urgent: {count} past appointments have no attendance recorded — immediate follow-up required.",
     "appointments.urgentBannerAction": "View appointments needing action",
+    "appointments.urgentBannerExport": "Export list",
     "appointments.urgentBannerDismiss": "Dismiss",
 
     // Settings tab (reference page)

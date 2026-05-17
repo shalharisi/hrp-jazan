@@ -339,10 +339,12 @@ export default function AppointmentsPage() {
   const statsAttended = filtered.filter((a) => a.attended === true).length;
   const statsAbsent = filtered.filter((a) => a.attended === false).length;
 
-  const statsNeedsAction = useMemo(() => {
-    if (!appointments) return 0;
-    return appointments.filter((a) => a.appointmentDate < todayStr && a.attended === null).length;
+  const needsActionRows = useMemo(() => {
+    if (!appointments) return [];
+    return appointments.filter((a) => a.appointmentDate < todayStr && a.attended === null);
   }, [appointments, todayStr]);
+
+  const statsNeedsAction = needsActionRows.length;
 
   const dateFilterLabel = (() => {
     if (dateFilter === "today") return t("appointments.dateToday");
@@ -422,6 +424,32 @@ export default function AppointmentsPage() {
               }}
             >
               {t("appointments.urgentBannerAction")}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs border-orange-400 text-orange-800 hover:bg-orange-100 gap-1"
+              onClick={() => {
+                exportAppointmentsToCsv(
+                  needsActionRows,
+                  lang,
+                  {
+                    patient: t("appointments.colPatient"),
+                    nationalId: t("appointments.colNationalId"),
+                    sector: t("appointments.colSector"),
+                    hospital: t("appointments.colHospital"),
+                    date: t("appointments.colDate"),
+                    status: t("appointments.colStatus"),
+                    note: t("appointments.colAttendanceNote"),
+                  },
+                  "all",
+                  "needs_action",
+                  null
+                );
+              }}
+            >
+              <Download className="w-3 h-3" />
+              {t("appointments.urgentBannerExport")}
             </Button>
             <button
               type="button"
