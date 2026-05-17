@@ -1,0 +1,34 @@
+name: Test – delete_bot_comment cleanup
+
+# Verifies that the delete_bot_comment helper introduced in task #237
+# fires correctly and makes exactly one DELETE call when a stale bot
+# comment exists, and zero DELETE calls when no comment is present.
+#
+# Triggered on changes to the detection workflow itself or to this test
+# so regressions are caught immediately in CI.
+
+on:
+  push:
+    paths:
+      - ".github/workflows/suggest-codeowners-updates.yml"
+      - ".github/scripts/codeowners-bot-helpers.sh"
+      - ".github/scripts/test-delete-bot-comment.sh"
+      - ".github/workflows/test-delete-bot-comment.yml"
+  pull_request:
+    paths:
+      - ".github/workflows/suggest-codeowners-updates.yml"
+      - ".github/scripts/codeowners-bot-helpers.sh"
+      - ".github/scripts/test-delete-bot-comment.sh"
+      - ".github/workflows/test-delete-bot-comment.yml"
+  workflow_dispatch:
+
+jobs:
+  test-delete-bot-comment:
+    name: Verify bot cleans up its comment on a synced branch
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run delete_bot_comment unit tests
+        run: bash .github/scripts/test-delete-bot-comment.sh
