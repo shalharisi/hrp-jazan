@@ -176,9 +176,14 @@ jobs:
           if [[ $failed -ne 0 ]]; then
             echo "ERROR: One or more CODEOWNERS rules list the same owner more than once."
             echo ""
-            echo "How to fix:"
-            echo "  • Remove the duplicate '@username' or '@org/team-slug' tokens so each"
-            echo "    owner appears exactly once on the rule line."
+            echo "How to fix automatically (single command):"
+            echo "  .github/scripts/fix-codeowners-dupes.sh"
+            echo ""
+            echo "Or to preview what would change without modifying the file:"
+            echo "  .github/scripts/fix-codeowners-dupes.sh --check"
+            echo ""
+            echo "To fix manually: remove the duplicate '@username' or '@org/team-slug'"
+            echo "tokens so each owner appears exactly once on the rule line."
             exit 1
           fi
 
