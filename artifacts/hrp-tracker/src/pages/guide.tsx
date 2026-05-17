@@ -10,6 +10,8 @@ import { type TranslationKey } from "@/i18n";
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 const API = `${BASE}/api`;
 
+const EXPECTED_DURATION_S = 20;
+
 type FileStatus = { docx: boolean; pdf: boolean; docxMtime?: string | null; pdfMtime?: string | null } | null;
 
 // ─── Bilingual cell and row types ─────────────────────────────────────────────
@@ -1082,6 +1084,7 @@ export default function UserGuide() {
   const [generating, setGenerating] = useState(false);
   const [generateResult, setGenerateResult] = useState<"success" | "error" | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState<number | null>(null);
+  const [progressPct, setProgressPct] = useState(0);
   const startTimeRef = useRef<number | null>(null);
   const [currentStep, setCurrentStep] = useState<string | null>(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -1110,8 +1113,13 @@ export default function UserGuide() {
   useEffect(() => {
     if (!generating) return;
     setElapsedSeconds(0);
+    setProgressPct(0);
     const interval = setInterval(() => {
-      setElapsedSeconds((s) => (s ?? 0) + 1);
+      setElapsedSeconds((s) => {
+        const next = (s ?? 0) + 1;
+        setProgressPct(Math.min(90, (next / EXPECTED_DURATION_S) * 90));
+        return next;
+      });
     }, 1000);
     return () => clearInterval(interval);
   }, [generating]);
@@ -1130,6 +1138,14 @@ export default function UserGuide() {
 
       const computeElapsed = () =>
         Math.max(1, Math.round((Date.now() - (startTimeRef.current ?? Date.now())) / 1000));
+
+      const finishSuccess = async () => {
+        setElapsedSeconds(computeElapsed());
+        setProgressPct(100);
+        await new Promise<void>((resolve) => setTimeout(resolve, 600));
+        setGenerateResult("success");
+        fetchStatus();
+      };
 
       // Stream SSE events from the server; fall back gracefully if body is unavailable.
       if (res.body) {
@@ -1157,9 +1173,7 @@ export default function UserGuide() {
                 setCurrentStep(event.step);
               } else if (event.done) {
                 settled = true;
-                setElapsedSeconds(computeElapsed());
-                setGenerateResult("success");
-                fetchStatus();
+                await finishSuccess();
               } else if (event.error) {
                 settled = true;
                 setGenerateResult("error");
@@ -1172,15 +1186,11 @@ export default function UserGuide() {
 
         // If the stream ended without an explicit done/error event, treat as success.
         if (!settled) {
-          setElapsedSeconds(computeElapsed());
-          setGenerateResult("success");
-          fetchStatus();
+          await finishSuccess();
         }
       } else {
         // No streaming support — treat the completed response as success.
-        setElapsedSeconds(computeElapsed());
-        setGenerateResult("success");
-        fetchStatus();
+        await finishSuccess();
       }
     } catch {
       setGenerateResult("error");
@@ -1280,28 +1290,26 @@ export default function UserGuide() {
                   {generating ? t("guide.generating") : t("guide.generateBtn")}
                 </Button>
                 {generating && (
-                  <div className="flex items-center gap-3 pt-1">
-                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground shrink-0" />
-                    <div className="flex-1 space-y-1.5">
-                      <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                        <div className="h-full bg-primary/60 rounded-full animate-[progress_2s_ease-in-out_infinite]" />
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {currentStep
-                          ? t(`guide.step.${currentStep}` as TranslationKey)
-                          : t("guide.generatingHint")}
-                      </p>
+                  <div className="space-y-1.5 pt-1">
+                    <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full bg-primary/60 rounded-full transition-[width] duration-1000 ease-linear"
+                        style={{ width: `${progressPct}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs text-muted-foreground font-mono">
                       {elapsedSeconds !== null && (
-                        <p className="text-xs text-muted-foreground font-mono">
-                          {t("guide.elapsed").replace("{n}", String(elapsedSeconds))}
-                        </p>
+                        <span>{t("guide.elapsed").replace("{n}", String(elapsedSeconds))}</span>
                       )}
-                      {elapsedSeconds !== null && (
-                        <p className="text-xs text-muted-foreground font-mono">
-                          {t("guide.remaining").replace("{n}", String(Math.max(0, 20 - elapsedSeconds)))}
-                        </p>
+                      {elapsedSeconds !== null && progressPct < 100 && (
+                        <span>{t("guide.remaining").replace("{n}", String(Math.max(0, EXPECTED_DURATION_S - elapsedSeconds)))}</span>
                       )}
                     </div>
+                    <p className="text-xs text-muted-foreground">
+                      {currentStep
+                        ? t(`guide.step.${currentStep}` as TranslationKey)
+                        : t("guide.generatingHint")}
+                    </p>
                   </div>
                 )}
               </div>
