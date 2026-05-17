@@ -49,6 +49,11 @@ artifacts/hrp-tracker/                  @jazan-health/frontend-leads
 artifacts/hrp-mobile/                   @jazan-health/frontend-leads
 
 # ──────────────────────────────────────────────────────────────────────────────
+# Design / mockup sandbox
+# ──────────────────────────────────────────────────────────────────────────────
+artifacts/mockup-sandbox/               @jazan-health/frontend-leads
+
+# ──────────────────────────────────────────────────────────────────────────────
 # CI / GitHub configuration
 # Workflow and branch-protection changes must be reviewed by repository admins.
 # ──────────────────────────────────────────────────────────────────────────────

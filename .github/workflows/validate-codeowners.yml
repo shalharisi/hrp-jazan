@@ -402,6 +402,93 @@ jobs:
 
           echo "No duplicate path patterns found in CODEOWNERS."
 
+      - name: Check that every top-level artifacts/ and lib/ directory has a specific owner
+        if: steps.changed.outputs.modified == 'true'
+        run: |
+          set -euo pipefail
+
+          CODEOWNERS=".github/CODEOWNERS"
+
+          echo "Checking that every top-level directory under artifacts/ and lib/ has a specific CODEOWNERS rule …"
+          echo "(Directories covered only by the catch-all '*' have no designated reviewer.)"
+          echo ""
+
+          # Collect every unique top-level subdirectory under artifacts/ and lib/
+          # that contains at least one tracked file.
+          mapfile -t dirs < <(
+            git ls-files artifacts/ lib/ \
+              | awk -F/ 'NF>=2{print $1"/"$2}' \
+              | sort -u
+          )
+
+          if [[ ${#dirs[@]} -eq 0 ]]; then
+            echo "No tracked directories found under artifacts/ or lib/ — nothing to check."
+            exit 0
+          fi
+
+          # Pre-build a list of (pattern, file-list) for every non-wildcard rule so we
+          # only call git ls-files once per pattern, not once per pattern per directory.
+          tmpdir=$(mktemp -d)
+          trap 'rm -rf "$tmpdir"' EXIT
+
+          idx=0
+          declare -a pat_arr
+
+          while IFS= read -r line; do
+            [[ "$line" =~ ^[[:space:]]*# ]] && continue
+            [[ -z "${line//[[:space:]]/}" ]] && continue
+            read -r -a fields <<< "$line"
+            pattern="${fields[0]}"
+            [[ "$pattern" == "*" ]] && continue          # skip catch-all
+            clean="${pattern#/}"                          # strip leading /
+            git ls-files -- "$clean" > "$tmpdir/$idx.txt" 2>/dev/null || true
+            pat_arr[$idx]="$pattern"
+            idx=$((idx + 1))
+          done < "$CODEOWNERS"
+
+          total=$idx
+
+          # For each directory, check whether at least one specific rule covers it
+          failed=0
+          unowned=()
+
+          for dir in "${dirs[@]}"; do
+            covered=false
+            for (( i=0; i<total; i++ )); do
+              if grep -q "^${dir}/" "$tmpdir/$i.txt" 2>/dev/null; then
+                covered=true
+                break
+              fi
+            done
+
+            if [[ "$covered" == true ]]; then
+              echo "✓  $dir"
+            else
+              echo "✗  $dir — no specific CODEOWNERS rule (only the catch-all '*' applies)"
+              unowned+=("$dir")
+              failed=1
+            fi
+          done
+
+          echo ""
+          if [[ $failed -ne 0 ]]; then
+            echo "ERROR: The following directories have no specific CODEOWNERS rule:"
+            for d in "${unowned[@]}"; do
+              echo "  • $d"
+            done
+            echo ""
+            echo "Add a rule for each directory to .github/CODEOWNERS so that a"
+            echo "designated reviewer is always requested when changes are made there."
+            echo ""
+            echo "Example:"
+            for d in "${unowned[@]}"; do
+              echo "  ${d}/    @jazan-health/<team-slug>"
+            done
+            exit 1
+          fi
+
+          echo "All top-level artifacts/ and lib/ directories have a specific CODEOWNERS rule."
+
       - name: Skip — CODEOWNERS not modified in this PR
         if: steps.changed.outputs.modified == 'false'
         run: echo "CODEOWNERS was not modified in this PR — validation skipped."
