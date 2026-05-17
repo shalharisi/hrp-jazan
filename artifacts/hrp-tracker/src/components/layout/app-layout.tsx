@@ -3,12 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useI18n } from "../../lib/i18n-context";
 import { useAuth } from "../../lib/auth-context";
 import { useGuideGenerationStatus } from "../../lib/use-guide-generation-status";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { TranslationKey } from "../../i18n";
 import {
   Sidebar,

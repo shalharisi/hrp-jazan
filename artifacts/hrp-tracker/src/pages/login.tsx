@@ -349,9 +349,7 @@ export default function LoginPage() {
                       {cpLoading ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          <span className="mx-2">
-                            {ar ? "جاري التغيير..." : "Changing..."}
-                          </span>
+                          <span className="mx-2">{ar ? "جاري التغيير..." : "Changing..."}</span>
                         </>
                       ) : (
                         t("auth.changePasswordBtn")

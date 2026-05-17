@@ -6,16 +6,11 @@ The CI badge and GitHub Actions workflows are ready to go, but the project needs
 
 ### 1 — Create the repository
 
-Go to [github.com/organizations/jazan-health/repositories/new](https://github.com/organizations/jazan-health/repositories/new) and create an **empty** repository named `hrp-jazan` (no README, no `.gitignore`, no licence). Note the HTTPS or SSH URL that GitHub shows you.
+The repository already exists at **https://github.com/shalharisi/hrp-jazan** and the code has been pushed. This step is complete.
 
 ### 2 — Add the remote and push
 
-```bash
-git remote add origin https://github.com/jazan-health/hrp-jazan.git
-git push -u origin main
-```
-
-Replace the URL with the SSH variant (`git@github.com:jazan-health/hrp-jazan.git`) if you prefer SSH. After this push, GitHub Actions will trigger automatically and the CI badge in `replit.md` will show a live status.
+The `origin` remote is already configured and `main` has been pushed. This step is complete.
 
 ### 3 — Activate branch protection (one-time)
 

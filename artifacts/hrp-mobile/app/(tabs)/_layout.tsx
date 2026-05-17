@@ -62,100 +62,100 @@ export default function TabLayout() {
       <Tabs
         screenOptions={{
           headerShown: false,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.mutedForeground,
-        tabBarLabelStyle: {
-          fontFamily: "Tajawal_500Medium",
-          fontSize: 11,
-        },
-        tabBarStyle: {
-          position: "absolute",
-          backgroundColor: isIOS ? "transparent" : colors.background,
-          borderTopWidth: Platform.OS === "web" ? 1 : 0,
-          borderTopColor: colors.border,
-          elevation: 0,
-          paddingBottom: safeAreaInsets.bottom,
-          height: Platform.OS === "web" ? 67 : undefined,
-        },
-        tabBarBackground: () =>
-          isIOS ? (
-            <BlurView
-              intensity={100}
-              tint={isDark ? "dark" : "light"}
-              style={StyleSheet.absoluteFill}
-            />
-          ) : (
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]} />
-          ),
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: t("nav.dashboard"),
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="house" tintColor={color} size={24} />
-            ) : (
-              <Feather name="home" size={22} color={color} />
-            ),
-        }}
-      />
-      <Tabs.Screen
-        name="patients"
-        options={{
-          title: t("nav.patients"),
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="person.2" tintColor={color} size={24} />
-            ) : (
-              <Ionicons name="people-outline" size={22} color={color} />
-            ),
-        }}
-      />
-      <Tabs.Screen
-        name="cases"
-        options={{
-          title: t("nav.cases"),
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="doc.text" tintColor={color} size={24} />
-            ) : (
-              <Ionicons name="document-text-outline" size={22} color={color} />
-            ),
-        }}
-      />
-      <Tabs.Screen
-        name="appointments"
-        options={{
-          title: t("nav.appointments"),
-          tabBarBadge: needsActionCount > 0 ? needsActionCount : undefined,
-          tabBarBadgeStyle: {
-            backgroundColor: "#ef4444",
-            fontSize: 10,
-            fontFamily: "Tajawal_700Bold",
+          tabBarActiveTintColor: colors.primary,
+          tabBarInactiveTintColor: colors.mutedForeground,
+          tabBarLabelStyle: {
+            fontFamily: "Tajawal_500Medium",
+            fontSize: 11,
           },
-          tabBarIcon: ({ color }) =>
+          tabBarStyle: {
+            position: "absolute",
+            backgroundColor: isIOS ? "transparent" : colors.background,
+            borderTopWidth: Platform.OS === "web" ? 1 : 0,
+            borderTopColor: colors.border,
+            elevation: 0,
+            paddingBottom: safeAreaInsets.bottom,
+            height: Platform.OS === "web" ? 67 : undefined,
+          },
+          tabBarBackground: () =>
             isIOS ? (
-              <SymbolView name="calendar" tintColor={color} size={24} />
+              <BlurView
+                intensity={100}
+                tint={isDark ? "dark" : "light"}
+                style={StyleSheet.absoluteFill}
+              />
             ) : (
-              <Ionicons name="calendar-outline" size={22} color={color} />
+              <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]} />
             ),
         }}
-      />
-      <Tabs.Screen
-        name="alerts"
-        options={{
-          title: t("nav.alerts"),
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="bell" tintColor={color} size={24} />
-            ) : (
-              <Ionicons name="notifications-outline" size={22} color={color} />
-            ),
-        }}
-      />
-    </Tabs>
+      >
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: t("nav.dashboard"),
+            tabBarIcon: ({ color }) =>
+              isIOS ? (
+                <SymbolView name="house" tintColor={color} size={24} />
+              ) : (
+                <Feather name="home" size={22} color={color} />
+              ),
+          }}
+        />
+        <Tabs.Screen
+          name="patients"
+          options={{
+            title: t("nav.patients"),
+            tabBarIcon: ({ color }) =>
+              isIOS ? (
+                <SymbolView name="person.2" tintColor={color} size={24} />
+              ) : (
+                <Ionicons name="people-outline" size={22} color={color} />
+              ),
+          }}
+        />
+        <Tabs.Screen
+          name="cases"
+          options={{
+            title: t("nav.cases"),
+            tabBarIcon: ({ color }) =>
+              isIOS ? (
+                <SymbolView name="doc.text" tintColor={color} size={24} />
+              ) : (
+                <Ionicons name="document-text-outline" size={22} color={color} />
+              ),
+          }}
+        />
+        <Tabs.Screen
+          name="appointments"
+          options={{
+            title: t("nav.appointments"),
+            tabBarBadge: needsActionCount > 0 ? needsActionCount : undefined,
+            tabBarBadgeStyle: {
+              backgroundColor: "#ef4444",
+              fontSize: 10,
+              fontFamily: "Tajawal_700Bold",
+            },
+            tabBarIcon: ({ color }) =>
+              isIOS ? (
+                <SymbolView name="calendar" tintColor={color} size={24} />
+              ) : (
+                <Ionicons name="calendar-outline" size={22} color={color} />
+              ),
+          }}
+        />
+        <Tabs.Screen
+          name="alerts"
+          options={{
+            title: t("nav.alerts"),
+            tabBarIcon: ({ color }) =>
+              isIOS ? (
+                <SymbolView name="bell" tintColor={color} size={24} />
+              ) : (
+                <Ionicons name="notifications-outline" size={22} color={color} />
+              ),
+          }}
+        />
+      </Tabs>
     </View>
   );
 }

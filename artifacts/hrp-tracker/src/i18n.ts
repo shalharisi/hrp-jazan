@@ -241,7 +241,8 @@ export const translations = {
     "guide.step.write_docx": "جارٍ حفظ ملف Word...",
     "guide.step.build_pdf": "جارٍ إنشاء ملف PDF...",
     "guide.step.write_pdf": "جارٍ حفظ ملف PDF...",
-    "guide.generatingElsewhere": "جارٍ إنشاء الدليل حاليًا في علامة تبويب أخرى. يرجى الانتظار حتى تكتمل العملية.",
+    "guide.generatingElsewhere":
+      "جارٍ إنشاء الدليل حاليًا في علامة تبويب أخرى. يرجى الانتظار حتى تكتمل العملية.",
     "guide.generatingBadge": "جارٍ إنشاء الدليل…",
     "guide.tooltipGenerating": "جارٍ إنشاء الدليل",
     "guide.tooltipElapsed": "• {n} ث",
@@ -254,7 +255,8 @@ export const translations = {
     "auth.newPassword": "كلمة المرور الجديدة (8 أحرف على الأقل)",
     "auth.confirmNewPassword": "تأكيد كلمة المرور الجديدة",
     "auth.changePasswordBtn": "تغيير كلمة المرور",
-    "auth.changePasswordSuccess": "تم تغيير كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة.",
+    "auth.changePasswordSuccess":
+      "تم تغيير كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة.",
     "auth.passwordMismatch": "كلمة المرور الجديدة وتأكيدها غير متطابقين",
     "auth.passwordTooShort": "كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل",
   },
@@ -502,7 +504,8 @@ export const translations = {
     "guide.step.write_docx": "Saving Word file...",
     "guide.step.build_pdf": "Rendering PDF...",
     "guide.step.write_pdf": "Saving PDF file...",
-    "guide.generatingElsewhere": "Guide generation is already in progress. Please wait for it to complete.",
+    "guide.generatingElsewhere":
+      "Guide generation is already in progress. Please wait for it to complete.",
     "guide.generatingBadge": "Generating guide…",
     "guide.tooltipGenerating": "Generating guide",
     "guide.tooltipElapsed": "• {n} s",
@@ -515,7 +518,8 @@ export const translations = {
     "auth.newPassword": "New Password (min. 8 characters)",
     "auth.confirmNewPassword": "Confirm New Password",
     "auth.changePasswordBtn": "Change Password",
-    "auth.changePasswordSuccess": "Password changed successfully. You can now sign in with your new password.",
+    "auth.changePasswordSuccess":
+      "Password changed successfully. You can now sign in with your new password.",
     "auth.passwordMismatch": "New password and confirmation do not match",
     "auth.passwordTooShort": "New password must be at least 8 characters",
   },

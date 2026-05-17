@@ -1,0 +1,11 @@
+# From .gitignore
+dist
+node_modules
+*.tsbuildinfo
+.expo
+.expo-shared
+
+# Generated files — do not format with prettier
+lib/api-client-react/src/generated/
+lib/api-zod/src/generated/
+artifacts/mockup-sandbox/src/.generated/

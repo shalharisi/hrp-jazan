@@ -386,9 +386,7 @@ function riskCell(text: string, bg: string, fg: string): TableCell {
       new Paragraph({
         bidirectional: true,
         alignment: AlignmentType.CENTER,
-        children: [
-          new TextRun({ text, bold: true, size: 22, color: fg, font: "Calibri" }),
-        ],
+        children: [new TextRun({ text, bold: true, size: 22, color: fg, font: "Calibri" })],
       }),
     ],
   });
@@ -493,7 +491,15 @@ function buildQuickReferenceSummary(): (Paragraph | Table)[] {
           new Paragraph({
             bidirectional: true,
             alignment: AlignmentType.CENTER,
-            children: [new TextRun({ text: "المستوى  /  Level", bold: true, size: 20, color: WHITE, font: "Calibri" })],
+            children: [
+              new TextRun({
+                text: "المستوى  /  Level",
+                bold: true,
+                size: 20,
+                color: WHITE,
+                font: "Calibri",
+              }),
+            ],
           }),
         ],
       }),
@@ -510,7 +516,15 @@ function buildQuickReferenceSummary(): (Paragraph | Table)[] {
           new Paragraph({
             bidirectional: true,
             alignment: AlignmentType.RIGHT,
-            children: [new TextRun({ text: "التعريف والإجراء المطلوب  /  Definition & Required Action", bold: true, size: 20, color: WHITE, font: "Calibri" })],
+            children: [
+              new TextRun({
+                text: "التعريف والإجراء المطلوب  /  Definition & Required Action",
+                bold: true,
+                size: 20,
+                color: WHITE,
+                font: "Calibri",
+              }),
+            ],
           }),
         ],
       }),
@@ -521,25 +535,33 @@ function buildQuickReferenceSummary(): (Paragraph | Table)[] {
     new TableRow({
       children: [
         riskCell("منخفض\nLow", RISK_LOW_BG, RISK_LOW_FG),
-        plainCell("لا توجد عوامل خطر مؤثرة – متابعة روتينية في المركز الصحي  /  No significant risk factors — routine follow-up at the health center"),
+        plainCell(
+          "لا توجد عوامل خطر مؤثرة – متابعة روتينية في المركز الصحي  /  No significant risk factors — routine follow-up at the health center",
+        ),
       ],
     }),
     new TableRow({
       children: [
         riskCell("متوسط\nMedium", RISK_MED_BG, RISK_MED_FG),
-        plainCell("عوامل خطر محدودة – متابعة مكثفة في المركز الصحي  /  Limited risk factors — intensive follow-up at the health center"),
+        plainCell(
+          "عوامل خطر محدودة – متابعة مكثفة في المركز الصحي  /  Limited risk factors — intensive follow-up at the health center",
+        ),
       ],
     }),
     new TableRow({
       children: [
         riskCell("عالٍ\nHigh", RISK_HIGH_BG, RISK_HIGH_FG),
-        plainCell("عوامل خطر متعددة أو حادة – إحالة للمستشفى  /  Multiple or severe risk factors — referral to hospital"),
+        plainCell(
+          "عوامل خطر متعددة أو حادة – إحالة للمستشفى  /  Multiple or severe risk factors — referral to hospital",
+        ),
       ],
     }),
     new TableRow({
       children: [
         riskCell("حرج\nCritical", RISK_CRIT_BG, RISK_CRIT_FG),
-        plainCell("حالة طارئة تستدعي تدخلًا فوريًا – إحالة لـ KFCH أو أقرب مستشفى  /  Emergency — immediate intervention, transfer to KFCH or nearest hospital"),
+        plainCell(
+          "حالة طارئة تستدعي تدخلًا فوريًا – إحالة لـ KFCH أو أقرب مستشفى  /  Emergency — immediate intervention, transfer to KFCH or nearest hospital",
+        ),
       ],
     }),
   ];
@@ -573,13 +595,17 @@ function buildQuickReferenceSummary(): (Paragraph | Table)[] {
         new TableRow({
           children: [
             labelCell("✅ ملتزم\nCompliant"),
-            plainCell("حُجز الموعد خلال ≤ 2 يوم عمل من تاريخ الزيارة (الجمعة والسبت مستثنيان)  /  Appointment booked within ≤ 2 working days of the visit date (Fri & Sat excluded)"),
+            plainCell(
+              "حُجز الموعد خلال ≤ 2 يوم عمل من تاريخ الزيارة (الجمعة والسبت مستثنيان)  /  Appointment booked within ≤ 2 working days of the visit date (Fri & Sat excluded)",
+            ),
           ],
         }),
         new TableRow({
           children: [
             labelCell("❌ غير ملتزم\nNon-compliant"),
-            plainCell("تأخر الحجز أكثر من يومَي عمل  /  Appointment booked more than 2 working days after the visit date"),
+            plainCell(
+              "تأخر الحجز أكثر من يومَي عمل  /  Appointment booked more than 2 working days after the visit date",
+            ),
           ],
         }),
         new TableRow({
@@ -657,7 +683,15 @@ function buildQuickReferenceSummary(): (Paragraph | Table)[] {
                 children: [
                   new Paragraph({
                     alignment: AlignmentType.CENTER,
-                    children: [new TextRun({ text: num, bold: true, size: 24, color: WHITE, font: "Calibri" })],
+                    children: [
+                      new TextRun({
+                        text: num,
+                        bold: true,
+                        size: 24,
+                        color: WHITE,
+                        font: "Calibri",
+                      }),
+                    ],
                   }),
                 ],
               }),
@@ -674,13 +708,29 @@ function buildQuickReferenceSummary(): (Paragraph | Table)[] {
                     bidirectional: true,
                     alignment: AlignmentType.RIGHT,
                     spacing: { before: 40, after: 20 },
-                    children: [new TextRun({ text: ar, bold: true, size: 20, color: GRAY_DARK, font: "Calibri" })],
+                    children: [
+                      new TextRun({
+                        text: ar,
+                        bold: true,
+                        size: 20,
+                        color: GRAY_DARK,
+                        font: "Calibri",
+                      }),
+                    ],
                   }),
                   new Paragraph({
                     bidirectional: true,
                     alignment: AlignmentType.RIGHT,
                     spacing: { before: 20, after: 40 },
-                    children: [new TextRun({ text: en, size: 18, color: GRAY_MID, font: "Calibri", italics: true })],
+                    children: [
+                      new TextRun({
+                        text: en,
+                        size: 18,
+                        color: GRAY_MID,
+                        font: "Calibri",
+                        italics: true,
+                      }),
+                    ],
                   }),
                 ],
               }),
@@ -702,7 +752,10 @@ export type CaptureEntry = { order: number; key: string; filename: string };
 
 export { OUTPUT_PATH };
 
-export async function buildDocument(screenshots?: Map<string, Buffer>, captureOrder?: CaptureEntry[]): Promise<Buffer> {
+export async function buildDocument(
+  screenshots?: Map<string, Buffer>,
+  captureOrder?: CaptureEntry[],
+): Promise<Buffer> {
   // Load logo if available
   let logoImage: ImageRun | null = null;
   if (fs.existsSync(LOGO_PATH)) {
@@ -1788,9 +1841,9 @@ export async function buildDocument(screenshots?: Map<string, Buffer>, captureOr
       sectionHeading("ملحق هـ: فهرس لقطات الشاشة", 1),
       rtlPara(
         "يسرد هذا الملحق جميع لقطات الشاشة المُضمَّنة في الدليل بترتيبها التسلسلي مع أسماء الملفات المقابلة لها.",
-        { spacing: { before: 120, after: 120 } }
+        { spacing: { before: 120, after: 120 } },
       ),
-      infoTable(screenshotRows, "التسمية | اسم الملف")
+      infoTable(screenshotRows, "التسمية | اسم الملف"),
     );
   }
 
@@ -3228,107 +3281,107 @@ function progress(step: string): void {
 // ── Main ──────────────────────────────────────────────────────────────────────
 const _isMain =
   path.resolve(process.argv[1]) === fileURLToPath(import.meta.url) ||
-  path.resolve(process.argv[1]).replace(/\.js$/, ".ts") ===
-    fileURLToPath(import.meta.url);
-if (_isMain)(async () => {
-  const startTime = Date.now();
-  const args = process.argv.slice(2);
+  path.resolve(process.argv[1]).replace(/\.js$/, ".ts") === fileURLToPath(import.meta.url);
+if (_isMain)
+  (async () => {
+    const startTime = Date.now();
+    const args = process.argv.slice(2);
 
-  const generatePdf = !args.includes("--no-pdf");
-  const openAfterBuild = args.includes("--open");
-  const useScreenshots = args.includes("--screenshots");
-  const screenshotsOnly = args.includes("--screenshots-only");
-  const baseUrl =
-    args.find((a) => a.startsWith("--base-url="))?.split("=")[1] ?? "http://localhost:80";
-  const outputScreenshotsDir = args
-    .find((a) => a.startsWith("--output-screenshots-dir="))
-    ?.split("=")
-    .slice(1)
-    .join("=");
-  let pdfStatus: "produced" | "skipped" | "disabled" = "disabled";
+    const generatePdf = !args.includes("--no-pdf");
+    const openAfterBuild = args.includes("--open");
+    const useScreenshots = args.includes("--screenshots");
+    const screenshotsOnly = args.includes("--screenshots-only");
+    const baseUrl =
+      args.find((a) => a.startsWith("--base-url="))?.split("=")[1] ?? "http://localhost:80";
+    const outputScreenshotsDir = args
+      .find((a) => a.startsWith("--output-screenshots-dir="))
+      ?.split("=")
+      .slice(1)
+      .join("=");
+    let pdfStatus: "produced" | "skipped" | "disabled" = "disabled";
 
-  if (screenshotsOnly) {
-    if (!outputScreenshotsDir) {
-      console.error("❌ --screenshots-only requires --output-screenshots-dir=<path>");
-      process.exit(1);
+    if (screenshotsOnly) {
+      if (!outputScreenshotsDir) {
+        console.error("❌ --screenshots-only requires --output-screenshots-dir=<path>");
+        process.exit(1);
+      }
+      console.log(`📸 التقاط لقطات الشاشة فقط إلى: ${outputScreenshotsDir}`);
+      console.log(`🔗 رابط التطبيق: ${baseUrl}`);
+      try {
+        await captureScreenshots(baseUrl, outputScreenshotsDir);
+        console.log("✅ اكتمل التقاط لقطات الشاشة.");
+      } catch (e) {
+        console.error("❌ فشل التقاط لقطات الشاشة:", e);
+        process.exit(1);
+      }
+      return;
     }
-    console.log(`📸 التقاط لقطات الشاشة فقط إلى: ${outputScreenshotsDir}`);
-    console.log(`🔗 رابط التطبيق: ${baseUrl}`);
-    try {
-      await captureScreenshots(baseUrl, outputScreenshotsDir);
-      console.log("✅ اكتمل التقاط لقطات الشاشة.");
-    } catch (e) {
-      console.error("❌ فشل التقاط لقطات الشاشة:", e);
-      process.exit(1);
-    }
-    return;
-  }
 
-  let screenshots: Map<string, Buffer> | undefined;
-  let captureOrder: CaptureEntry[] | undefined;
-  if (useScreenshots) {
-    console.log(`🔗 رابط التطبيق: ${baseUrl}`);
-    if (outputScreenshotsDir) {
-      console.log(`💾 ستُحفظ لقطات الشاشة أيضًا في: ${outputScreenshotsDir}`);
-    }
-    progress("screenshots");
-    try {
-      const result = await captureScreenshots(baseUrl, outputScreenshotsDir);
-      screenshots = result.screenshots;
-      captureOrder = result.captureOrder;
-    } catch (e) {
-      console.error("⚠ فشل التقاط لقطات الشاشة – سيُنشأ الملف بالنصوص البديلة:", e);
-    }
-  }
-
-  progress("build_docx");
-  console.log(`${ts()} 📝 بناء مستند Word...`);
-  const buffer = await buildDocument(screenshots, captureOrder);
-
-  progress("write_docx");
-  fs.writeFileSync(OUTPUT_PATH, buffer);
-  const sizeKB = Math.round(buffer.length / 1024);
-  console.log(`✅ تم إنشاء ملف Word: ${OUTPUT_PATH}`);
-  console.log(`   الحجم: ${sizeKB} كيلوبايت`);
-
-  let pdfSizeKB = 0;
-  if (generatePdf) {
-    progress("build_pdf");
-    console.log(`${ts()} 📄 إنشاء دليل المستخدم (PDF)...`);
-    try {
-      const pdfBuffer = await buildPdf();
-
-      progress("write_pdf");
-      fs.writeFileSync(PDF_OUTPUT_PATH, pdfBuffer);
-      pdfSizeKB = Math.round(pdfBuffer.length / 1024);
-      console.log(`✅ تم إنشاء ملف PDF: ${PDF_OUTPUT_PATH}`);
-      console.log(`   الحجم: ${pdfSizeKB} كيلوبايت`);
-      pdfStatus = "produced";
-    } catch (err) {
-      if (err instanceof NoBrowserError) {
-        console.warn("⚠️  تخطي إنشاء PDF: لا يوجد متصفح متاح.");
-        console.warn(err.message);
-        pdfStatus = "skipped";
-      } else {
-        throw err;
+    let screenshots: Map<string, Buffer> | undefined;
+    let captureOrder: CaptureEntry[] | undefined;
+    if (useScreenshots) {
+      console.log(`🔗 رابط التطبيق: ${baseUrl}`);
+      if (outputScreenshotsDir) {
+        console.log(`💾 ستُحفظ لقطات الشاشة أيضًا في: ${outputScreenshotsDir}`);
+      }
+      progress("screenshots");
+      try {
+        const result = await captureScreenshots(baseUrl, outputScreenshotsDir);
+        screenshots = result.screenshots;
+        captureOrder = result.captureOrder;
+      } catch (e) {
+        console.error("⚠ فشل التقاط لقطات الشاشة – سيُنشأ الملف بالنصوص البديلة:", e);
       }
     }
-  }
 
-  const wordFile = path.basename(OUTPUT_PATH);
-  const pdfFile = path.basename(PDF_OUTPUT_PATH);
-  const pdfSummary =
-    pdfStatus === "produced"
-      ? `PDF ✅ ${pdfSizeKB} KB (${pdfFile})`
-      : pdfStatus === "skipped"
-        ? `PDF ⚠️ skipped — no browser`
-        : `PDF ⏭️ disabled (--no-pdf)`;
-  const elapsedSec = Math.round((Date.now() - startTime) / 1000);
-  console.log(`\nالملخص: Word ✅ ${sizeKB} KB (${wordFile})  ${pdfSummary}  (${elapsedSec}s)`);
+    progress("build_docx");
+    console.log(`${ts()} 📝 بناء مستند Word...`);
+    const buffer = await buildDocument(screenshots, captureOrder);
 
-  if (openAfterBuild) {
-    const fileToOpen = generatePdf && pdfStatus === "produced" ? PDF_OUTPUT_PATH : OUTPUT_PATH;
-    console.log(`\n📂 فتح الملف: ${path.basename(fileToOpen)}`);
-    openDocument(fileToOpen);
-  }
-})();
+    progress("write_docx");
+    fs.writeFileSync(OUTPUT_PATH, buffer);
+    const sizeKB = Math.round(buffer.length / 1024);
+    console.log(`✅ تم إنشاء ملف Word: ${OUTPUT_PATH}`);
+    console.log(`   الحجم: ${sizeKB} كيلوبايت`);
+
+    let pdfSizeKB = 0;
+    if (generatePdf) {
+      progress("build_pdf");
+      console.log(`${ts()} 📄 إنشاء دليل المستخدم (PDF)...`);
+      try {
+        const pdfBuffer = await buildPdf();
+
+        progress("write_pdf");
+        fs.writeFileSync(PDF_OUTPUT_PATH, pdfBuffer);
+        pdfSizeKB = Math.round(pdfBuffer.length / 1024);
+        console.log(`✅ تم إنشاء ملف PDF: ${PDF_OUTPUT_PATH}`);
+        console.log(`   الحجم: ${pdfSizeKB} كيلوبايت`);
+        pdfStatus = "produced";
+      } catch (err) {
+        if (err instanceof NoBrowserError) {
+          console.warn("⚠️  تخطي إنشاء PDF: لا يوجد متصفح متاح.");
+          console.warn(err.message);
+          pdfStatus = "skipped";
+        } else {
+          throw err;
+        }
+      }
+    }
+
+    const wordFile = path.basename(OUTPUT_PATH);
+    const pdfFile = path.basename(PDF_OUTPUT_PATH);
+    const pdfSummary =
+      pdfStatus === "produced"
+        ? `PDF ✅ ${pdfSizeKB} KB (${pdfFile})`
+        : pdfStatus === "skipped"
+          ? `PDF ⚠️ skipped — no browser`
+          : `PDF ⏭️ disabled (--no-pdf)`;
+    const elapsedSec = Math.round((Date.now() - startTime) / 1000);
+    console.log(`\nالملخص: Word ✅ ${sizeKB} KB (${wordFile})  ${pdfSummary}  (${elapsedSec}s)`);
+
+    if (openAfterBuild) {
+      const fileToOpen = generatePdf && pdfStatus === "produced" ? PDF_OUTPUT_PATH : OUTPUT_PATH;
+      console.log(`\n📂 فتح الملف: ${path.basename(fileToOpen)}`);
+      openDocument(fileToOpen);
+    }
+  })();

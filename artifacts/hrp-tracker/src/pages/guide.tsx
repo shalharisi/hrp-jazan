@@ -24,7 +24,9 @@ function readDurationHistory(): number[] {
     if (stored) {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed)) {
-        const valid = parsed.filter((n): n is number => typeof n === "number" && Number.isFinite(n) && n > 0);
+        const valid = parsed.filter(
+          (n): n is number => typeof n === "number" && Number.isFinite(n) && n > 0,
+        );
         if (valid.length > 0) return valid;
       }
       // backward-compat: old single-number value
@@ -49,11 +51,19 @@ function getLastStoredDuration(): number | null {
   return history.length > 0 ? history[history.length - 1] : null;
 }
 
-type FileStatus = { docx: boolean; pdf: boolean; docxMtime?: string | null; pdfMtime?: string | null; generating?: boolean } | null;
+type FileStatus = {
+  docx: boolean;
+  pdf: boolean;
+  docxMtime?: string | null;
+  pdfMtime?: string | null;
+  generating?: boolean;
+} | null;
 
 // ─── Bilingual cell and row types ─────────────────────────────────────────────
 type BiStr = string | { ar: string; en: string };
-function cell(ar: string, en: string): BiStr { return { ar, en }; }
+function cell(ar: string, en: string): BiStr {
+  return { ar, en };
+}
 function resolveCell(c: BiStr, lang: string): string {
   if (typeof c === "string") return c;
   return lang === "ar" ? c.ar : c.en;
@@ -64,7 +74,14 @@ type ContentBlock =
   | { type: "bullets"; items: { ar: string; en: string }[] }
   | { type: "note"; variant: "info" | "warning" | "tip"; ar: string; en: string }
   | { type: "table"; headerAr?: string; headerEn?: string; rows: [BiStr, BiStr][] }
-  | { type: "table4"; headerAr?: string; headerEn?: string; colsAr: string[]; colsEn: string[]; rows: [BiStr, BiStr, BiStr, BiStr][] }
+  | {
+      type: "table4";
+      headerAr?: string;
+      headerEn?: string;
+      colsAr: string[];
+      colsEn: string[];
+      rows: [BiStr, BiStr, BiStr, BiStr][];
+    }
   | { type: "faq"; items: { qAr: string; qEn: string; aAr: string; aEn: string }[] }
   | { type: "heading3"; ar: string; en: string };
 
@@ -96,12 +113,30 @@ const sections: Section[] = [
           {
             type: "bullets",
             items: [
-              { ar: "تتبع آني لحالات الحمل عالي الخطورة عبر جميع المراكز الصحية والمستشفيات في المنطقة", en: "Real-time tracking of high-risk pregnancies across all health centers and hospitals in the region" },
-              { ar: "تصنيف آلي لدرجة الخطورة وحساب مؤشر الالتزام بالمواعيد", en: "Automatic risk classification and appointment compliance calculation" },
-              { ar: "تنبيهات فورية للحالات الحرجة التي تحتاج تدخلًا طارئًا", en: "Instant alerts for critical cases requiring urgent intervention" },
-              { ar: "لوحة إحصاءات شاملة تعكس الأداء الصحي للقطاع", en: "Comprehensive KPI dashboard reflecting sector health performance" },
-              { ar: "تصدير البيانات بصيغة CSV للتحليل والتقارير الدورية", en: "CSV data export for analysis and periodic reports" },
-              { ar: "واجهة ثنائية اللغة (العربية / الإنجليزية) مع دعم اتجاه RTL", en: "Bilingual interface (Arabic/English) with full RTL support" },
+              {
+                ar: "تتبع آني لحالات الحمل عالي الخطورة عبر جميع المراكز الصحية والمستشفيات في المنطقة",
+                en: "Real-time tracking of high-risk pregnancies across all health centers and hospitals in the region",
+              },
+              {
+                ar: "تصنيف آلي لدرجة الخطورة وحساب مؤشر الالتزام بالمواعيد",
+                en: "Automatic risk classification and appointment compliance calculation",
+              },
+              {
+                ar: "تنبيهات فورية للحالات الحرجة التي تحتاج تدخلًا طارئًا",
+                en: "Instant alerts for critical cases requiring urgent intervention",
+              },
+              {
+                ar: "لوحة إحصاءات شاملة تعكس الأداء الصحي للقطاع",
+                en: "Comprehensive KPI dashboard reflecting sector health performance",
+              },
+              {
+                ar: "تصدير البيانات بصيغة CSV للتحليل والتقارير الدورية",
+                en: "CSV data export for analysis and periodic reports",
+              },
+              {
+                ar: "واجهة ثنائية اللغة (العربية / الإنجليزية) مع دعم اتجاه RTL",
+                en: "Bilingual interface (Arabic/English) with full RTL support",
+              },
             ],
           },
         ],
@@ -115,10 +150,34 @@ const sections: Section[] = [
             headerAr: "الأدوار والصلاحيات",
             headerEn: "Roles & Permissions",
             rows: [
-              [cell("منسق الحوامل عالي الخطورة", "HRP Coordinator"), cell("الوصول الكامل: تسجيل المرضى، إدارة الحالات، المواعيد، التقارير", "Full access: patient registration, case management, appointments, reports")],
-              [cell("الطبيب (Doctor)", "Doctor"), cell("إدارة الحالات السريرية، تسجيل الزيارات، تصدير البيانات", "Clinical case management, visit logging, data export")],
-              [cell("المسؤول (Admin)", "Admin"), cell("كل الصلاحيات + إدارة المستخدمين والحسابات", "All permissions + user and account management")],
-              [cell("المشاهد (Viewer)", "Viewer"), cell("قراءة البيانات فقط، بدون تعديل", "Read-only access, no modifications allowed")],
+              [
+                cell("منسق الحوامل عالي الخطورة", "HRP Coordinator"),
+                cell(
+                  "الوصول الكامل: تسجيل المرضى، إدارة الحالات، المواعيد، التقارير",
+                  "Full access: patient registration, case management, appointments, reports",
+                ),
+              ],
+              [
+                cell("الطبيب (Doctor)", "Doctor"),
+                cell(
+                  "إدارة الحالات السريرية، تسجيل الزيارات، تصدير البيانات",
+                  "Clinical case management, visit logging, data export",
+                ),
+              ],
+              [
+                cell("المسؤول (Admin)", "Admin"),
+                cell(
+                  "كل الصلاحيات + إدارة المستخدمين والحسابات",
+                  "All permissions + user and account management",
+                ),
+              ],
+              [
+                cell("المشاهد (Viewer)", "Viewer"),
+                cell(
+                  "قراءة البيانات فقط، بدون تعديل",
+                  "Read-only access, no modifications allowed",
+                ),
+              ],
             ],
           },
         ],
@@ -130,10 +189,34 @@ const sections: Section[] = [
           {
             type: "table",
             rows: [
-              [cell("المتصفح", "Browser"), cell("Chrome 110+ أو Edge 110+ أو Firefox 110+ (يُوصى بـ Chrome)", "Chrome 110+, Edge 110+, or Firefox 110+ (Chrome recommended)")],
-              [cell("الجهاز", "Device"), cell("حاسب مكتبي أو لابتوب أو جهاز لوحي (الشاشة لا تقل عن 10 بوصة)", "Desktop, laptop, or tablet (screen ≥ 10 inches)")],
-              [cell("الاتصال", "Connection"), cell("اتصال بإنترنت مستقر (الشبكة الداخلية للمنشأة مُفضَّلة)", "Stable internet connection (internal facility network preferred)")],
-              [cell("التطبيق المحمول", "Mobile app"), cell("Android 8+ أو iOS 13+ عبر تطبيق Expo المرافق", "Android 8+ or iOS 13+ via the companion Expo app")],
+              [
+                cell("المتصفح", "Browser"),
+                cell(
+                  "Chrome 110+ أو Edge 110+ أو Firefox 110+ (يُوصى بـ Chrome)",
+                  "Chrome 110+, Edge 110+, or Firefox 110+ (Chrome recommended)",
+                ),
+              ],
+              [
+                cell("الجهاز", "Device"),
+                cell(
+                  "حاسب مكتبي أو لابتوب أو جهاز لوحي (الشاشة لا تقل عن 10 بوصة)",
+                  "Desktop, laptop, or tablet (screen ≥ 10 inches)",
+                ),
+              ],
+              [
+                cell("الاتصال", "Connection"),
+                cell(
+                  "اتصال بإنترنت مستقر (الشبكة الداخلية للمنشأة مُفضَّلة)",
+                  "Stable internet connection (internal facility network preferred)",
+                ),
+              ],
+              [
+                cell("التطبيق المحمول", "Mobile app"),
+                cell(
+                  "Android 8+ أو iOS 13+ عبر تطبيق Expo المرافق",
+                  "Android 8+ or iOS 13+ via the companion Expo app",
+                ),
+              ],
             ],
           },
           {
@@ -169,10 +252,19 @@ const sections: Section[] = [
           {
             type: "bullets",
             items: [
-              { ar: "أدخِل اسم المستخدم المُخصَّص لك في حقل «اسم المستخدم»", en: "Enter your assigned username in the username field" },
-              { ar: "أدخِل كلمة المرور السرية في حقل «كلمة المرور»", en: "Enter your password in the password field" },
+              {
+                ar: "أدخِل اسم المستخدم المُخصَّص لك في حقل «اسم المستخدم»",
+                en: "Enter your assigned username in the username field",
+              },
+              {
+                ar: "أدخِل كلمة المرور السرية في حقل «كلمة المرور»",
+                en: "Enter your password in the password field",
+              },
               { ar: "اضغط زر «تسجيل الدخول»", en: "Click the 'Login' button" },
-              { ar: "في حال صحة البيانات، ستنتقل مباشرةً إلى لوحة المعلومات الرئيسية", en: "On success you are immediately redirected to the main dashboard" },
+              {
+                ar: "في حال صحة البيانات، ستنتقل مباشرةً إلى لوحة المعلومات الرئيسية",
+                en: "On success you are immediately redirected to the main dashboard",
+              },
             ],
           },
           {
@@ -190,10 +282,34 @@ const sections: Section[] = [
           {
             type: "table",
             rows: [
-              [cell("مدة الجلسة", "Session duration"), cell("تبقى الجلسة نشطة ما دمت تتفاعل مع المنظومة", "Session stays active as long as you are interacting with the system")],
-              [cell("انتهاء الجلسة", "Session expiry"), cell("تنتهي الجلسة تلقائيًا عند توقف النشاط لفترة طويلة", "Session expires automatically after a prolonged period of inactivity")],
-              [cell("تسجيل الخروج", "Logout"), cell("اضغط على أيقونة المستخدم في أعلى الشريط الجانبي ثم «تسجيل الخروج»", "Click the user icon at the top of the sidebar then 'Logout'")],
-              [cell("الأمان", "Security"), cell("جميع العمليات مُسجَّلة وفق نظام PDPL", "All operations are logged in compliance with the PDPL")],
+              [
+                cell("مدة الجلسة", "Session duration"),
+                cell(
+                  "تبقى الجلسة نشطة ما دمت تتفاعل مع المنظومة",
+                  "Session stays active as long as you are interacting with the system",
+                ),
+              ],
+              [
+                cell("انتهاء الجلسة", "Session expiry"),
+                cell(
+                  "تنتهي الجلسة تلقائيًا عند توقف النشاط لفترة طويلة",
+                  "Session expires automatically after a prolonged period of inactivity",
+                ),
+              ],
+              [
+                cell("تسجيل الخروج", "Logout"),
+                cell(
+                  "اضغط على أيقونة المستخدم في أعلى الشريط الجانبي ثم «تسجيل الخروج»",
+                  "Click the user icon at the top of the sidebar then 'Logout'",
+                ),
+              ],
+              [
+                cell("الأمان", "Security"),
+                cell(
+                  "جميع العمليات مُسجَّلة وفق نظام PDPL",
+                  "All operations are logged in compliance with the PDPL",
+                ),
+              ],
             ],
           },
         ],
@@ -236,10 +352,34 @@ const sections: Section[] = [
             headerAr: "البطاقات الإحصائية ومعانيها",
             headerEn: "KPI Cards & Their Meanings",
             rows: [
-              [cell("إجمالي المرضى", "Total patients"), cell("عدد جميع الحوامل المسجلات في المنظومة", "Total number of all registered pregnant patients in the system")],
-              [cell("إجمالي الحالات", "Total cases"), cell("عدد حالات الحمل المُسجَّلة (قد تتعدد الحالات للمريضة الواحدة)", "Number of registered pregnancy cases (a single patient may have multiple cases)")],
-              [cell("الحالات الحرجة", "Critical cases"), cell("عدد الحالات ذات مستوى الخطورة «حرج»، مع عرض عدد من ليس لديها موعد", "Count of 'critical'-level cases, showing how many have no appointment booked")],
-              [cell("نسبة الالتزام بالمواعيد", "Booking compliance rate"), cell("نسبة الحالات التي حجزت موعدًا خلال يومَي عمل من تاريخ الزيارة", "Percentage of cases with an appointment booked within 2 working days of the visit date")],
+              [
+                cell("إجمالي المرضى", "Total patients"),
+                cell(
+                  "عدد جميع الحوامل المسجلات في المنظومة",
+                  "Total number of all registered pregnant patients in the system",
+                ),
+              ],
+              [
+                cell("إجمالي الحالات", "Total cases"),
+                cell(
+                  "عدد حالات الحمل المُسجَّلة (قد تتعدد الحالات للمريضة الواحدة)",
+                  "Number of registered pregnancy cases (a single patient may have multiple cases)",
+                ),
+              ],
+              [
+                cell("الحالات الحرجة", "Critical cases"),
+                cell(
+                  "عدد الحالات ذات مستوى الخطورة «حرج»، مع عرض عدد من ليس لديها موعد",
+                  "Count of 'critical'-level cases, showing how many have no appointment booked",
+                ),
+              ],
+              [
+                cell("نسبة الالتزام بالمواعيد", "Booking compliance rate"),
+                cell(
+                  "نسبة الحالات التي حجزت موعدًا خلال يومَي عمل من تاريخ الزيارة",
+                  "Percentage of cases with an appointment booked within 2 working days of the visit date",
+                ),
+              ],
             ],
           },
         ],
@@ -251,10 +391,22 @@ const sections: Section[] = [
           {
             type: "bullets",
             items: [
-              { ar: "مخطط دائري: يوضح توزيع الحالات حسب مستوى الخطورة الأربعة — منخفض (أخضر)، متوسط (أصفر)، عالٍ (برتقالي)، حرج (أحمر)", en: "Pie chart: shows case distribution by risk level — low (green), medium (yellow), high (orange), critical (red)" },
-              { ar: "مخطط أعمدة الالتزام: يعرض عدد الحالات الملتزمة (أخضر)، غير الملتزمة (أحمر)، والمعلقة (رمادي) انتظارًا لموعد", en: "Compliance bar chart: displays compliant (green), non-compliant (red), and pending (grey) case counts" },
-              { ar: "توزيع القطاعات: يعرض عدد الحالات لكل قطاع", en: "Sector distribution: shows case counts by sector" },
-              { ar: "حضور المستشفيات: نسبة الحضور لكل مستشفى", en: "Hospital attendance: attendance rate per hospital" },
+              {
+                ar: "مخطط دائري: يوضح توزيع الحالات حسب مستوى الخطورة الأربعة — منخفض (أخضر)، متوسط (أصفر)، عالٍ (برتقالي)، حرج (أحمر)",
+                en: "Pie chart: shows case distribution by risk level — low (green), medium (yellow), high (orange), critical (red)",
+              },
+              {
+                ar: "مخطط أعمدة الالتزام: يعرض عدد الحالات الملتزمة (أخضر)، غير الملتزمة (أحمر)، والمعلقة (رمادي) انتظارًا لموعد",
+                en: "Compliance bar chart: displays compliant (green), non-compliant (red), and pending (grey) case counts",
+              },
+              {
+                ar: "توزيع القطاعات: يعرض عدد الحالات لكل قطاع",
+                en: "Sector distribution: shows case counts by sector",
+              },
+              {
+                ar: "حضور المستشفيات: نسبة الحضور لكل مستشفى",
+                en: "Hospital attendance: attendance rate per hospital",
+              },
             ],
           },
         ],
@@ -297,11 +449,41 @@ const sections: Section[] = [
             headerAr: "خيارات البحث والتصفية",
             headerEn: "Search & Filter Options",
             rows: [
-              [cell("البحث النصي", "Text search"), cell("البحث باسم المريضة أو رقم هويتها في حقل البحث", "Search by patient name or national ID in the search field")],
-              [cell("تصفية بالمستشفى", "Filter by hospital"), cell("اختر مستشفى لعرض مريضات مرتبطات بقطاعاته", "Select a hospital to see patients linked to its sectors")],
-              [cell("تصفية بالقطاع", "Filter by sector"), cell("تصفية تبعية للمستشفى المختار", "Cascading filter dependent on the selected hospital")],
-              [cell("تصفية بالمركز الصحي", "Filter by health center"), cell("تصفية تبعية للقطاع المختار", "Cascading filter dependent on the selected sector")],
-              [cell("إزالة الفلاتر", "Clear filters"), cell("زر «مسح الفلاتر» يُعيد عرض جميع المرضى", "'Clear filters' button restores the full patient list")],
+              [
+                cell("البحث النصي", "Text search"),
+                cell(
+                  "البحث باسم المريضة أو رقم هويتها في حقل البحث",
+                  "Search by patient name or national ID in the search field",
+                ),
+              ],
+              [
+                cell("تصفية بالمستشفى", "Filter by hospital"),
+                cell(
+                  "اختر مستشفى لعرض مريضات مرتبطات بقطاعاته",
+                  "Select a hospital to see patients linked to its sectors",
+                ),
+              ],
+              [
+                cell("تصفية بالقطاع", "Filter by sector"),
+                cell(
+                  "تصفية تبعية للمستشفى المختار",
+                  "Cascading filter dependent on the selected hospital",
+                ),
+              ],
+              [
+                cell("تصفية بالمركز الصحي", "Filter by health center"),
+                cell(
+                  "تصفية تبعية للقطاع المختار",
+                  "Cascading filter dependent on the selected sector",
+                ),
+              ],
+              [
+                cell("إزالة الفلاتر", "Clear filters"),
+                cell(
+                  "زر «مسح الفلاتر» يُعيد عرض جميع المرضى",
+                  "'Clear filters' button restores the full patient list",
+                ),
+              ],
             ],
           },
         ],
@@ -323,11 +505,29 @@ const sections: Section[] = [
           {
             type: "table",
             rows: [
-              [cell("رقم الهوية الوطنية (*)", "National ID (*)"), cell("10 أرقام فقط – لا يمكن تكراره في المنظومة", "10 digits only — must be unique in the system")],
+              [
+                cell("رقم الهوية الوطنية (*)", "National ID (*)"),
+                cell(
+                  "10 أرقام فقط – لا يمكن تكراره في المنظومة",
+                  "10 digits only — must be unique in the system",
+                ),
+              ],
               [cell("الاسم بالعربية (*)", "Name in Arabic (*)"), cell("الاسم الكامل", "Full name")],
-              [cell("رقم الجوال (*)", "Phone number (*)"), cell("بصيغة 05XXXXXXXX", "Format: 05XXXXXXXX")],
-              [cell("القطاع (*)", "Sector (*)"), cell("اختر من القائمة المنسدلة", "Select from the dropdown list")],
-              [cell("المركز الصحي (*)", "Health center (*)"), cell("يظهر بعد اختيار القطاع – اختر المركز المناسب", "Appears after selecting a sector — choose the appropriate center")],
+              [
+                cell("رقم الجوال (*)", "Phone number (*)"),
+                cell("بصيغة 05XXXXXXXX", "Format: 05XXXXXXXX"),
+              ],
+              [
+                cell("القطاع (*)", "Sector (*)"),
+                cell("اختر من القائمة المنسدلة", "Select from the dropdown list"),
+              ],
+              [
+                cell("المركز الصحي (*)", "Health center (*)"),
+                cell(
+                  "يظهر بعد اختيار القطاع – اختر المركز المناسب",
+                  "Appears after selecting a sector — choose the appropriate center",
+                ),
+              ],
             ],
           },
           {
@@ -338,8 +538,17 @@ const sections: Section[] = [
           {
             type: "table",
             rows: [
-              [cell("تاريخ الميلاد", "Date of birth"), cell("يُحسَب العمر تلقائيًا من هذا التاريخ", "Age is computed automatically from this date")],
-              [cell("جوال الطبيب", "Doctor's phone"), cell("رقم تواصل الطبيب المسؤول", "Contact number of the responsible doctor")],
+              [
+                cell("تاريخ الميلاد", "Date of birth"),
+                cell(
+                  "يُحسَب العمر تلقائيًا من هذا التاريخ",
+                  "Age is computed automatically from this date",
+                ),
+              ],
+              [
+                cell("جوال الطبيب", "Doctor's phone"),
+                cell("رقم تواصل الطبيب المسؤول", "Contact number of the responsible doctor"),
+              ],
               [cell("العنوان", "Address"), cell("عنوان السكن", "Residential address")],
             ],
           },
@@ -363,8 +572,14 @@ const sections: Section[] = [
           {
             type: "bullets",
             items: [
-              { ar: "بيانات المريضة الشخصية مع إمكانية التعديل بالضغط على «تعديل»", en: "Patient personal details with an 'Edit' button to update them" },
-              { ar: "قائمة جميع حالات الحمل المُسجَّلة لها مع مستوى الخطورة وحالة الالتزام", en: "List of all her registered pregnancy cases with risk level and compliance status" },
+              {
+                ar: "بيانات المريضة الشخصية مع إمكانية التعديل بالضغط على «تعديل»",
+                en: "Patient personal details with an 'Edit' button to update them",
+              },
+              {
+                ar: "قائمة جميع حالات الحمل المُسجَّلة لها مع مستوى الخطورة وحالة الالتزام",
+                en: "List of all her registered pregnancy cases with risk level and compliance status",
+              },
               { ar: "زر «إضافة حالة حمل جديدة»", en: "An 'Add New Pregnancy Case' button" },
             ],
           },
@@ -397,10 +612,34 @@ const sections: Section[] = [
             headerAr: "مستويات الخطورة ومعاييرها",
             headerEn: "Risk Levels & Criteria",
             rows: [
-              [cell("منخفض (Low)", "Low"), cell("لا توجد عوامل خطر مؤثرة – متابعة روتينية في المركز الصحي", "No significant risk factors — routine follow-up at the health center")],
-              [cell("متوسط (Medium)", "Medium"), cell("عوامل خطر محدودة – متابعة مكثفة في المركز الصحي", "Limited risk factors — intensive follow-up at the health center")],
-              [cell("عالٍ (High)", "High"), cell("عوامل خطر متعددة أو حادة – إحالة للمستشفى", "Multiple or severe risk factors — referral to hospital")],
-              [cell("حرج (Critical)", "Critical"), cell("حالة طارئة تستدعي تدخلًا فوريًا – إحالة لـ KFCH أو أقرب مستشفى", "Emergency case requiring immediate intervention — transfer to KFCH or nearest hospital")],
+              [
+                cell("منخفض (Low)", "Low"),
+                cell(
+                  "لا توجد عوامل خطر مؤثرة – متابعة روتينية في المركز الصحي",
+                  "No significant risk factors — routine follow-up at the health center",
+                ),
+              ],
+              [
+                cell("متوسط (Medium)", "Medium"),
+                cell(
+                  "عوامل خطر محدودة – متابعة مكثفة في المركز الصحي",
+                  "Limited risk factors — intensive follow-up at the health center",
+                ),
+              ],
+              [
+                cell("عالٍ (High)", "High"),
+                cell(
+                  "عوامل خطر متعددة أو حادة – إحالة للمستشفى",
+                  "Multiple or severe risk factors — referral to hospital",
+                ),
+              ],
+              [
+                cell("حرج (Critical)", "Critical"),
+                cell(
+                  "حالة طارئة تستدعي تدخلًا فوريًا – إحالة لـ KFCH أو أقرب مستشفى",
+                  "Emergency case requiring immediate intervention — transfer to KFCH or nearest hospital",
+                ),
+              ],
             ],
           },
         ],
@@ -421,9 +660,18 @@ const sections: Section[] = [
               { ar: "عمر الأم فوق 40 أو أقل من 16", en: "Maternal age >40 or <16" },
               { ar: "BMI 35 أو أكثر", en: "BMI ≥ 35" },
               { ar: "حمل IVF أو تدخين", en: "IVF pregnancy or smoking" },
-              { ar: "نتائج فحص الفصل الأول إيجابية", en: "Positive first-trimester screening results" },
-              { ar: "3 إجهاضات أو أكثر، ولادة مبكرة سابقة، وفاة جنينية سابقة", en: "3 or more miscarriages, prior preterm birth, prior fetal death" },
-              { ar: "عملية قيصرية سابقة، سوابق تسمم الحمل، جلطات وريدية سابقة", en: "Prior C-section, history of pre-eclampsia, prior VTE" },
+              {
+                ar: "نتائج فحص الفصل الأول إيجابية",
+                en: "Positive first-trimester screening results",
+              },
+              {
+                ar: "3 إجهاضات أو أكثر، ولادة مبكرة سابقة، وفاة جنينية سابقة",
+                en: "3 or more miscarriages, prior preterm birth, prior fetal death",
+              },
+              {
+                ar: "عملية قيصرية سابقة، سوابق تسمم الحمل، جلطات وريدية سابقة",
+                en: "Prior C-section, history of pre-eclampsia, prior VTE",
+              },
               { ar: "سابقة إصابة بنزيف ما بعد الولادة", en: "Prior postpartum haemorrhage" },
             ],
           },
@@ -438,10 +686,16 @@ const sections: Section[] = [
               { ar: "ارتفاع ضغط الدم الحملي", en: "Gestational hypertension" },
               { ar: "تسمم الحمل / الإرعاش", en: "Pre-eclampsia / eclampsia" },
               { ar: "داء السكري الحملي", en: "Gestational diabetes" },
-              { ar: "انفصال المشيمة، المشيمة المنزاحة", en: "Placental abruption, placenta praevia" },
+              {
+                ar: "انفصال المشيمة، المشيمة المنزاحة",
+                en: "Placental abruption, placenta praevia",
+              },
               { ar: "تأخر النمو داخل الرحم (IUGR)", en: "Intrauterine growth restriction (IUGR)" },
               { ar: "نقص أو زيادة السائل الأمنيوسي", en: "Oligo- or polyhydramnios" },
-              { ar: "تمزق الأغشية المبكر (PPROM)، نزيف ما قبل الولادة", en: "Preterm prelabour rupture of membranes (PPROM), antepartum haemorrhage" },
+              {
+                ar: "تمزق الأغشية المبكر (PPROM)، نزيف ما قبل الولادة",
+                en: "Preterm prelabour rupture of membranes (PPROM), antepartum haemorrhage",
+              },
               { ar: "هيموغلوبين منخفض (Hb < 9)", en: "Low haemoglobin (Hb < 9)" },
             ],
           },
@@ -453,11 +707,23 @@ const sections: Section[] = [
           {
             type: "bullets",
             items: [
-              { ar: "داء السكري النوع الأول أو الثاني، ارتفاع ضغط الدم المزمن", en: "Type 1 or Type 2 diabetes, chronic hypertension" },
-              { ar: "أمراض القلب، الكلى، الغدة الدرقية، الكبد", en: "Heart, kidney, thyroid, or liver disease" },
-              { ar: "الصرع، الأمراض المناعية الذاتية، الربو الشديد", en: "Epilepsy, autoimmune diseases, severe asthma" },
+              {
+                ar: "داء السكري النوع الأول أو الثاني، ارتفاع ضغط الدم المزمن",
+                en: "Type 1 or Type 2 diabetes, chronic hypertension",
+              },
+              {
+                ar: "أمراض القلب، الكلى، الغدة الدرقية، الكبد",
+                en: "Heart, kidney, thyroid, or liver disease",
+              },
+              {
+                ar: "الصرع، الأمراض المناعية الذاتية، الربو الشديد",
+                en: "Epilepsy, autoimmune diseases, severe asthma",
+              },
               { ar: "الاكتئاب والاضطرابات النفسية", en: "Depression and psychiatric disorders" },
-              { ar: "فقر الدم المنجلي أو الثلاسيميا، السرطان", en: "Sickle cell anaemia or thalassaemia, cancer" },
+              {
+                ar: "فقر الدم المنجلي أو الثلاسيميا، السرطان",
+                en: "Sickle cell anaemia or thalassaemia, cancer",
+              },
             ],
           },
         ],
@@ -471,19 +737,76 @@ const sections: Section[] = [
             headerAr: "الحقول السريرية",
             headerEn: "Clinical Fields",
             rows: [
-              [cell("تاريخ الزيارة (*)", "Visit date (*)"), cell("تاريخ الفحص السريري الأول – يُحسَب الالتزام انطلاقًا منه", "Date of first clinical examination — compliance is calculated from this date")],
-              [cell("تاريخ آخر دورة شهرية (LMP)", "Last menstrual period (LMP)"), cell("اختياري – يُستخدم لحساب عمر الحمل", "Optional — used to calculate gestational age")],
-              [cell("عمر الحمل (أسابيع)", "Gestational age (weeks)"), cell("اختياري – بالأسابيع", "Optional — in weeks")],
-              [cell("درجة الخطورة (*)", "Risk level (*)"), cell("اختر من: منخفض / متوسط / عالٍ / حرج", "Select from: Low / Medium / High / Critical")],
+              [
+                cell("تاريخ الزيارة (*)", "Visit date (*)"),
+                cell(
+                  "تاريخ الفحص السريري الأول – يُحسَب الالتزام انطلاقًا منه",
+                  "Date of first clinical examination — compliance is calculated from this date",
+                ),
+              ],
+              [
+                cell("تاريخ آخر دورة شهرية (LMP)", "Last menstrual period (LMP)"),
+                cell(
+                  "اختياري – يُستخدم لحساب عمر الحمل",
+                  "Optional — used to calculate gestational age",
+                ),
+              ],
+              [
+                cell("عمر الحمل (أسابيع)", "Gestational age (weeks)"),
+                cell("اختياري – بالأسابيع", "Optional — in weeks"),
+              ],
+              [
+                cell("درجة الخطورة (*)", "Risk level (*)"),
+                cell(
+                  "اختر من: منخفض / متوسط / عالٍ / حرج",
+                  "Select from: Low / Medium / High / Critical",
+                ),
+              ],
               [cell("اسم الطبيب", "Doctor name"), cell("اختياري", "Optional")],
-              [cell("VTE عالي الخطورة", "High-risk VTE"), cell("مربع اختيار – للحالات ذات خطر التجلط الوريدي", "Checkbox — for cases with venous thromboembolism risk")],
-              [cell("Enoxaparin موصوف", "Enoxaparin prescribed"), cell("مربع اختيار – هل وُصف دواء إنوكساباريين؟", "Checkbox — has Enoxaparin been prescribed?")],
-              [cell("توصية الإحالة (*)", "Referral recommendation (*)"), cell("متابعة في المركز / في المستشفى / تحويل لـ KFCH", "Follow-up at center / at hospital / transfer to KFCH")],
-              [cell("المستشفى المُحوَّل إليه", "Referral hospital"), cell("اختياري عند الإحالة", "Optional — complete when a referral is made")],
-              [cell("تاريخ موعد المستشفى", "Hospital appointment date"), cell("تاريخ الموعد المحجوز في المستشفى", "The booked hospital appointment date")],
-              [cell("الأدوية", "Medications"), cell("اذكر الأدوية الموصوفة إن وُجدت", "List any prescribed medications")],
-              [cell("ملاحظات عامة", "General notes"), cell("أي ملاحظات سريرية إضافية", "Any additional clinical notes")],
-              [cell("ملاحظات المتابعة والتواصل", "Follow-up & contact notes"), cell("سجّل هنا ردود المريضة على التواصل", "Record patient responses to follow-up contact here")],
+              [
+                cell("VTE عالي الخطورة", "High-risk VTE"),
+                cell(
+                  "مربع اختيار – للحالات ذات خطر التجلط الوريدي",
+                  "Checkbox — for cases with venous thromboembolism risk",
+                ),
+              ],
+              [
+                cell("Enoxaparin موصوف", "Enoxaparin prescribed"),
+                cell(
+                  "مربع اختيار – هل وُصف دواء إنوكساباريين؟",
+                  "Checkbox — has Enoxaparin been prescribed?",
+                ),
+              ],
+              [
+                cell("توصية الإحالة (*)", "Referral recommendation (*)"),
+                cell(
+                  "متابعة في المركز / في المستشفى / تحويل لـ KFCH",
+                  "Follow-up at center / at hospital / transfer to KFCH",
+                ),
+              ],
+              [
+                cell("المستشفى المُحوَّل إليه", "Referral hospital"),
+                cell("اختياري عند الإحالة", "Optional — complete when a referral is made"),
+              ],
+              [
+                cell("تاريخ موعد المستشفى", "Hospital appointment date"),
+                cell("تاريخ الموعد المحجوز في المستشفى", "The booked hospital appointment date"),
+              ],
+              [
+                cell("الأدوية", "Medications"),
+                cell("اذكر الأدوية الموصوفة إن وُجدت", "List any prescribed medications"),
+              ],
+              [
+                cell("ملاحظات عامة", "General notes"),
+                cell("أي ملاحظات سريرية إضافية", "Any additional clinical notes"),
+              ],
+              [
+                cell("ملاحظات المتابعة والتواصل", "Follow-up & contact notes"),
+                cell(
+                  "سجّل هنا ردود المريضة على التواصل",
+                  "Record patient responses to follow-up contact here",
+                ),
+              ],
             ],
           },
         ],
@@ -502,9 +825,24 @@ const sections: Section[] = [
             headerAr: "قيم مؤشر الالتزام",
             headerEn: "Compliance Indicator Values",
             rows: [
-              [cell("ملتزم ✅", "Compliant ✅"), cell("تم حجز الموعد في غضون يومَي عمل أو أقل من تاريخ الزيارة", "Appointment booked within 2 working days or fewer from the visit date")],
-              [cell("غير ملتزم ❌", "Non-compliant ❌"), cell("تم حجز الموعد بعد أكثر من يومَي عمل من تاريخ الزيارة", "Appointment booked more than 2 working days after the visit date")],
-              [cell("بانتظار موعد ⏳", "Pending ⏳"), cell("لم يُحجز أي موعد بعد", "No appointment has been booked yet")],
+              [
+                cell("ملتزم ✅", "Compliant ✅"),
+                cell(
+                  "تم حجز الموعد في غضون يومَي عمل أو أقل من تاريخ الزيارة",
+                  "Appointment booked within 2 working days or fewer from the visit date",
+                ),
+              ],
+              [
+                cell("غير ملتزم ❌", "Non-compliant ❌"),
+                cell(
+                  "تم حجز الموعد بعد أكثر من يومَي عمل من تاريخ الزيارة",
+                  "Appointment booked more than 2 working days after the visit date",
+                ),
+              ],
+              [
+                cell("بانتظار موعد ⏳", "Pending ⏳"),
+                cell("لم يُحجز أي موعد بعد", "No appointment has been booked yet"),
+              ],
             ],
           },
         ],
@@ -547,10 +885,31 @@ const sections: Section[] = [
             headerAr: "خيارات التصفية المتاحة",
             headerEn: "Available Filter Options",
             rows: [
-              [cell("تصفية بالتاريخ", "Date filter"), cell("اليوم / هذا الأسبوع / كل المواعيد / نطاق مخصص", "Today / This week / All appointments / Custom range")],
-              [cell("تصفية بالحالة", "Status filter"), cell("كل المواعيد / مجدول ⏳ / حضر ✅ / غائب ❌ / تحتاج متابعة", "All / Scheduled ⏳ / Attended ✅ / Absent ❌ / Needs follow-up")],
-              [cell("تصفية بالقطاع", "Sector filter"), cell("اختر قطاعًا لعرض مواعيد قطاع محدد", "Select a sector to show only appointments from that sector")],
-              [cell("تصفية بمستوى الخطورة", "Risk level filter"), cell("حرج / عالٍ / متوسط / منخفض", "Critical / High / Medium / Low")],
+              [
+                cell("تصفية بالتاريخ", "Date filter"),
+                cell(
+                  "اليوم / هذا الأسبوع / كل المواعيد / نطاق مخصص",
+                  "Today / This week / All appointments / Custom range",
+                ),
+              ],
+              [
+                cell("تصفية بالحالة", "Status filter"),
+                cell(
+                  "كل المواعيد / مجدول ⏳ / حضر ✅ / غائب ❌ / تحتاج متابعة",
+                  "All / Scheduled ⏳ / Attended ✅ / Absent ❌ / Needs follow-up",
+                ),
+              ],
+              [
+                cell("تصفية بالقطاع", "Sector filter"),
+                cell(
+                  "اختر قطاعًا لعرض مواعيد قطاع محدد",
+                  "Select a sector to show only appointments from that sector",
+                ),
+              ],
+              [
+                cell("تصفية بمستوى الخطورة", "Risk level filter"),
+                cell("حرج / عالٍ / متوسط / منخفض", "Critical / High / Medium / Low"),
+              ],
             ],
           },
           {
@@ -573,9 +932,18 @@ const sections: Section[] = [
           {
             type: "bullets",
             items: [
-              { ar: "اضغط أيقونة ✅ لتسجيل الحضور، أو ❌ لتسجيل الغياب", en: "Click ✅ to log attendance, or ❌ to log absence" },
-              { ar: "تظهر نافذة تأكيد تتيح لك إضافة ملاحظة حضور (مثل: «حضرت متأخرة» أو «اعتذرت لظرف طارئ»)", en: "A confirmation dialog appears where you can add an attendance note (e.g., 'Arrived late' or 'Excused for emergency')" },
-              { ar: "اضغط «حفظ» لتثبيت حالة الحضور", en: "Click 'Save' to confirm the attendance status" },
+              {
+                ar: "اضغط أيقونة ✅ لتسجيل الحضور، أو ❌ لتسجيل الغياب",
+                en: "Click ✅ to log attendance, or ❌ to log absence",
+              },
+              {
+                ar: "تظهر نافذة تأكيد تتيح لك إضافة ملاحظة حضور (مثل: «حضرت متأخرة» أو «اعتذرت لظرف طارئ»)",
+                en: "A confirmation dialog appears where you can add an attendance note (e.g., 'Arrived late' or 'Excused for emergency')",
+              },
+              {
+                ar: "اضغط «حفظ» لتثبيت حالة الحضور",
+                en: "Click 'Save' to confirm the attendance status",
+              },
             ],
           },
         ],
@@ -606,8 +974,14 @@ const sections: Section[] = [
           {
             type: "bullets",
             items: [
-              { ar: "زر «تصدير CSV»: يُنزِّل جميع المواعيد المعروضة حاليًا (بعد تطبيق الفلاتر) في ملف CSV يشمل: اسم المريضة، الهوية، القطاع، المستشفى، التاريخ، الحالة، الملاحظة", en: "CSV Export button: downloads all currently shown appointments (after filters) as a CSV file with: patient name, ID, sector, hospital, date, status, note" },
-              { ar: "زر «طباعة»: يفتح نافذة طباعة جاهزة تعرض جدول المواعيد مع ملخص الفلاتر المطبقة وتاريخ الطباعة", en: "Print button: opens a print-ready window showing the appointments table with applied filter summary and print date" },
+              {
+                ar: "زر «تصدير CSV»: يُنزِّل جميع المواعيد المعروضة حاليًا (بعد تطبيق الفلاتر) في ملف CSV يشمل: اسم المريضة، الهوية، القطاع، المستشفى، التاريخ، الحالة، الملاحظة",
+                en: "CSV Export button: downloads all currently shown appointments (after filters) as a CSV file with: patient name, ID, sector, hospital, date, status, note",
+              },
+              {
+                ar: "زر «طباعة»: يفتح نافذة طباعة جاهزة تعرض جدول المواعيد مع ملخص الفلاتر المطبقة وتاريخ الطباعة",
+                en: "Print button: opens a print-ready window showing the appointments table with applied filter summary and print date",
+              },
             ],
           },
           {
@@ -645,10 +1019,34 @@ const sections: Section[] = [
             headerAr: "أنواع التنبيهات",
             headerEn: "Alert Types",
             rows: [
-              [cell("VTE بدون إنوكساباريين", "VTE without Enoxaparin"), cell("حالة مصنفة كـ VTE عالي الخطورة لكن لم يُوصَف لها إنوكساباريين", "Case classified as high-risk VTE without Enoxaparin being prescribed")],
-              [cell("حرج بدون موعد", "Critical without appointment"), cell("حالة بمستوى «حرج» ليس لها أي موعد مستشفى مسجّل", "A 'critical'-level case with no hospital appointment recorded")],
-              [cell("موعد فائت", "Missed appointment"), cell("موعد انقضى تاريخه دون تسجيل حضور أو غياب", "An appointment whose date has passed with no attendance logged")],
-              [cell("متأخر حرج", "Overdue critical"), cell("حالة حرجة بموعد منقضٍ لم يُعالج", "A critical case with an overdue appointment that has not been actioned")],
+              [
+                cell("VTE بدون إنوكساباريين", "VTE without Enoxaparin"),
+                cell(
+                  "حالة مصنفة كـ VTE عالي الخطورة لكن لم يُوصَف لها إنوكساباريين",
+                  "Case classified as high-risk VTE without Enoxaparin being prescribed",
+                ),
+              ],
+              [
+                cell("حرج بدون موعد", "Critical without appointment"),
+                cell(
+                  "حالة بمستوى «حرج» ليس لها أي موعد مستشفى مسجّل",
+                  "A 'critical'-level case with no hospital appointment recorded",
+                ),
+              ],
+              [
+                cell("موعد فائت", "Missed appointment"),
+                cell(
+                  "موعد انقضى تاريخه دون تسجيل حضور أو غياب",
+                  "An appointment whose date has passed with no attendance logged",
+                ),
+              ],
+              [
+                cell("متأخر حرج", "Overdue critical"),
+                cell(
+                  "حالة حرجة بموعد منقضٍ لم يُعالج",
+                  "A critical case with an overdue appointment that has not been actioned",
+                ),
+              ],
             ],
           },
         ],
@@ -660,9 +1058,18 @@ const sections: Section[] = [
           {
             type: "bullets",
             items: [
-              { ar: "اضغط على اسم المريضة في التنبيه للانتقال مباشرةً إلى ملف حالتها", en: "Click the patient name in the alert to navigate directly to her case file" },
-              { ar: "راجع البيانات السريرية وأكمل المعلومات الناقصة (موعد، دواء، ملاحظة)", en: "Review the clinical data and complete any missing information (appointment, medication, note)" },
-              { ar: "بعد تحديث الحالة سيختفي التنبيه تلقائيًا عند تحديث الصفحة", en: "After updating the case, the alert disappears automatically on page refresh" },
+              {
+                ar: "اضغط على اسم المريضة في التنبيه للانتقال مباشرةً إلى ملف حالتها",
+                en: "Click the patient name in the alert to navigate directly to her case file",
+              },
+              {
+                ar: "راجع البيانات السريرية وأكمل المعلومات الناقصة (موعد، دواء، ملاحظة)",
+                en: "Review the clinical data and complete any missing information (appointment, medication, note)",
+              },
+              {
+                ar: "بعد تحديث الحالة سيختفي التنبيه تلقائيًا عند تحديث الصفحة",
+                en: "After updating the case, the alert disappears automatically on page refresh",
+              },
             ],
           },
           {
@@ -724,9 +1131,18 @@ const sections: Section[] = [
             type: "bullets",
             items: [
               { ar: "بيانات المريضة المرتبطة", en: "Associated patient details" },
-              { ar: "تاريخ الزيارة، عمر الحمل، درجة الخطورة", en: "Visit date, gestational age, risk level" },
-              { ar: "مستوى الالتزام، توصية الإحالة", en: "Compliance level, referral recommendation" },
-              { ar: "VTE، Enoxaparin، الأدوية، المستشفى المُحوَّل إليه وتاريخ الموعد", en: "VTE, Enoxaparin, medications, referral hospital and appointment date" },
+              {
+                ar: "تاريخ الزيارة، عمر الحمل، درجة الخطورة",
+                en: "Visit date, gestational age, risk level",
+              },
+              {
+                ar: "مستوى الالتزام، توصية الإحالة",
+                en: "Compliance level, referral recommendation",
+              },
+              {
+                ar: "VTE، Enoxaparin، الأدوية، المستشفى المُحوَّل إليه وتاريخ الموعد",
+                en: "VTE, Enoxaparin, medications, referral hospital and appointment date",
+              },
             ],
           },
         ],
@@ -774,10 +1190,19 @@ const sections: Section[] = [
           {
             type: "bullets",
             items: [
-              { ar: "اضغط «إضافة مستخدم» في أعلى الصفحة", en: "Click 'Add User' at the top of the page" },
+              {
+                ar: "اضغط «إضافة مستخدم» في أعلى الصفحة",
+                en: "Click 'Add User' at the top of the page",
+              },
               { ar: "أدخِل اسم المستخدم وكلمة المرور", en: "Enter the username and password" },
-              { ar: "أدخِل الاسم بالعربية (والإنجليزية اختياريًا)", en: "Enter the name in Arabic (and English, optionally)" },
-              { ar: "حدد الدور: مدير / منسق / طبيب / عارض", en: "Select the role: Admin / Coordinator / Doctor / Viewer" },
+              {
+                ar: "أدخِل الاسم بالعربية (والإنجليزية اختياريًا)",
+                en: "Enter the name in Arabic (and English, optionally)",
+              },
+              {
+                ar: "حدد الدور: مدير / منسق / طبيب / عارض",
+                en: "Select the role: Admin / Coordinator / Doctor / Viewer",
+              },
               { ar: "اضغط «إنشاء الحساب»", en: "Click 'Create Account'" },
             ],
           },
@@ -790,9 +1215,18 @@ const sections: Section[] = [
           {
             type: "bullets",
             items: [
-              { ar: "تغيير الدور: اضغط أيقونة القلم بجانب المستخدم، اختر الدور الجديد، ثم «حفظ»", en: "Change role: click the pencil icon next to the user, select the new role, then 'Save'" },
-              { ar: "إيقاف الحساب مؤقتًا: اضغط أيقونة ✓ الخضراء لتحويلها إلى ✗ (الحساب يصبح موقوفًا)", en: "Deactivate account: click the green ✓ icon to turn it into ✗ (account becomes inactive)" },
-              { ar: "تفعيل الحساب: اضغط أيقونة ✗ الحمراء لإعادة تفعيله", en: "Reactivate account: click the red ✗ icon to reactivate it" },
+              {
+                ar: "تغيير الدور: اضغط أيقونة القلم بجانب المستخدم، اختر الدور الجديد، ثم «حفظ»",
+                en: "Change role: click the pencil icon next to the user, select the new role, then 'Save'",
+              },
+              {
+                ar: "إيقاف الحساب مؤقتًا: اضغط أيقونة ✓ الخضراء لتحويلها إلى ✗ (الحساب يصبح موقوفًا)",
+                en: "Deactivate account: click the green ✓ icon to turn it into ✗ (account becomes inactive)",
+              },
+              {
+                ar: "تفعيل الحساب: اضغط أيقونة ✗ الحمراء لإعادة تفعيله",
+                en: "Reactivate account: click the red ✗ icon to reactivate it",
+              },
             ],
           },
           {
@@ -859,14 +1293,54 @@ const appendixSections: Section[] = [
             colsAr: ["رقم القطاع", "اسم القطاع", "المستشفى المرجعي", "عدد المراكز"],
             colsEn: ["Sector No.", "Sector Name", "Reference Hospital", "Centers"],
             rows: [
-              [cell("1", "1"), cell("المركزي", "Al-Markazi (Central)"), cell("مستشفى جازان العام", "Jazan General Hospital"), cell("23", "23")],
-              [cell("2", "2"), cell("الغربي", "Al-Gharbi (Western)"), cell("مستشفى صبيا العام", "Sabya General Hospital"), cell("30", "30")],
-              [cell("3", "3"), cell("الأوسط", "Al-Awsat (Middle)"), cell("مستشفى أبو عريش العام", "Abu Arish General Hospital"), cell("33", "33")],
-              [cell("4", "4"), cell("الجنوبي", "Al-Janubi (Southern)"), cell("مستشفى صامطة العام", "Samtah General Hospital"), cell("43", "43")],
-              [cell("5", "5"), cell("الشمالي", "Al-Shamali (Northern)"), cell("مستشفى بيش العام", "Baysh General Hospital"), cell("25", "25")],
-              [cell("6", "6"), cell("الجبلي", "Al-Jabali (Mountain)"), cell("مستشفى صبيا العام", "Sabya General Hospital"), cell("13", "13")],
-              [cell("7", "7"), cell("بني مالك", "Bani Malik"), cell("مستشفى أبو عريش العام", "Abu Arish General Hospital"), cell("13", "13")],
-              [cell("8", "8"), cell("فرسان", "Farasan"), cell("مستشفى جازان العام", "Jazan General Hospital"), cell("4", "4")],
+              [
+                cell("1", "1"),
+                cell("المركزي", "Al-Markazi (Central)"),
+                cell("مستشفى جازان العام", "Jazan General Hospital"),
+                cell("23", "23"),
+              ],
+              [
+                cell("2", "2"),
+                cell("الغربي", "Al-Gharbi (Western)"),
+                cell("مستشفى صبيا العام", "Sabya General Hospital"),
+                cell("30", "30"),
+              ],
+              [
+                cell("3", "3"),
+                cell("الأوسط", "Al-Awsat (Middle)"),
+                cell("مستشفى أبو عريش العام", "Abu Arish General Hospital"),
+                cell("33", "33"),
+              ],
+              [
+                cell("4", "4"),
+                cell("الجنوبي", "Al-Janubi (Southern)"),
+                cell("مستشفى صامطة العام", "Samtah General Hospital"),
+                cell("43", "43"),
+              ],
+              [
+                cell("5", "5"),
+                cell("الشمالي", "Al-Shamali (Northern)"),
+                cell("مستشفى بيش العام", "Baysh General Hospital"),
+                cell("25", "25"),
+              ],
+              [
+                cell("6", "6"),
+                cell("الجبلي", "Al-Jabali (Mountain)"),
+                cell("مستشفى صبيا العام", "Sabya General Hospital"),
+                cell("13", "13"),
+              ],
+              [
+                cell("7", "7"),
+                cell("بني مالك", "Bani Malik"),
+                cell("مستشفى أبو عريش العام", "Abu Arish General Hospital"),
+                cell("13", "13"),
+              ],
+              [
+                cell("8", "8"),
+                cell("فرسان", "Farasan"),
+                cell("مستشفى جازان العام", "Jazan General Hospital"),
+                cell("4", "4"),
+              ],
             ],
           },
           {
@@ -874,12 +1348,33 @@ const appendixSections: Section[] = [
             headerAr: "المستشفيات الستة في تجمع جازان الصحي",
             headerEn: "Six Hospitals in Jazan Health Cluster",
             rows: [
-              [cell("مستشفى جازان العام", "Jazan General Hospital"), cell("يخدم قطاعَي المركزي وفرسان", "Serves Al-Markazi and Farasan sectors")],
-              [cell("مستشفى صبيا العام", "Sabya General Hospital"), cell("يخدم قطاعَي الغربي والجبلي", "Serves Al-Gharbi and Al-Jabali sectors")],
-              [cell("مستشفى أبو عريش العام", "Abu Arish General Hospital"), cell("يخدم قطاعَي الأوسط وبني مالك", "Serves Al-Awsat and Bani Malik sectors")],
-              [cell("مستشفى صامطة العام", "Samtah General Hospital"), cell("يخدم القطاع الجنوبي", "Serves Al-Janubi (Southern) sector")],
-              [cell("مستشفى بيش العام", "Baysh General Hospital"), cell("يخدم القطاع الشمالي", "Serves Al-Shamali (Northern) sector")],
-              [cell("مستشفى الملك فهد المركزي (KFCH)", "King Fahd Central Hospital (KFCH)"), cell("مستشفى تخصصي يستقبل تحويلات الحالات الحرجة من جميع القطاعات", "Specialist hospital receiving critical-case transfers from all sectors")],
+              [
+                cell("مستشفى جازان العام", "Jazan General Hospital"),
+                cell("يخدم قطاعَي المركزي وفرسان", "Serves Al-Markazi and Farasan sectors"),
+              ],
+              [
+                cell("مستشفى صبيا العام", "Sabya General Hospital"),
+                cell("يخدم قطاعَي الغربي والجبلي", "Serves Al-Gharbi and Al-Jabali sectors"),
+              ],
+              [
+                cell("مستشفى أبو عريش العام", "Abu Arish General Hospital"),
+                cell("يخدم قطاعَي الأوسط وبني مالك", "Serves Al-Awsat and Bani Malik sectors"),
+              ],
+              [
+                cell("مستشفى صامطة العام", "Samtah General Hospital"),
+                cell("يخدم القطاع الجنوبي", "Serves Al-Janubi (Southern) sector"),
+              ],
+              [
+                cell("مستشفى بيش العام", "Baysh General Hospital"),
+                cell("يخدم القطاع الشمالي", "Serves Al-Shamali (Northern) sector"),
+              ],
+              [
+                cell("مستشفى الملك فهد المركزي (KFCH)", "King Fahd Central Hospital (KFCH)"),
+                cell(
+                  "مستشفى تخصصي يستقبل تحويلات الحالات الحرجة من جميع القطاعات",
+                  "Specialist hospital receiving critical-case transfers from all sectors",
+                ),
+              ],
             ],
           },
         ],
@@ -898,9 +1393,21 @@ const appendixSections: Section[] = [
           {
             type: "table",
             rows: [
-              [cell("أيام العمل", "Working days"), cell("الأحد، الاثنين، الثلاثاء، الأربعاء، الخميس", "Sunday, Monday, Tuesday, Wednesday, Thursday")],
-              [cell("أيام العطلة (مستثناة)", "Weekend (excluded)"), cell("الجمعة والسبت", "Friday and Saturday")],
-              [cell("حد الالتزام", "Compliance threshold"), cell("≤ 2 يوم عمل من تاريخ الزيارة", "≤ 2 working days from the visit date")],
+              [
+                cell("أيام العمل", "Working days"),
+                cell(
+                  "الأحد، الاثنين، الثلاثاء، الأربعاء، الخميس",
+                  "Sunday, Monday, Tuesday, Wednesday, Thursday",
+                ),
+              ],
+              [
+                cell("أيام العطلة (مستثناة)", "Weekend (excluded)"),
+                cell("الجمعة والسبت", "Friday and Saturday"),
+              ],
+              [
+                cell("حد الالتزام", "Compliance threshold"),
+                cell("≤ 2 يوم عمل من تاريخ الزيارة", "≤ 2 working days from the visit date"),
+              ],
             ],
           },
           {
@@ -913,11 +1420,32 @@ const appendixSections: Section[] = [
             headerAr: "أمثلة على حساب الالتزام",
             headerEn: "Compliance Calculation Examples",
             rows: [
-              [cell("زيارة الأحد + موعد الاثنين", "Sunday visit + Monday appointment"), cell("1 يوم عمل → ملتزم ✅", "1 working day → Compliant ✅")],
-              [cell("زيارة الأحد + موعد الثلاثاء", "Sunday visit + Tuesday appointment"), cell("2 يوم عمل → ملتزم ✅", "2 working days → Compliant ✅")],
-              [cell("زيارة الأحد + موعد الأربعاء", "Sunday visit + Wednesday appointment"), cell("3 أيام عمل → غير ملتزم ❌", "3 working days → Non-compliant ❌")],
-              [cell("زيارة الخميس + موعد الأحد التالي", "Thursday visit + following Sunday appointment"), cell("1 يوم عمل (الجمعة والسبت مستثنيان) → ملتزم ✅", "1 working day (Friday & Saturday excluded) → Compliant ✅")],
-              [cell("لا يوجد موعد محجوز", "No appointment booked"), cell("بانتظار موعد ⏳", "Pending ⏳")],
+              [
+                cell("زيارة الأحد + موعد الاثنين", "Sunday visit + Monday appointment"),
+                cell("1 يوم عمل → ملتزم ✅", "1 working day → Compliant ✅"),
+              ],
+              [
+                cell("زيارة الأحد + موعد الثلاثاء", "Sunday visit + Tuesday appointment"),
+                cell("2 يوم عمل → ملتزم ✅", "2 working days → Compliant ✅"),
+              ],
+              [
+                cell("زيارة الأحد + موعد الأربعاء", "Sunday visit + Wednesday appointment"),
+                cell("3 أيام عمل → غير ملتزم ❌", "3 working days → Non-compliant ❌"),
+              ],
+              [
+                cell(
+                  "زيارة الخميس + موعد الأحد التالي",
+                  "Thursday visit + following Sunday appointment",
+                ),
+                cell(
+                  "1 يوم عمل (الجمعة والسبت مستثنيان) → ملتزم ✅",
+                  "1 working day (Friday & Saturday excluded) → Compliant ✅",
+                ),
+              ],
+              [
+                cell("لا يوجد موعد محجوز", "No appointment booked"),
+                cell("بانتظار موعد ⏳", "Pending ⏳"),
+              ],
             ],
           },
         ],
@@ -995,7 +1523,13 @@ const appendixSections: Section[] = [
 const allSections = [...sections, ...appendixSections];
 
 // ─── Block renderers ──────────────────────────────────────────────────────────
-function NoteBox({ block, lang }: { block: Extract<ContentBlock, { type: "note" }>; lang: string }) {
+function NoteBox({
+  block,
+  lang,
+}: {
+  block: Extract<ContentBlock, { type: "note" }>;
+  lang: string;
+}) {
   const icons = { info: "ℹ️", warning: "⚠️", tip: "💡" };
   const styles = {
     info: "bg-blue-50 border-blue-300 text-blue-900",
@@ -1010,19 +1544,27 @@ function NoteBox({ block, lang }: { block: Extract<ContentBlock, { type: "note" 
   );
 }
 
-function InfoTable({ block, lang }: { block: Extract<ContentBlock, { type: "table" }>; lang: string }) {
+function InfoTable({
+  block,
+  lang,
+}: {
+  block: Extract<ContentBlock, { type: "table" }>;
+  lang: string;
+}) {
   const header = lang === "ar" ? block.headerAr : block.headerEn;
   return (
     <div className="overflow-x-auto rounded-md border border-border text-sm">
-      {header && (
-        <div className="bg-emerald-800 text-white font-semibold px-3 py-2">{header}</div>
-      )}
+      {header && <div className="bg-emerald-800 text-white font-semibold px-3 py-2">{header}</div>}
       <table className="w-full">
         <tbody>
           {block.rows.map((row, i) => (
             <tr key={i} className={i % 2 === 0 ? "bg-emerald-50" : "bg-background"}>
-              <td className="border-b border-border px-3 py-2 font-semibold text-foreground w-2/5 align-top">{resolveCell(row[0], lang)}</td>
-              <td className="border-b border-border px-3 py-2 text-muted-foreground">{resolveCell(row[1], lang)}</td>
+              <td className="border-b border-border px-3 py-2 font-semibold text-foreground w-2/5 align-top">
+                {resolveCell(row[0], lang)}
+              </td>
+              <td className="border-b border-border px-3 py-2 text-muted-foreground">
+                {resolveCell(row[1], lang)}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -1031,19 +1573,25 @@ function InfoTable({ block, lang }: { block: Extract<ContentBlock, { type: "tabl
   );
 }
 
-function InfoTable4({ block, lang }: { block: Extract<ContentBlock, { type: "table4" }>; lang: string }) {
+function InfoTable4({
+  block,
+  lang,
+}: {
+  block: Extract<ContentBlock, { type: "table4" }>;
+  lang: string;
+}) {
   const header = lang === "ar" ? block.headerAr : block.headerEn;
   const cols = lang === "ar" ? block.colsAr : block.colsEn;
   return (
     <div className="overflow-x-auto rounded-md border border-border text-sm">
-      {header && (
-        <div className="bg-emerald-800 text-white font-semibold px-3 py-2">{header}</div>
-      )}
+      {header && <div className="bg-emerald-800 text-white font-semibold px-3 py-2">{header}</div>}
       <table className="w-full">
         <thead>
           <tr className="bg-emerald-700 text-white">
             {cols.map((h, i) => (
-              <th key={i} className="px-3 py-2 text-start font-semibold">{h}</th>
+              <th key={i} className="px-3 py-2 text-start font-semibold">
+                {h}
+              </th>
             ))}
           </tr>
         </thead>
@@ -1051,7 +1599,9 @@ function InfoTable4({ block, lang }: { block: Extract<ContentBlock, { type: "tab
           {block.rows.map((row, i) => (
             <tr key={i} className={i % 2 === 0 ? "bg-emerald-50" : "bg-background"}>
               {row.map((c, j) => (
-                <td key={j} className="border-b border-border px-3 py-2 text-muted-foreground">{resolveCell(c, lang)}</td>
+                <td key={j} className="border-b border-border px-3 py-2 text-muted-foreground">
+                  {resolveCell(c, lang)}
+                </td>
               ))}
             </tr>
           ))}
@@ -1128,7 +1678,7 @@ export default function UserGuide() {
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [activeSection, setActiveSection] = useState<string | null>(
-    () => localStorage.getItem(GUIDE_POSITION_KEY) ?? null
+    () => localStorage.getItem(GUIDE_POSITION_KEY) ?? null,
   );
   const [activeSubsection, setActiveSubsection] = useState<string | null>(null);
   // Tracks whether the current generating state was triggered by the button (SSE stream
@@ -1139,7 +1689,11 @@ export default function UserGuide() {
   const jumpMenuRef = useRef<HTMLDivElement>(null);
   const activeItemRef = useRef<HTMLButtonElement>(null);
   const [hasSavedPosition, setHasSavedPosition] = useState(() => {
-    try { return !!localStorage.getItem(GUIDE_POSITION_KEY); } catch { return false; }
+    try {
+      return !!localStorage.getItem(GUIDE_POSITION_KEY);
+    } catch {
+      return false;
+    }
   });
 
   const bcRef = useRef<BroadcastChannel | null>(null);
@@ -1193,7 +1747,6 @@ export default function UserGuide() {
       }
       bcRef.current = null;
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -1311,7 +1864,9 @@ export default function UserGuide() {
       fetch(`${API}/downloads/user-guide/status`)
         .then((res) => res.json())
         .then((data: FileStatus) => setStatus(data))
-        .catch(() => {/* ignore transient errors */});
+        .catch(() => {
+          /* ignore transient errors */
+        });
     }, 3000);
     return () => clearInterval(id);
   }, [status?.generating, generating]);
@@ -1372,8 +1927,7 @@ export default function UserGuide() {
           history.push(clamped);
           const trimmed = history.slice(-GUIDE_DURATION_HISTORY_SIZE);
           localStorage.setItem(GUIDE_DURATION_KEY, JSON.stringify(trimmed));
-        } catch {
-        }
+        } catch {}
       };
 
       const finishSuccess = async () => {
@@ -1662,9 +2216,7 @@ export default function UserGuide() {
 
       {/* Print-only section index — immediately follows the title block on paper */}
       <div className="print-only guide-print-index" aria-hidden="true">
-        <h3>
-          {lang === "ar" ? "فهرس الأقسام" : "Section Index"}
-        </h3>
+        <h3>{lang === "ar" ? "فهرس الأقسام" : "Section Index"}</h3>
         <ol>
           {allSections.map((section, idx) => (
             <React.Fragment key={section.id}>
@@ -1674,7 +2226,9 @@ export default function UserGuide() {
               </li>
               {section.subsections.map((sub, subIdx) => (
                 <li key={subIdx} className="guide-print-index-subsection">
-                  <span className="guide-print-index-subnum">{idx + 1}.{subIdx + 1}</span>{" "}
+                  <span className="guide-print-index-subnum">
+                    {idx + 1}.{subIdx + 1}
+                  </span>{" "}
                   {lang === "ar" ? sub.ar : sub.en}
                 </li>
               ))}
@@ -1698,7 +2252,9 @@ export default function UserGuide() {
             <thead>
               <tr>
                 <th>{lang === "ar" ? "المستوى" : "Level"}</th>
-                <th>{lang === "ar" ? "التعريف والإجراء المطلوب" : "Definition & Required Action"}</th>
+                <th>
+                  {lang === "ar" ? "التعريف والإجراء المطلوب" : "Definition & Required Action"}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -1777,11 +2333,7 @@ export default function UserGuide() {
                 <td className="guide-print-summary-label">
                   ⏳ {lang === "ar" ? "معلق" : "Pending"}
                 </td>
-                <td>
-                  {lang === "ar"
-                    ? "لم يُحجز موعد بعد"
-                    : "No appointment booked yet"}
-                </td>
+                <td>{lang === "ar" ? "لم يُحجز موعد بعد" : "No appointment booked yet"}</td>
               </tr>
             </tbody>
           </table>
@@ -1947,7 +2499,12 @@ export default function UserGuide() {
                         <span>{t("guide.elapsed").replace("{n}", String(elapsedSeconds))}</span>
                       )}
                       {elapsedSeconds !== null && progressPct < 100 && (
-                        <span>{t("guide.remaining").replace("{n}", String(Math.max(0, getExpectedDuration() - elapsedSeconds)))}</span>
+                        <span>
+                          {t("guide.remaining").replace(
+                            "{n}",
+                            String(Math.max(0, getExpectedDuration() - elapsedSeconds)),
+                          )}
+                        </span>
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground">
@@ -2094,19 +2651,19 @@ export default function UserGuide() {
                       const subId = `${section.id}-${idx}`;
                       const isActiveSub = activeSubsection === subId;
                       return (
-                      <button
-                        key={idx}
-                        onClick={() => {
-                          scrollTo(subId);
-                          setShowJumpMenu(false);
-                        }}
-                        className={`block w-full px-4 ps-8 py-1.5 text-start text-xs transition-colors ${isActiveSub ? "bg-emerald-50 text-emerald-700 font-medium" : "text-muted-foreground hover:bg-emerald-50 hover:text-emerald-700"}`}
-                      >
-                        {isActiveSub && (
-                          <span className="inline-block w-1 h-1 rounded-full bg-emerald-400 me-1.5 mb-0.5 align-middle" />
-                        )}
-                        {lang === "ar" ? sub.ar : sub.en}
-                      </button>
+                        <button
+                          key={idx}
+                          onClick={() => {
+                            scrollTo(subId);
+                            setShowJumpMenu(false);
+                          }}
+                          className={`block w-full px-4 ps-8 py-1.5 text-start text-xs transition-colors ${isActiveSub ? "bg-emerald-50 text-emerald-700 font-medium" : "text-muted-foreground hover:bg-emerald-50 hover:text-emerald-700"}`}
+                        >
+                          {isActiveSub && (
+                            <span className="inline-block w-1 h-1 rounded-full bg-emerald-400 me-1.5 mb-0.5 align-middle" />
+                          )}
+                          {lang === "ar" ? sub.ar : sub.en}
+                        </button>
                       );
                     })}
                   </div>
@@ -2127,7 +2684,10 @@ export default function UserGuide() {
               {lang === "ar" ? "الأقسام" : "Sections"}
             </button>
             {/* Mini scroll-progress bar */}
-            <div className="h-1 w-full rounded-full bg-emerald-100 overflow-hidden" aria-hidden="true">
+            <div
+              className="h-1 w-full rounded-full bg-emerald-100 overflow-hidden"
+              aria-hidden="true"
+            >
               <div
                 className="h-full rounded-full bg-emerald-500 transition-[width] duration-150 ease-out"
                 style={{ width: `${scrollProgress}%` }}
@@ -2148,7 +2708,10 @@ export default function UserGuide() {
       )}
 
       {/* Print-only appendix: quick-reference card at the back of the guide */}
-      <div className="print-only guide-print-summary guide-print-summary-appendix" aria-hidden="true">
+      <div
+        className="print-only guide-print-summary guide-print-summary-appendix"
+        aria-hidden="true"
+      >
         <div className="guide-print-summary-appendix-label">
           {lang === "ar" ? "ملحق و: بطاقة المرجع السريع" : "Appendix F: Quick-Reference Card"}
         </div>
@@ -2165,7 +2728,9 @@ export default function UserGuide() {
             <thead>
               <tr>
                 <th>{lang === "ar" ? "المستوى" : "Level"}</th>
-                <th>{lang === "ar" ? "التعريف والإجراء المطلوب" : "Definition & Required Action"}</th>
+                <th>
+                  {lang === "ar" ? "التعريف والإجراء المطلوب" : "Definition & Required Action"}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -2244,11 +2809,7 @@ export default function UserGuide() {
                 <td className="guide-print-summary-label">
                   ⏳ {lang === "ar" ? "معلق" : "Pending"}
                 </td>
-                <td>
-                  {lang === "ar"
-                    ? "لم يُحجز موعد بعد"
-                    : "No appointment booked yet"}
-                </td>
+                <td>{lang === "ar" ? "لم يُحجز موعد بعد" : "No appointment booked yet"}</td>
               </tr>
             </tbody>
           </table>
