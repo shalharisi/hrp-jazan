@@ -1106,11 +1106,42 @@ export default function UserGuide() {
   // is active) vs detected from the server's status response (startup auto-generation).
   const buttonGeneratingRef = useRef(false);
 
+  const GUIDE_SESSION_KEY = "guide-last-section";
+
   useEffect(() => {
     const onScroll = () => setShowBackToTop(window.scrollY > 400);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    const savedId = sessionStorage.getItem(GUIDE_SESSION_KEY);
+    if (!savedId) return;
+    const timer = setTimeout(() => {
+      const el = document.getElementById(savedId);
+      if (el) el.scrollIntoView({ behavior: "instant", block: "start" });
+    }, 120);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const sectionIds = allSections.map((s) => s.id);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            sessionStorage.setItem(GUIDE_SESSION_KEY, entry.target.id);
+          }
+        }
+      },
+      { threshold: 0.1, rootMargin: "-80px 0px -55% 0px" },
+    );
+    for (const id of sectionIds) {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    }
+    return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
