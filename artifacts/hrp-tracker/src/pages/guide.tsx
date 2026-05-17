@@ -12,6 +12,7 @@ const API = `${BASE}/api`;
 
 const GUIDE_DURATION_KEY = "guideExpectedDuration";
 const FALLBACK_DURATION_S = 20;
+const MAX_GUIDE_DURATION_S = 120;
 const GUIDE_BC_CHANNEL = "hrp-guide-generation";
 const GUIDE_LS_SIGNAL_KEY = "hrp-guide-generation-signal";
 
@@ -20,7 +21,7 @@ function getExpectedDuration(): number {
     const stored = localStorage.getItem(GUIDE_DURATION_KEY);
     if (stored) {
       const n = Number(stored);
-      if (Number.isFinite(n) && n > 0) return n;
+      if (Number.isFinite(n) && n > 0) return Math.min(n, MAX_GUIDE_DURATION_S);
     }
   } catch {
     // ignore
@@ -1301,7 +1302,7 @@ export default function UserGuide() {
 
       const saveDuration = (elapsed: number) => {
         try {
-          localStorage.setItem(GUIDE_DURATION_KEY, String(elapsed));
+          localStorage.setItem(GUIDE_DURATION_KEY, String(Math.min(elapsed, MAX_GUIDE_DURATION_S)));
         } catch {
         }
       };
@@ -1310,12 +1311,8 @@ export default function UserGuide() {
         const elapsed = computeElapsed();
         setElapsedSeconds(elapsed);
         setProgressPct(100);
-        try {
-          localStorage.setItem(GUIDE_DURATION_KEY, String(elapsed));
-          setLastDuration(elapsed);
-        } catch {
-          // ignore
-        }
+        saveDuration(elapsed);
+        setLastDuration(elapsed);
         broadcastGenerationDone();
         await new Promise<void>((resolve) => setTimeout(resolve, 600));
         setGenerateResult("success");
