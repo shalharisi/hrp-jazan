@@ -2126,8 +2126,9 @@ async function captureScreenshots(baseUrl: string): Promise<Map<string, Buffer>>
   const generatePdf = !process.argv.includes("--no-pdf");
   const useScreenshots = process.argv.includes("--screenshots");
   const baseUrl = process.argv.find((a) => a.startsWith("--base-url="))?.split("=")[1] ?? "http://localhost:80";
+  let pdfStatus: "produced" | "skipped" | "disabled" = "disabled";
 
-  console.log("📄 جاري إنشاء دليل المستخدم...");
+  console.log("📄 جاري إنشاء دليل المستخدم (Word)...");
 
   let screenshots: Map<string, Buffer> | undefined;
   if (useScreenshots) {
@@ -2153,13 +2154,25 @@ async function captureScreenshots(baseUrl: string): Promise<Map<string, Buffer>>
       const pdfSizeKB = Math.round(pdfBuffer.length / 1024);
       console.log(`✅ تم إنشاء ملف PDF: ${PDF_OUTPUT_PATH}`);
       console.log(`   الحجم: ${pdfSizeKB} كيلوبايت`);
+      pdfStatus = "produced";
     } catch (err) {
       if (err instanceof NoBrowserError) {
         console.warn("⚠️  تخطي إنشاء PDF: لا يوجد متصفح متاح.");
         console.warn(err.message);
+        pdfStatus = "skipped";
       } else {
         throw err;
       }
     }
   }
+
+  const wordFile = path.basename(OUTPUT_PATH);
+  const pdfFile = path.basename(PDF_OUTPUT_PATH);
+  const pdfSummary =
+    pdfStatus === "produced"
+      ? `PDF ✅ (${pdfFile})`
+      : pdfStatus === "skipped"
+        ? `PDF ⚠️ skipped — no browser`
+        : `PDF ⏭️ disabled (--no-pdf)`;
+  console.log(`\nالملخص: Word ✅ (${wordFile})  ${pdfSummary}`);
 })();
