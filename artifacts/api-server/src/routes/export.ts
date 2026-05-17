@@ -46,7 +46,7 @@ router.get(
       "ID", "Name", "National ID", "DOB", "Phone", "Health Center", "Sector", "Registered At",
     ];
 
-    const rows: string[] = [headers.join(",")];
+    const dataRows: string[] = [];
 
     for (const p of patients) {
       const center = centerMap.get(p.healthCenterId);
@@ -54,7 +54,7 @@ router.get(
 
       if (sectorFilter && sector?.id !== sectorFilter) continue;
 
-      rows.push(toCsvRow([
+      dataRows.push(toCsvRow([
         p.id,
         p.nameAr,
         p.nationalId,
@@ -74,7 +74,19 @@ router.get(
       ]));
     }
 
-    const csv = "\uFEFF" + rows.join("\r\n"); // BOM for Excel Arabic
+    const lines: string[] = [];
+    if (sectorFilter) {
+      const sectorName = sectorMap.get(sectorFilter)?.nameAr ?? String(sectorFilter);
+      const exportDate = new Date().toLocaleDateString("ar-SA");
+      lines.push(
+        `إجمالي السجلات: ${dataRows.length} – القطاع: ${sectorName} – بتاريخ ${exportDate}` +
+        ` | Total records: ${dataRows.length} – Sector: ${sectorMap.get(sectorFilter)?.nameEn ?? sectorName} – as of ${new Date().toISOString().split("T")[0]}`
+      );
+    }
+    lines.push(headers.join(","));
+    lines.push(...dataRows);
+
+    const csv = "\uFEFF" + lines.join("\r\n"); // BOM for Excel Arabic
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
     res.setHeader("Content-Disposition", `attachment; filename="patients_${new Date().toISOString().split("T")[0]}.csv"`);
     res.send(csv);
@@ -134,7 +146,7 @@ router.get(
       "Medications", "Follow-up Notes",
     ];
 
-    const rows: string[] = [headers.join(",")];
+    const dataRows: string[] = [];
 
     for (const pg of pregnancies) {
       const patient = patientMap.get(pg.patientId);
@@ -150,7 +162,7 @@ router.get(
       const referralExplainedAr = pg.referralExplained === true ? "نعم" : pg.referralExplained === false ? "لا" : "";
       const referralExplainedEn = pg.referralExplained === true ? "Yes" : pg.referralExplained === false ? "No" : "";
 
-      rows.push(toCsvRow([
+      dataRows.push(toCsvRow([
         pg.id,
         patient.nameAr,
         patient.nationalId,
@@ -196,7 +208,19 @@ router.get(
       ]));
     }
 
-    const csv = "\uFEFF" + rows.join("\r\n");
+    const lines: string[] = [];
+    if (sectorFilter) {
+      const sectorName = sectorMap.get(sectorFilter)?.nameAr ?? String(sectorFilter);
+      const exportDate = new Date().toLocaleDateString("ar-SA");
+      lines.push(
+        `إجمالي السجلات: ${dataRows.length} – القطاع: ${sectorName} – بتاريخ ${exportDate}` +
+        ` | Total records: ${dataRows.length} – Sector: ${sectorMap.get(sectorFilter)?.nameEn ?? sectorName} – as of ${new Date().toISOString().split("T")[0]}`
+      );
+    }
+    lines.push(headers.join(","));
+    lines.push(...dataRows);
+
+    const csv = "\uFEFF" + lines.join("\r\n");
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
     res.setHeader("Content-Disposition", `attachment; filename="pregnancies_${new Date().toISOString().split("T")[0]}.csv"`);
     res.send(csv);
