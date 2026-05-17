@@ -324,6 +324,15 @@ function infoTable(rows: [string, string][], header?: string): Table {
   });
 }
 
+// ── Helper: Timestamp for progress lines ─────────────────────────────────────
+function ts(): string {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2, "0");
+  const m = String(now.getMinutes()).padStart(2, "0");
+  const s = String(now.getSeconds()).padStart(2, "0");
+  return `[${h}:${m}:${s}]`;
+}
+
 // ── Helper: Page break ──────────────────────────────────────────────────────
 function pageBreak(): Paragraph {
   return new Paragraph({
@@ -2407,7 +2416,9 @@ async function captureScreenshots(
     console.log(`💾 سيتم حفظ لقطات الشاشة في: ${outputDir}`);
   }
 
-  console.log("🌐 تشغيل المتصفح وأخذ لقطات الشاشة...");
+  const TOTAL_SCREENSHOTS = 19;
+  let snapCount = 0;
+  console.log(`${ts()} 📸 التقاط لقطات الشاشة (0/${TOTAL_SCREENSHOTS})...`);
   const executablePath = await resolvePuppeteerExecutable();
 
   const browser = await puppeteer.launch({
@@ -2428,6 +2439,7 @@ async function captureScreenshots(
   let demoCleanup: (() => Promise<void>) | null = null;
 
   const snap = async (key: string): Promise<void> => {
+    snapCount += 1;
     try {
       await new Promise<void>((r) => setTimeout(r, 800));
       const buf = await page.screenshot({ type: "png", fullPage: false });
@@ -2440,9 +2452,9 @@ async function captureScreenshots(
         fs.writeFileSync(path.join(outputDir, filename), buffer);
       }
       captureOrder.push({ order, key, filename });
-      console.log(`  ✓ ${key}`);
+      console.log(`  ${ts()} ✓ ${snapCount}/${TOTAL_SCREENSHOTS} ${key}`);
     } catch (e) {
-      console.warn(`  ✗ فشل أخذ اللقطة: ${key}`);
+      console.warn(`  ${ts()} ✗ ${snapCount}/${TOTAL_SCREENSHOTS} فشل أخذ اللقطة: ${key}`);
     }
   };
 
@@ -2753,8 +2765,6 @@ async function captureScreenshots(
     return;
   }
 
-  console.log("📄 جاري إنشاء دليل المستخدم (Word)...");
-
   let screenshots: Map<string, Buffer> | undefined;
   if (useScreenshots) {
     console.log(`🔗 رابط التطبيق: ${baseUrl}`);
@@ -2768,6 +2778,7 @@ async function captureScreenshots(
     }
   }
 
+  console.log(`${ts()} 📝 بناء مستند Word...`);
   const buffer = await buildDocument(screenshots);
   fs.writeFileSync(OUTPUT_PATH, buffer);
   const sizeKB = Math.round(buffer.length / 1024);
@@ -2776,7 +2787,7 @@ async function captureScreenshots(
 
   let pdfSizeKB = 0;
   if (generatePdf) {
-    console.log("📄 جاري إنشاء دليل المستخدم (PDF)...");
+    console.log(`${ts()} 📄 إنشاء دليل المستخدم (PDF)...`);
     try {
       const pdfBuffer = await buildPdf();
       fs.writeFileSync(PDF_OUTPUT_PATH, pdfBuffer);
