@@ -69,7 +69,7 @@ export default function LoginScreen() {
           <View style={styles.logoSection}>
             <View style={styles.logoWrap}>
               <Image
-                source={require("../assets/images/icon.png")}
+                source={require("../assets/images/branding.jpg")}
                 style={styles.logo}
                 contentFit="contain"
               />

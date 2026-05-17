@@ -4,12 +4,12 @@
     "slug": "hrp-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/branding.jpg",
     "scheme": "hrp-mobile",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/icon.png",
+      "image": "./assets/images/branding.jpg",
       "resizeMode": "contain",
       "backgroundColor": "#f5f8f6"
     },
@@ -21,7 +21,7 @@
       "package": "com.replit.hrpmobile"
     },
     "web": {
-      "favicon": "./assets/images/icon.png"
+      "favicon": "./assets/images/branding.jpg"
     },
     "plugins": [
       [

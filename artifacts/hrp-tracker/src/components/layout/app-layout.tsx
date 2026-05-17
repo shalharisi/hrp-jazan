@@ -34,7 +34,7 @@ import {
   FileDown,
   Database,
 } from "lucide-react";
-import logoPath from "../../assets/logo.jpg";
+import logoPath from "../../assets/branding.jpg";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { lang, setLang, t } = useI18n();
