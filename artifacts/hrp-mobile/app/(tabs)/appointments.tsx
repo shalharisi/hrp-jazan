@@ -6,8 +6,8 @@ import {
   useListPregnancies,
   useUpdateAppointment,
 } from "@workspace/api-client-react";
-import { router } from "expo-router";
-import React, { useMemo, useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -68,10 +68,19 @@ export default function AppointmentsScreen() {
   const { t, isRTL } = useI18n();
   const topWebPadding = Platform.OS === "web" ? 67 : 0;
 
-  const [dateFilter, setDateFilter] = useState<DateFilter>("today");
+  const params = useLocalSearchParams<{ filter?: string }>();
+
+  const [dateFilter, setDateFilter] = useState<DateFilter>(initialDateFilter);
   const [attendanceFilter, setAttendanceFilter] =
-    useState<AttendanceFilter>("all");
+    useState<AttendanceFilter>(initialAttendanceFilter);
   const [riskFilter, setRiskFilter] = useState<RiskFilter>("all");
+
+  useEffect(() => {
+    if (params.filter === "needs_action") {
+      setAttendanceFilter("needs_action");
+      setDateFilter("all");
+    }
+  }, [params.filter]);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
 
   const [showNewModal, setShowNewModal] = useState(false);

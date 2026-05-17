@@ -3,9 +3,10 @@ import {
   useGetDashboardByRiskLevel,
   useGetDashboardSummary,
   useListAlerts,
+  useListAppointments,
 } from "@workspace/api-client-react";
 import { router } from "expo-router";
-import React from "react";
+import React, { useMemo } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -35,6 +36,7 @@ export default function DashboardScreen() {
   const summary = useGetDashboardSummary();
   const riskStats = useGetDashboardByRiskLevel();
   const alerts = useListAlerts();
+  const appointments = useListAppointments();
 
   const topWebPadding = Platform.OS === "web" ? 67 : 0;
 
@@ -43,10 +45,19 @@ export default function DashboardScreen() {
     summary.refetch();
     riskStats.refetch();
     alerts.refetch();
+    appointments.refetch();
   };
 
   const s = summary.data;
   const styles = makeStyles(colors, isRTL);
+
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+  const needsActionCount = useMemo(() => {
+    const all = appointments.data ?? [];
+    return all.filter((a) => a.appointmentDate.slice(0, 10) < todayStr && a.attended === null).length;
+  }, [appointments.data, todayStr]);
 
   const kpiCards = s
     ? [
@@ -56,6 +67,7 @@ export default function DashboardScreen() {
           value: s.totalPatients,
           icon: "people" as const,
           color: colors.primary,
+          onPress: undefined as (() => void) | undefined,
         },
         {
           key: "cases",
@@ -63,6 +75,7 @@ export default function DashboardScreen() {
           value: s.totalPregnancies,
           icon: "document-text" as const,
           color: "#3b82f6",
+          onPress: undefined as (() => void) | undefined,
         },
         {
           key: "critical",
@@ -70,6 +83,7 @@ export default function DashboardScreen() {
           value: s.totalCritical,
           icon: "warning" as const,
           color: "#ef4444",
+          onPress: undefined as (() => void) | undefined,
         },
         {
           key: "compliance",
@@ -77,6 +91,7 @@ export default function DashboardScreen() {
           value: `${Math.round(s.bookingComplianceRate)}%`,
           icon: "checkmark-circle" as const,
           color: "#22c55e",
+          onPress: undefined as (() => void) | undefined,
         },
         {
           key: "vteWithout",
@@ -84,6 +99,7 @@ export default function DashboardScreen() {
           value: s.vteWithoutEnoxaparin,
           icon: "medkit" as const,
           color: "#f59e0b",
+          onPress: undefined as (() => void) | undefined,
         },
         {
           key: "criticalNoAppt",
@@ -91,6 +107,15 @@ export default function DashboardScreen() {
           value: s.criticalWithoutAppointment,
           icon: "calendar" as const,
           color: "#f97316",
+          onPress: undefined as (() => void) | undefined,
+        },
+        {
+          key: "needsAction",
+          label: t("appointments.needsAction"),
+          value: needsActionCount,
+          icon: "alert-circle" as const,
+          color: "#c2410c",
+          onPress: () => router.push("/(tabs)/appointments?filter=needs_action"),
         },
       ]
     : [];
@@ -142,9 +167,15 @@ export default function DashboardScreen() {
         <>
           <View style={styles.kpiGrid}>
             {kpiCards.map((card) => (
-              <View
+              <Pressable
                 key={card.key}
-                style={[styles.kpiCard, { borderLeftColor: card.color }]}
+                style={({ pressed }) => [
+                  styles.kpiCard,
+                  { borderLeftColor: card.color },
+                  card.onPress && pressed && styles.kpiCardPressed,
+                ]}
+                onPress={card.onPress}
+                disabled={!card.onPress}
               >
                 <View
                   style={[
@@ -158,7 +189,15 @@ export default function DashboardScreen() {
                 <Text style={[styles.kpiLabel, isRTL && styles.rtlText]}>
                   {card.label}
                 </Text>
-              </View>
+                {card.onPress && (
+                  <Ionicons
+                    name={isRTL ? "chevron-back" : "chevron-forward"}
+                    size={12}
+                    color={card.color}
+                    style={styles.kpiChevron}
+                  />
+                )}
+              </Pressable>
             ))}
           </View>
 
@@ -343,6 +382,8 @@ function makeStyles(colors: ReturnType<typeof useColors>, isRTL: boolean) {
       shadowRadius: 8,
       elevation: 3,
     },
+    kpiCardPressed: { opacity: 0.75 },
+    kpiChevron: { marginTop: 4, alignSelf: isRTL ? "flex-end" : "flex-start" },
     kpiIconWrap: {
       width: 36,
       height: 36,
