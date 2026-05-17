@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useGetPregnancy } from "@workspace/api-client-react";
 import { router, useLocalSearchParams } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -14,6 +14,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useI18n } from "@/context/I18nContext";
 import { useColors } from "@/hooks/useColors";
+import { NewAppointmentModal } from "@/components/NewAppointmentModal";
 
 const RISK_COLORS: Record<string, string> = {
   low: "#22c55e",
@@ -30,7 +31,9 @@ export default function PregnancyDetailScreen() {
   const pregId = Number(id);
   const topWebPadding = Platform.OS === "web" ? 67 : 0;
 
-  const { data, isLoading } = useGetPregnancy(pregId);
+  const [showBookModal, setShowBookModal] = useState(false);
+
+  const { data, isLoading, refetch } = useGetPregnancy(pregId);
 
   const styles = makeStyles(colors, isRTL);
 
@@ -81,6 +84,13 @@ export default function PregnancyDetailScreen() {
         <Text style={[styles.screenTitle, isRTL && styles.rtlText]}>
           {t("pregnancy.title")}
         </Text>
+        <Pressable
+          style={styles.bookBtn}
+          onPress={() => setShowBookModal(true)}
+        >
+          <Ionicons name="calendar" size={16} color="#fff" />
+          <Text style={styles.bookBtnText}>{t("appointments.newAppointment")}</Text>
+        </Pressable>
       </View>
 
       <View style={styles.riskBanner}>
@@ -329,6 +339,17 @@ export default function PregnancyDetailScreen() {
           </View>
         ))
       )}
+      <NewAppointmentModal
+        visible={showBookModal}
+        onClose={() => setShowBookModal(false)}
+        onSuccess={() => refetch()}
+        initialPregnancyId={pregId}
+        initialPregnancyLabel={{
+          nameAr: patient.nameAr,
+          nationalId: patient.nationalId,
+        }}
+        initialHospitalId={pregnancy.referredHospitalId ?? undefined}
+      />
     </ScrollView>
   );
 }
@@ -426,6 +447,20 @@ function makeStyles(colors: ReturnType<typeof useColors>, isRTL: boolean) {
       alignItems: "center",
       gap: 12,
       marginBottom: 16,
+    },
+    bookBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+      backgroundColor: colors.primary,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 10,
+    },
+    bookBtnText: {
+      color: "#fff",
+      fontSize: 12,
+      fontFamily: "Tajawal_700Bold",
     },
     backIconBtn: {
       width: 40,
