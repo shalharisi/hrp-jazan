@@ -1,5 +1,7 @@
 # منظومة تتبع الحمل عالي الخطورة – تجمع جازان الصحي 2026
 
+[![CI](https://github.com/jazan-health/hrp-jazan/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jazan-health/hrp-jazan/actions/workflows/ci.yml)
+
 High-Risk Pregnancy Tracking Platform for Jazan Health Cluster 2026 — a bilingual (Arabic RTL / English) clinical management system replacing the Excel/Microsoft Forms workflow.
 
 ## Run & Operate
