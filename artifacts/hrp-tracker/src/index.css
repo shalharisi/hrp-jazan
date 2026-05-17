@@ -324,6 +324,48 @@
     margin-top: 3pt;
   }
 
+  /* Section cards: each starts on a fresh page */
+  .guide-section-card {
+    break-before: page;
+  }
+
+  /* Print-only section index */
+  .guide-print-index {
+    margin: 12pt 0 8pt;
+    border: 1px solid #ccc;
+    padding: 10pt 14pt;
+    background: #f9f9f9 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .guide-print-index h3 {
+    font-size: 11pt;
+    font-weight: bold;
+    color: #005a2e !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    margin-bottom: 6pt;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 4pt;
+  }
+  .guide-print-index ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .guide-print-index ol li {
+    font-size: 10pt;
+    padding: 2pt 0;
+    color: #111 !important;
+  }
+  .guide-print-index-num {
+    font-weight: bold;
+    color: #005a2e !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    margin-inline-end: 4pt;
+  }
+
   /* Alternating table rows */
   .guide-page .bg-emerald-50 {
     background: #f0faf4 !important;

@@ -1351,6 +1351,21 @@ export default function UserGuide() {
         </p>
       </div>
 
+      {/* Print-only section index — immediately follows the title block on paper */}
+      <div className="print-only guide-print-index" aria-hidden="true">
+        <h3>
+          {lang === "ar" ? "فهرس الأقسام" : "Section Index"}
+        </h3>
+        <ol>
+          {allSections.map((section, idx) => (
+            <li key={section.id}>
+              <span className="guide-print-index-num">{idx + 1}.</span>{" "}
+              {lang === "ar" ? section.ar : section.en}
+            </li>
+          ))}
+        </ol>
+      </div>
+
       <div className="flex items-center justify-between gap-4 flex-wrap no-print">
         <h1 className="text-3xl font-bold">{t("nav.guide")}</h1>
         <Button variant="outline" onClick={handlePrint} className="gap-2 shrink-0">
@@ -1522,7 +1537,7 @@ export default function UserGuide() {
 
       {/* Section cards */}
       {allSections.map((section) => (
-        <Card key={section.id} id={section.id} className="scroll-mt-4">
+        <Card key={section.id} id={section.id} className="scroll-mt-4 guide-section-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg text-emerald-800">
               {lang === "ar" ? section.ar : section.en}
