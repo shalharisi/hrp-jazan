@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useI18n } from "@/lib/i18n-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,7 +31,17 @@ function localDateStr(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-const URGENT_THRESHOLD = 5;
+const URGENT_THRESHOLD_KEY = "hrp_urgent_threshold";
+const DEFAULT_URGENT_THRESHOLD = 5;
+
+function getUrgentThreshold(): number {
+  const stored = localStorage.getItem(URGENT_THRESHOLD_KEY);
+  if (stored !== null) {
+    const parsed = parseInt(stored, 10);
+    if (!isNaN(parsed) && parsed >= 0) return parsed;
+  }
+  return DEFAULT_URGENT_THRESHOLD;
+}
 
 export default function Dashboard() {
   const { t } = useI18n();
@@ -41,6 +51,17 @@ export default function Dashboard() {
   const { data: compStats } = useGetDashboardCompliance();
   const { data: appointments, isLoading: loadingAppointments } = useListAppointments();
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [urgentThreshold, setUrgentThreshold] = useState<number>(getUrgentThreshold);
+
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === URGENT_THRESHOLD_KEY) {
+        setUrgentThreshold(getUrgentThreshold());
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
 
   const todayStr = localDateStr(new Date());
   const statsNeedsAction = useMemo(() => {
@@ -49,7 +70,7 @@ export default function Dashboard() {
   }, [appointments, todayStr]);
 
   const showUrgentBanner =
-    !bannerDismissed && !loadingAppointments && statsNeedsAction > URGENT_THRESHOLD;
+    !bannerDismissed && !loadingAppointments && statsNeedsAction > urgentThreshold;
 
   const urgentBannerText = t("appointments.urgentBanner").replace(
     "{count}",

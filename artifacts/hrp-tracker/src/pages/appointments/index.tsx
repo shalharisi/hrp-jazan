@@ -518,7 +518,18 @@ export default function AppointmentsPage() {
     day: "numeric",
   });
 
-  const urgentThreshold = getUrgentThreshold();
+  const [urgentThreshold, setUrgentThreshold] = useState<number>(getUrgentThreshold);
+
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === URGENT_THRESHOLD_KEY) {
+        setUrgentThreshold(getUrgentThreshold());
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
+
   const showUrgentBanner =
     !isLoading && statsNeedsAction > urgentThreshold && statsNeedsAction > dismissedCount;
 

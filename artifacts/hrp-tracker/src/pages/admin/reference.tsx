@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n-context";
 import { useAuth } from "@/lib/auth-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -837,6 +837,21 @@ function SettingsTab() {
     }
     return String(DEFAULT_URGENT_THRESHOLD);
   });
+
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === URGENT_THRESHOLD_KEY) {
+        if (e.newValue === null) {
+          setInputValue(String(DEFAULT_URGENT_THRESHOLD));
+        } else {
+          const parsed = parseInt(e.newValue, 10);
+          if (!isNaN(parsed) && parsed >= 0) setInputValue(String(parsed));
+        }
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
 
   const lastDuration = (() => {
     const stored = localStorage.getItem(GUIDE_DURATION_KEY);
