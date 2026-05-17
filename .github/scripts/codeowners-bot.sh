@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# codeowners-bot-helpers.sh
+# codeowners-bot.sh
 #
 # Shared shell helpers for the suggest-codeowners-updates workflow.
 # Sourced by both the workflow and the unit-test script so there is a

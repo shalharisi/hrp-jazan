@@ -2,7 +2,7 @@
 # test-delete-bot-comment.sh
 #
 # Unit test for the delete_bot_comment cleanup path defined in
-# .github/scripts/codeowners-bot-helpers.sh (sourced by
+# .github/scripts/codeowners-bot.sh (sourced by
 # .github/workflows/suggest-codeowners-updates.yml).
 #
 # Strategy
@@ -29,7 +29,7 @@ fail() { echo "FAIL: $*"; (( FAIL++ )) || true; }
 
 # ── Resolve script root so this test can be run from any working directory ────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-HELPERS="$SCRIPT_DIR/codeowners-bot-helpers.sh"
+HELPERS="$SCRIPT_DIR/codeowners-bot.sh"
 
 if [[ ! -f "$HELPERS" ]]; then
   echo "ERROR: helpers file not found at $HELPERS" >&2
@@ -103,7 +103,7 @@ REPO="test-org/test-repo"
 PR_NUMBER=7
 
 # ── Load the production helper — same source as the workflow ──────────────────
-# shellcheck source=.github/scripts/codeowners-bot-helpers.sh
+# shellcheck source=.github/scripts/codeowners-bot.sh
 source "$HELPERS"
 
 # ═══════════════════════════════════════════════════════════════════════════════

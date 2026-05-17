@@ -219,8 +219,8 @@ jobs:
           # Load the shared helper (delete_bot_comment).  The script is kept
           # in a separate file so the unit-test suite can source the same
           # definition rather than maintaining a copy.
-          # shellcheck source=.github/scripts/codeowners-bot-helpers.sh
-          source ".github/scripts/codeowners-bot-helpers.sh"
+          # shellcheck source=.github/scripts/codeowners-bot.sh
+          source ".github/scripts/codeowners-bot.sh"
 
           # ── 1. Collect all file-level renames in this PR ─────────────────────
           # Output format: R<score> TAB old-path TAB new-path
