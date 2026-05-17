@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ChevronUp, Loader2, Printer } from "lucide-react";
+import { ChevronUp, List, Loader2, Printer } from "lucide-react";
 import { type TranslationKey } from "@/i18n";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
@@ -1109,6 +1109,8 @@ export default function UserGuide() {
   const buttonGeneratingRef = useRef(false);
 
   const GUIDE_SESSION_KEY = "guide-last-section";
+  const [showJumpMenu, setShowJumpMenu] = useState(false);
+  const jumpMenuRef = useRef<HTMLDivElement>(null);
 
   const bcRef = useRef<BroadcastChannel | null>(null);
 
@@ -1376,6 +1378,17 @@ export default function UserGuide() {
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
+
+  useEffect(() => {
+    if (!showJumpMenu) return;
+    const handleClick = (e: MouseEvent) => {
+      if (jumpMenuRef.current && !jumpMenuRef.current.contains(e.target as Node)) {
+        setShowJumpMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [showJumpMenu]);
 
   // Inject a portrait @page override while the guide is mounted so both the
   // "Print Guide" button and the browser's native Ctrl/Cmd+P produce portrait A4.
@@ -1774,16 +1787,54 @@ export default function UserGuide() {
         </Card>
       ))}
 
-      {/* Back to top */}
+      {/* Floating navigation cluster — Back to top + Section jump */}
       {showBackToTop && (
-        <button
-          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          aria-label={lang === "ar" ? "العودة إلى الأعلى" : "Back to top"}
-          className={`fixed bottom-6 z-50 flex items-center gap-1.5 rounded-full bg-emerald-700 px-4 py-2 text-sm font-medium text-white shadow-lg transition-opacity hover:bg-emerald-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${lang === "ar" ? "left-6" : "right-6"}`}
+        <div
+          ref={jumpMenuRef}
+          className={`fixed bottom-6 z-50 flex flex-col gap-2 no-print ${lang === "ar" ? "left-6 items-start" : "right-6 items-end"}`}
         >
-          <ChevronUp className="h-4 w-4" />
-          {lang === "ar" ? "أعلى الصفحة" : "Back to top"}
-        </button>
+          {/* Section jump dropdown */}
+          {showJumpMenu && (
+            <div
+              className={`mb-1 max-h-80 w-64 overflow-y-auto rounded-xl border border-border bg-white shadow-xl ${lang === "ar" ? "text-right" : "text-left"}`}
+              dir={lang === "ar" ? "rtl" : "ltr"}
+            >
+              {allSections.map((section) => (
+                <button
+                  key={section.id}
+                  onClick={() => {
+                    scrollTo(section.id);
+                    setShowJumpMenu(false);
+                  }}
+                  className="block w-full px-4 py-2.5 text-start text-sm hover:bg-emerald-50 hover:text-emerald-700 border-b border-border/50 last:border-b-0 transition-colors"
+                >
+                  {lang === "ar" ? section.ar : section.en}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Sections picker button */}
+          <button
+            onClick={() => setShowJumpMenu((v) => !v)}
+            aria-label={lang === "ar" ? "الانتقال إلى قسم" : "Jump to section"}
+            aria-expanded={showJumpMenu}
+            className={`flex items-center gap-1.5 rounded-full border px-3 py-2 text-sm font-medium shadow-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${showJumpMenu ? "border-emerald-700 bg-emerald-700 text-white hover:bg-emerald-800" : "border-emerald-700 bg-white text-emerald-700 hover:bg-emerald-50"}`}
+          >
+            <List className="h-4 w-4" />
+            {lang === "ar" ? "الأقسام" : "Sections"}
+          </button>
+
+          {/* Back to top button */}
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            aria-label={lang === "ar" ? "العودة إلى الأعلى" : "Back to top"}
+            className="flex items-center gap-1.5 rounded-full bg-emerald-700 px-4 py-2 text-sm font-medium text-white shadow-lg hover:bg-emerald-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-colors"
+          >
+            <ChevronUp className="h-4 w-4" />
+            {lang === "ar" ? "أعلى الصفحة" : "Back to top"}
+          </button>
+        </div>
       )}
     </div>
   );
