@@ -2433,11 +2433,13 @@ async function captureScreenshots(
       const buf = await page.screenshot({ type: "png", fullPage: false });
       const buffer = Buffer.from(buf);
       screenshots.set(key, buffer);
-      const filename = `${sanitizeScreenshotFilename(key)}.png`;
+      const order = captureOrder.length + 1;
+      const prefix = String(order).padStart(2, "0");
+      const filename = `${prefix}_${sanitizeScreenshotFilename(key)}.png`;
       if (outputDir) {
         fs.writeFileSync(path.join(outputDir, filename), buffer);
       }
-      captureOrder.push({ order: captureOrder.length + 1, key, filename });
+      captureOrder.push({ order, key, filename });
       console.log(`  ✓ ${key}`);
     } catch (e) {
       console.warn(`  ✗ فشل أخذ اللقطة: ${key}`);
