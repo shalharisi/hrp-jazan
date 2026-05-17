@@ -9,12 +9,14 @@
     "import-excel": "tsx ./src/import-excel.ts",
     "fix-health-centers": "tsx ./src/fix-health-centers.ts",
     "delete-test-data": "tsx ./src/delete-test-data.ts",
+    "generate-guide": "tsx ./src/generate-user-guide.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@types/xlsx": "^0.0.36",
     "@workspace/db": "workspace:*",
     "bcryptjs": "^3.0.3",
+    "docx": "^9.6.1",
     "drizzle-orm": "catalog:",
     "xlsx": "^0.18.5"
   },
