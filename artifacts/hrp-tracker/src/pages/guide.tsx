@@ -1211,9 +1211,21 @@ export default function UserGuide() {
   useEffect(() => {
     const savedId = localStorage.getItem(GUIDE_POSITION_KEY);
     if (!savedId) return;
+    // Determine whether the saved ID is a subsection or a section
+    const subsectionIds = new Set(
+      allSections.flatMap((s) => s.subsections.map((_, idx) => `${s.id}-${idx}`)),
+    );
+    const isSubsection = subsectionIds.has(savedId);
     // Pre-seed the active highlight so the dropdown shows the right section
     // immediately on page load/restore before the observer fires.
-    setActiveSection(savedId);
+    if (isSubsection) {
+      // Derive the parent section ID by stripping the trailing "-<idx>" suffix
+      const parentId = savedId.replace(/-\d+$/, "");
+      setActiveSection(parentId);
+      setActiveSubsection(savedId);
+    } else {
+      setActiveSection(savedId);
+    }
     const timer = setTimeout(() => {
       const el = document.getElementById(savedId);
       if (el) el.scrollIntoView({ behavior: "instant", block: "start" });
@@ -1237,8 +1249,6 @@ export default function UserGuide() {
           if (entry.isIntersecting) {
             if (isSection) {
               visibleSections.add(id);
-              localStorage.setItem(GUIDE_POSITION_KEY, id);
-              setHasSavedPosition(true);
             } else {
               visibleSubsections.add(id);
             }
@@ -1256,6 +1266,12 @@ export default function UserGuide() {
         // Pick the topmost visible subsection (first in document order)
         const topSub = subsectionIds.find((id) => visibleSubsections.has(id)) ?? null;
         setActiveSubsection(topSub);
+        // Persist the most specific visible position: subsection preferred over section
+        const positionToSave = topSub ?? top;
+        if (positionToSave) {
+          localStorage.setItem(GUIDE_POSITION_KEY, positionToSave);
+          setHasSavedPosition(true);
+        }
       },
       { threshold: 0.1, rootMargin: "-80px 0px -55% 0px" },
     );
