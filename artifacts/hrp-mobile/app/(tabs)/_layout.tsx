@@ -3,12 +3,13 @@ import { BlurView } from "expo-blur";
 import { Redirect, Tabs } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import React, { useMemo } from "react";
-import { Platform, StyleSheet, View, useColorScheme } from "react-native";
+import { ActivityIndicator, Platform, StyleSheet, View, useColorScheme } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth } from "@/context/AuthContext";
 import { useI18n } from "@/context/I18nContext";
 import { useColors } from "@/hooks/useColors";
+import { useGuideGenerationStatus } from "@/hooks/useGuideGenerationStatus";
 import { useListAppointments } from "@workspace/api-client-react";
 
 function localDateStr(d: Date): string {
@@ -24,8 +25,9 @@ export default function TabLayout() {
   const isDark = colorScheme === "dark";
   const isIOS = Platform.OS === "ios";
   const safeAreaInsets = useSafeAreaInsets();
-  const { t } = useI18n();
+  const { t, isRTL } = useI18n();
   const { isAuthenticated, isLoading } = useAuth();
+  const isGuideGenerating = useGuideGenerationStatus();
 
   const { data: appointments } = useListAppointments();
 
@@ -40,9 +42,26 @@ export default function TabLayout() {
   if (!isAuthenticated) return <Redirect href="/login" />;
 
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
+    <View style={styles.container}>
+      {isGuideGenerating && (
+        <View
+          style={[
+            styles.guideIndicator,
+            isRTL ? styles.guideIndicatorLeft : styles.guideIndicatorRight,
+            { top: safeAreaInsets.top + 10 },
+          ]}
+        >
+          <ActivityIndicator
+            size="small"
+            color="#2563eb"
+            accessibilityLabel={t("guide.generating")}
+            accessibilityRole="progressbar"
+          />
+        </View>
+      )}
+      <Tabs
+        screenOptions={{
+          headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.mutedForeground,
         tabBarLabelStyle: {
@@ -137,5 +156,30 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  guideIndicator: {
+    position: "absolute",
+    zIndex: 100,
+    backgroundColor: "rgba(239, 246, 255, 0.92)",
+    borderRadius: 20,
+    padding: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  guideIndicatorRight: {
+    right: 14,
+  },
+  guideIndicatorLeft: {
+    left: 14,
+  },
+});

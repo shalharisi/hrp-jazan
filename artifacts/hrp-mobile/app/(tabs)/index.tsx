@@ -22,7 +22,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BANNER_KEY_PREFIX, useAuth } from "@/context/AuthContext";
 import { useI18n } from "@/context/I18nContext";
 import { useColors } from "@/hooks/useColors";
-import { GuideGenerationBanner } from "@/components/GuideGenerationBanner";
 
 const RISK_COLORS: Record<string, string> = {
   low: "#22c55e",
@@ -205,8 +204,6 @@ export default function DashboardScreen() {
           <Ionicons name="pulse" size={20} color={colors.primary} />
         </View>
       </View>
-
-      <GuideGenerationBanner />
 
       {showUrgentBanner && (
         <Pressable
