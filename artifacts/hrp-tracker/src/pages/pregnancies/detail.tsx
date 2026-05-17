@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RiskBadge, ComplianceBadge, ReferralBadge } from "@/components/ui/status-badges";
+import { RiskBadge, ComplianceBadge, ReferralBadge } from "@/components/status-badges";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,

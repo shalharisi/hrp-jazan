@@ -29,7 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { RiskBadge, ComplianceBadge } from "@/components/ui/status-badges";
+import { RiskBadge, ComplianceBadge } from "@/components/status-badges";
 import { useToast } from "@/hooks/use-toast";
 
 export default function PatientDetail() {

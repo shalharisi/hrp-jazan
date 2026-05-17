@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/table";
 import { Plus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RiskBadge, ComplianceBadge, ReferralBadge } from "@/components/ui/status-badges";
+import { RiskBadge, ComplianceBadge, ReferralBadge } from "@/components/status-badges";
 
 export default function PregnanciesList() {
   const { t } = useI18n();

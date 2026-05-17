@@ -150,3 +150,26 @@ pnpm install   # triggers the prepare script which calls simple-git-hooks
 3. Update route handlers in `artifacts/api-server/src/routes/`.
 4. Run `pnpm run typecheck` to confirm everything compiles.
 5. Open a pull request — CI will re-verify steps 2 and 4.
+
+## Workflow: adding a new shadcn/ui component
+
+`lib/ui` is the **single source of truth** for all shared UI primitives. Follow these steps whenever you add a new shadcn/ui component:
+
+1. **Add the component implementation to `lib/ui/src/components/`.**  
+   Run the shadcn CLI targeting `lib/ui`, or create the file manually there.
+2. **Export it from the `@workspace/ui` barrel** (`lib/ui/src/index.ts`).
+3. **Add a one-line re-export stub in each artifact that needs it**, e.g.:
+
+   ```ts
+   // artifacts/hrp-tracker/src/components/ui/my-new-component.tsx
+   export * from "@workspace/ui";
+   ```
+
+   Every file in `artifacts/*/src/components/ui/` **must** be exactly this stub.  
+   The CI `check-ui-stubs` job will fail if any file in those directories contains component logic instead of the stub.
+
+4. **Do not copy-paste component code into artifact directories.**  
+   If a component is only used in one artifact and is truly app-specific (e.g. it depends on the app's own i18n context or domain types), place it in `artifacts/<name>/src/components/` — **not** inside `components/ui/`.
+
+5. Run `pnpm run typecheck` to confirm everything compiles.
+6. Open a pull request — CI will verify the stub constraint automatically.

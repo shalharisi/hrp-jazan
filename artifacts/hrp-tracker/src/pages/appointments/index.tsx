@@ -48,7 +48,7 @@ import {
   Printer,
   X,
 } from "lucide-react";
-import { RiskBadge } from "@/components/ui/status-badges";
+import { RiskBadge } from "@/components/status-badges";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { getListAppointmentsQueryKey } from "@workspace/api-client-react";

@@ -32,11 +32,13 @@ High-Risk Pregnancy Tracking Platform for Jazan Health Cluster 2026 — a biling
 - `lib/db/src/schema/` — Drizzle ORM table definitions (sectors, hospitals, health-centers, patients, pregnancies, appointments)
 - `lib/api-client-react/src/generated/` — generated React Query hooks (do not edit manually)
 - `lib/api-zod/src/generated/` — generated Zod schemas for server validation
+- `lib/ui/src/components/` — canonical shadcn/ui component implementations; this is the single source of truth for all shared UI primitives
 - `artifacts/api-server/src/routes/` — Express route handlers
 - `artifacts/api-server/src/lib/compliance.ts` — working-days booking compliance logic
 - `artifacts/hrp-tracker/src/` — React frontend
 - `artifacts/hrp-tracker/src/lib/i18n-context.tsx` — bilingual translation context (ar/en)
 - `artifacts/hrp-tracker/src/components/layout/app-layout.tsx` — sidebar layout with language toggle
+- `artifacts/hrp-tracker/src/components/ui/` — re-export stubs only (`export * from "@workspace/ui"`) — do not add component logic here
 - `artifacts/hrp-tracker/src/assets/logo.jpg` — Jazan Health Cluster logo
 
 ## Architecture decisions
@@ -96,6 +98,7 @@ pnpm install   # triggers the `prepare` script which calls simple-git-hooks
 - DB schema changes require `pnpm --filter @workspace/db run push`
 - The `@assets` Vite alias points to workspace-root `attached_assets/` — for images, copy to `artifacts/hrp-tracker/src/assets/` instead to avoid Vite fs.strict issues
 - API routes must handle path prefix `/api/` — artifact.toml routes to port 8080 at path `/api`
+- **shadcn/ui components belong in `lib/ui`** — never add component logic to `artifacts/*/src/components/ui/`; those files must stay as one-line re-export stubs (`export * from "@workspace/ui"`). The CI `check-ui-stubs` job enforces this.
 
 ## Pointers
 
