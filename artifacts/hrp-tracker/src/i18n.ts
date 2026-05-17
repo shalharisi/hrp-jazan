@@ -197,6 +197,8 @@ export const translations = {
     "appointments.urgentBannerAction": "عرض المواعيد بحاجة إجراء",
     "appointments.urgentBannerExport": "تصدير القائمة",
     "appointments.urgentBannerDismiss": "إغلاق",
+    "appointments.filterRisk": "مستوى الخطورة",
+    "appointments.printFilterRisk": "مستوى الخطورة",
 
     // Settings tab (reference page)
     "reference.settings": "الإعدادات",
@@ -404,6 +406,8 @@ export const translations = {
     "appointments.urgentBannerAction": "View appointments needing action",
     "appointments.urgentBannerExport": "Export list",
     "appointments.urgentBannerDismiss": "Dismiss",
+    "appointments.filterRisk": "Risk Level",
+    "appointments.printFilterRisk": "Risk Level",
 
     // Settings tab (reference page)
     "reference.settings": "Settings",

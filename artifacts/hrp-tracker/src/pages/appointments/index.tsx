@@ -45,6 +45,7 @@ import { getListAppointmentsQueryKey } from "@workspace/api-client-react";
 
 type DateFilter = "today" | "week" | "all" | "custom";
 type StatusFilter = "all" | "scheduled" | "attended" | "absent" | "needs_action";
+type RiskFilter = "all" | "critical" | "high" | "medium" | "low";
 
 function localDateStr(d: Date): string {
   const y = d.getFullYear();
@@ -251,6 +252,7 @@ export default function AppointmentsPage() {
   const [customEnd, setCustomEnd] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialStatus);
   const [sectorFilter, setSectorFilter] = useState<string>("all");
+  const [riskFilter, setRiskFilter] = useState<RiskFilter>("all");
   const [dialogState, setDialogState] = useState<AttendanceDialogState>(null);
   const [attendanceNote, setAttendanceNote] = useState("");
 
@@ -322,8 +324,12 @@ export default function AppointmentsPage() {
       list = list.filter((a) => String(a.sectorId) === sectorFilter);
     }
 
+    if (riskFilter !== "all") {
+      list = list.filter((a) => a.riskLevel === riskFilter);
+    }
+
     return list;
-  }, [appointments, dateFilter, customStart, customEnd, statusFilter, sectorFilter]);
+  }, [appointments, dateFilter, customStart, customEnd, statusFilter, sectorFilter, riskFilter]);
 
   const handleMarkAttendance = (appt: Appointment, marking: "attended" | "absent") => {
     setDialogState({ appointment: appt, marking });
@@ -391,6 +397,14 @@ export default function AppointmentsPage() {
     return t("appointments.printAll");
   })();
 
+  const riskFilterLabel = (() => {
+    if (riskFilter === "critical") return t("risk.critical");
+    if (riskFilter === "high") return t("risk.high");
+    if (riskFilter === "medium") return t("risk.medium");
+    if (riskFilter === "low") return t("risk.low");
+    return t("appointments.printAll");
+  })();
+
   const printDate = new Date().toLocaleDateString(lang === "ar" ? "ar-SA" : "en-GB", {
     year: "numeric",
     month: "long",
@@ -414,6 +428,7 @@ export default function AppointmentsPage() {
           <span>{t("appointments.printFilterDate")}: <strong>{dateFilterLabel}</strong></span>
           <span>{t("appointments.printFilterStatus")}: <strong>{statusFilterLabel}</strong></span>
           <span>{t("appointments.printFilterSector")}: <strong>{sectorFilterLabel}</strong></span>
+          <span>{t("appointments.printFilterRisk")}: <strong>{riskFilterLabel}</strong></span>
           <span>{t("appointments.printDate")}: <strong>{printDate}</strong></span>
           <span>{t("appointments.totalCount")}: <strong>{filtered.length}</strong></span>
         </div>
@@ -643,6 +658,48 @@ export default function AppointmentsPage() {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="w-full flex flex-col gap-1">
+            <Label className="text-xs text-muted-foreground">{t("appointments.filterRisk")}</Label>
+            <div className="flex flex-wrap gap-2">
+              {(["all", "critical", "high", "medium", "low"] as RiskFilter[]).map((level) => {
+                const label =
+                  level === "all"
+                    ? t("appointments.printAll")
+                    : level === "critical"
+                    ? t("risk.critical")
+                    : level === "high"
+                    ? t("risk.high")
+                    : level === "medium"
+                    ? t("risk.medium")
+                    : t("risk.low");
+                const colorMap: Record<Exclude<RiskFilter, "all">, string> = {
+                  critical: "border-red-500 bg-red-50 text-red-800 hover:bg-red-100",
+                  high: "border-orange-500 bg-orange-50 text-orange-800 hover:bg-orange-100",
+                  medium: "border-yellow-500 bg-yellow-50 text-yellow-800 hover:bg-yellow-100",
+                  low: "border-green-500 bg-green-50 text-green-800 hover:bg-green-100",
+                };
+                const activeColor =
+                  level === "all"
+                    ? "border-slate-700 bg-slate-700 text-white hover:bg-slate-800"
+                    : colorMap[level];
+                const inactiveBase = "border-slate-200 bg-white text-slate-600 hover:bg-slate-50";
+                const isActive = riskFilter === level;
+                return (
+                  <button
+                    key={level}
+                    type="button"
+                    onClick={() => setRiskFilter(level)}
+                    className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 ${
+                      isActive ? activeColor : inactiveBase
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <div className="flex-1" />
