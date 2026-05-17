@@ -1591,10 +1591,18 @@ export default function UserGuide() {
         </h3>
         <ol>
           {allSections.map((section, idx) => (
-            <li key={section.id}>
-              <span className="guide-print-index-num">{idx + 1}.</span>{" "}
-              {lang === "ar" ? section.ar : section.en}
-            </li>
+            <React.Fragment key={section.id}>
+              <li className="guide-print-index-section">
+                <span className="guide-print-index-num">{idx + 1}.</span>{" "}
+                {lang === "ar" ? section.ar : section.en}
+              </li>
+              {section.subsections.map((sub, subIdx) => (
+                <li key={subIdx} className="guide-print-index-subsection">
+                  <span className="guide-print-index-subnum">{idx + 1}.{subIdx + 1}</span>{" "}
+                  {lang === "ar" ? sub.ar : sub.en}
+                </li>
+              ))}
+            </React.Fragment>
           ))}
         </ol>
       </div>

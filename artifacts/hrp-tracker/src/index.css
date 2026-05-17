@@ -358,9 +358,26 @@
     padding: 2pt 0;
     color: #111 !important;
   }
+  .guide-print-index-section {
+    font-weight: 600;
+  }
+  .guide-print-index-subsection {
+    font-size: 9pt !important;
+    color: #555 !important;
+    padding-inline-start: 18pt;
+    padding-top: 1pt !important;
+    padding-bottom: 1pt !important;
+  }
   .guide-print-index-num {
     font-weight: bold;
     color: #005a2e !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    margin-inline-end: 4pt;
+  }
+  .guide-print-index-subnum {
+    font-weight: normal;
+    color: #666 !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
     margin-inline-end: 4pt;
