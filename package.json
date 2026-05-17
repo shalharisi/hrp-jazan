@@ -7,7 +7,7 @@
     "prepare": "simple-git-hooks",
     "build": "pnpm run check:codegen && pnpm run typecheck && pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",
-    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
+    "typecheck": "pnpm run check:codegen && pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
     "check:codegen": "pnpm --filter @workspace/scripts run check:codegen"
   },
   "simple-git-hooks": {
