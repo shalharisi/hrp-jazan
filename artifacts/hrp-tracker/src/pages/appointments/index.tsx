@@ -155,7 +155,15 @@ function exportAppointmentsToCsv(
   statusFilter: StatusFilter,
   sectorName: string | null,
   customStart?: string,
-  customEnd?: string
+  customEnd?: string,
+  filterLabels?: {
+    dateFieldLabel: string;
+    dateValue: string;
+    statusFieldLabel: string;
+    statusValue: string;
+    sectorFieldLabel: string;
+    sectorValue: string;
+  }
 ) {
   const cols = [
     headers.patient,
@@ -175,15 +183,22 @@ function exportAppointmentsToCsv(
     return s;
   };
 
-  const hasFilter = statusFilter !== "all" || dateFilter !== "all";
   const lines: string[] = [];
 
-  if (hasFilter) {
+  {
     const exportDate = localDateStr(new Date());
-    const summaryLine =
+    const base =
       lang === "ar"
         ? `إجمالي السجلات: ${rows.length} – بتاريخ ${exportDate}`
         : `Total records: ${rows.length} as of ${exportDate}`;
+    const filterParts = filterLabels
+      ? [
+          `${filterLabels.dateFieldLabel}: ${filterLabels.dateValue}`,
+          `${filterLabels.statusFieldLabel}: ${filterLabels.statusValue}`,
+          `${filterLabels.sectorFieldLabel}: ${filterLabels.sectorValue}`,
+        ]
+      : [];
+    const summaryLine = filterParts.length > 0 ? `${base} | ${filterParts.join(" | ")}` : base;
     lines.push(escape(summaryLine));
   }
 
@@ -479,7 +494,17 @@ export default function AppointmentsPage() {
                   },
                   "all",
                   "needs_action",
-                  null
+                  null,
+                  undefined,
+                  undefined,
+                  {
+                    dateFieldLabel: t("appointments.printFilterDate"),
+                    dateValue: t("appointments.dateAll"),
+                    statusFieldLabel: t("appointments.printFilterStatus"),
+                    statusValue: t("appointments.statusNeedsAction"),
+                    sectorFieldLabel: t("appointments.printFilterSector"),
+                    sectorValue: t("appointments.printAll"),
+                  }
                 );
               }}
             >
@@ -730,7 +755,15 @@ export default function AppointmentsPage() {
                 statusFilter,
                 activeSectorName,
                 customStart || undefined,
-                customEnd || undefined
+                customEnd || undefined,
+                {
+                  dateFieldLabel: t("appointments.printFilterDate"),
+                  dateValue: dateFilterLabel,
+                  statusFieldLabel: t("appointments.printFilterStatus"),
+                  statusValue: statusFilterLabel,
+                  sectorFieldLabel: t("appointments.printFilterSector"),
+                  sectorValue: sectorFilterLabel,
+                }
               );
             }}
           >
