@@ -46,9 +46,13 @@ router.get("/downloads/user-guide.pdf", (req, res): void => {
 
 // GET /api/downloads/user-guide/status — check which files are available
 router.get("/downloads/user-guide/status", (req, res): void => {
+  const docxExists = fs.existsSync(DOCX_PATH);
+  const pdfExists = fs.existsSync(PDF_PATH);
   res.json({
-    docx: fs.existsSync(DOCX_PATH),
-    pdf: fs.existsSync(PDF_PATH),
+    docx: docxExists,
+    pdf: pdfExists,
+    docxMtime: docxExists ? fs.statSync(DOCX_PATH).mtime.toISOString() : null,
+    pdfMtime: pdfExists ? fs.statSync(PDF_PATH).mtime.toISOString() : null,
   });
 });
 

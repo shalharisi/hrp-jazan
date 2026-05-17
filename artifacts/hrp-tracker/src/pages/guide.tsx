@@ -120,7 +120,12 @@ const sections: Section[] = [
   },
 ];
 
-type FileStatus = { docx: boolean; pdf: boolean } | null;
+type FileStatus = {
+  docx: boolean;
+  pdf: boolean;
+  docxMtime: string | null;
+  pdfMtime: string | null;
+} | null;
 
 export default function UserGuide() {
   const { t, lang } = useI18n();
@@ -135,7 +140,7 @@ export default function UserGuide() {
     fetch(`${API}/downloads/user-guide/status`)
       .then((res) => res.json())
       .then((data: FileStatus) => setStatus(data))
-      .catch(() => setStatus({ docx: false, pdf: false }))
+      .catch(() => setStatus({ docx: false, pdf: false, docxMtime: null, pdfMtime: null }))
       .finally(() => setChecking(false));
   };
 
@@ -164,6 +169,27 @@ export default function UserGuide() {
 
   const anyAvailable = status && (status.pdf || status.docx);
 
+  const formatMtime = (isoString: string | null | undefined): string => {
+    if (!isoString) return "";
+    const date = new Date(isoString);
+    return date.toLocaleString(lang === "ar" ? "ar-SA" : "en-GB", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const displayMtime = (() => {
+    if (!status) return "";
+    const candidates = [status.pdfMtime, status.docxMtime]
+      .filter((m): m is string => m !== null)
+      .map((m) => new Date(m).getTime());
+    if (candidates.length === 0) return "";
+    return formatMtime(new Date(Math.max(...candidates)).toISOString());
+  })();
+
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -185,20 +211,27 @@ export default function UserGuide() {
             {checking ? (
               <p className="text-sm text-muted-foreground">{t("guide.checking")}</p>
             ) : anyAvailable ? (
-              <div className={`flex gap-3 flex-wrap ${lang === "ar" ? "flex-row-reverse justify-end" : ""}`}>
-                {status?.pdf && (
-                  <Button asChild variant="default">
-                    <a href={`${API}/downloads/user-guide.pdf`} download>
-                      {t("guide.downloadPdf")}
-                    </a>
-                  </Button>
-                )}
-                {status?.docx && (
-                  <Button asChild variant="outline">
-                    <a href={`${API}/downloads/user-guide.docx`} download>
-                      {t("guide.downloadWord")}
-                    </a>
-                  </Button>
+              <div className="space-y-3">
+                <div className={`flex gap-3 flex-wrap ${lang === "ar" ? "flex-row-reverse justify-end" : ""}`}>
+                  {status?.pdf && (
+                    <Button asChild variant="default">
+                      <a href={`${API}/downloads/user-guide.pdf`} download>
+                        {t("guide.downloadPdf")}
+                      </a>
+                    </Button>
+                  )}
+                  {status?.docx && (
+                    <Button asChild variant="outline">
+                      <a href={`${API}/downloads/user-guide.docx`} download>
+                        {t("guide.downloadWord")}
+                      </a>
+                    </Button>
+                  )}
+                </div>
+                {displayMtime && (
+                  <p className="text-xs text-muted-foreground">
+                    {t("guide.lastGenerated")} {displayMtime}
+                  </p>
                 )}
               </div>
             ) : isAdmin ? (

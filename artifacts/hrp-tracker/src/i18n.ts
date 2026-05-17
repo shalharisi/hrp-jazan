@@ -224,6 +224,7 @@ export const translations = {
     "guide.generateError": "تعذَّر إنشاء الدليل. راجع سجل الخادم للاطلاع على التفاصيل.",
     "guide.checking": "جارٍ التحقق...",
     "guide.generatingHint": "قد تستغرق العملية من 10 إلى 30 ثانية. يرجى الانتظار...",
+    "guide.lastGenerated": "آخر إنشاء:",
   },
   en: {
     // Navigation
@@ -450,6 +451,7 @@ export const translations = {
     "guide.generateError": "Failed to generate the guide. Please check the server log for details.",
     "guide.checking": "Checking availability...",
     "guide.generatingHint": "This may take 10–30 seconds. Please wait...",
+    "guide.lastGenerated": "Last generated:",
   }
 } as const;
 
