@@ -10,6 +10,7 @@
     "fix-health-centers": "tsx ./src/fix-health-centers.ts",
     "delete-test-data": "tsx ./src/delete-test-data.ts",
     "generate-guide": "tsx ./src/generate-user-guide.ts",
+    "check:codegen": "tsx ./src/check-codegen.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
