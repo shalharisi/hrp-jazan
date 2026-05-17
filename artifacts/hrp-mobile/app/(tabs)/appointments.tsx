@@ -4,7 +4,7 @@ import {
   useUpdateAppointment,
 } from "@workspace/api-client-react";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -20,7 +20,7 @@ import { useI18n } from "@/context/I18nContext";
 import { useColors } from "@/hooks/useColors";
 
 type DateFilter = "today" | "week" | "all";
-type AttendanceFilter = "all" | "pending" | "attended" | "missed";
+type AttendanceFilter = "all" | "pending" | "attended" | "missed" | "needs_action";
 
 function localDateStr(d: Date): string {
   const y = d.getFullYear();
@@ -62,20 +62,29 @@ export default function AppointmentsScreen() {
   const updateAppt = useUpdateAppointment();
 
   const all = data ?? [];
-
   const today = isoToday();
   const week = isoWeekRange();
 
-  const filtered = all.filter((a: (typeof all)[0]) => {
-    const apptDate = a.appointmentDate.slice(0, 10);
-    if (dateFilter === "today" && apptDate !== today) return false;
-    if (dateFilter === "week" && (apptDate < week.start || apptDate > week.end))
-      return false;
-    if (attendanceFilter === "pending" && a.attended !== null) return false;
-    if (attendanceFilter === "attended" && a.attended !== true) return false;
-    if (attendanceFilter === "missed" && a.attended !== false) return false;
-    return true;
-  });
+  const needsActionCount = useMemo(
+    () => all.filter((a) => a.appointmentDate.slice(0, 10) < today && a.attended === null).length,
+    [all, today]
+  );
+
+  const filtered = useMemo(() => {
+    return all.filter((a: (typeof all)[0]) => {
+      const apptDate = a.appointmentDate.slice(0, 10);
+      if (dateFilter === "today" && apptDate !== today) return false;
+      if (dateFilter === "week" && (apptDate < week.start || apptDate > week.end))
+        return false;
+      if (attendanceFilter === "needs_action") {
+        return apptDate < today && a.attended === null;
+      }
+      if (attendanceFilter === "pending" && a.attended !== null) return false;
+      if (attendanceFilter === "attended" && a.attended !== true) return false;
+      if (attendanceFilter === "missed" && a.attended !== false) return false;
+      return true;
+    });
+  }, [all, dateFilter, attendanceFilter, today, week.start, week.end]);
 
   const styles = makeStyles(colors, isRTL);
 
@@ -87,6 +96,7 @@ export default function AppointmentsScreen() {
 
   const attendanceFilterTabs: { key: AttendanceFilter; label: string }[] = [
     { key: "all", label: t("cases.all") },
+    { key: "needs_action", label: t("appointments.needsAction") },
     { key: "pending", label: t("appt.pending") },
     { key: "attended", label: t("appt.attended") },
     { key: "missed", label: t("appt.missed") },
@@ -162,6 +172,34 @@ export default function AppointmentsScreen() {
         )}
       </View>
 
+      {/* Needs Action Banner */}
+      {!isLoading && needsActionCount > 0 && (
+        <Pressable
+          style={[styles.needsActionBanner, isRTL && styles.rowReverse]}
+          onPress={() => {
+            setAttendanceFilter("needs_action");
+            setDateFilter("all");
+          }}
+        >
+          <View style={[styles.needsActionLeft, isRTL && styles.rowReverse]}>
+            <Ionicons name="alert-circle" size={20} color="#c2410c" />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.needsActionCount, isRTL && styles.rtlText]}>
+                {needsActionCount} {t("appointments.needsAction")}
+              </Text>
+              <Text style={[styles.needsActionSub, isRTL && styles.rtlText]}>
+                {t("appointments.needsActionBanner")}
+              </Text>
+            </View>
+          </View>
+          <Ionicons
+            name={isRTL ? "chevron-back" : "chevron-forward"}
+            size={16}
+            color="#c2410c"
+          />
+        </Pressable>
+      )}
+
       <View style={[styles.filterRow, isRTL && styles.rowReverse]}>
         {dateFilterTabs.map((tab) => (
           <Pressable
@@ -191,13 +229,25 @@ export default function AppointmentsScreen() {
             style={[
               styles.filterTabSmall,
               attendanceFilter === tab.key && styles.filterTabSmallActive,
+              tab.key === "needs_action" && styles.filterTabNeedsAction,
+              tab.key === "needs_action" && attendanceFilter === "needs_action" && styles.filterTabNeedsActionActive,
             ]}
-            onPress={() => setAttendanceFilter(tab.key)}
+            onPress={() => {
+              setAttendanceFilter(tab.key);
+              if (tab.key === "needs_action") setDateFilter("all");
+            }}
           >
+            {tab.key === "needs_action" && needsActionCount > 0 && (
+              <View style={styles.filterBadge}>
+                <Text style={styles.filterBadgeText}>{needsActionCount}</Text>
+              </View>
+            )}
             <Text
               style={[
                 styles.filterTabSmallText,
                 attendanceFilter === tab.key && styles.filterTabSmallTextActive,
+                tab.key === "needs_action" && styles.filterTabNeedsActionText,
+                tab.key === "needs_action" && attendanceFilter === "needs_action" && styles.filterTabNeedsActionTextActive,
               ]}
             >
               {tab.label}
@@ -231,11 +281,13 @@ export default function AppointmentsScreen() {
             const riskBadge = getRiskBadge(item.riskLevel);
             const isUpdating = updatingId === item.id;
             const apptDate = item.appointmentDate.slice(0, 10);
+            const isNeedsAction = apptDate < today && item.attended === null;
 
             return (
               <Pressable
                 style={({ pressed }) => [
                   styles.card,
+                  isNeedsAction && styles.cardNeedsAction,
                   pressed && styles.pressed,
                 ]}
                 onPress={() =>
@@ -243,14 +295,23 @@ export default function AppointmentsScreen() {
                 }
                 testID={`appt-${item.id}`}
               >
+                {isNeedsAction && (
+                  <View style={[styles.needsActionCardBadge, isRTL ? styles.needsActionCardBadgeRTL : null]}>
+                    <Ionicons name="alert-circle" size={12} color="#c2410c" />
+                    <Text style={styles.needsActionCardBadgeText}>
+                      {t("appointments.needsAction")}
+                    </Text>
+                  </View>
+                )}
+
                 <View style={[styles.cardTop, isRTL && styles.rowReverse]}>
                   <View style={styles.dateBlock}>
                     <Ionicons
                       name="calendar-outline"
                       size={16}
-                      color={colors.primary}
+                      color={isNeedsAction ? "#c2410c" : colors.primary}
                     />
-                    <Text style={[styles.dateText, isRTL && styles.rtlText]}>
+                    <Text style={[styles.dateText, isRTL && styles.rtlText, isNeedsAction && styles.dateTextNeedsAction]}>
                       {apptDate}
                     </Text>
                   </View>
@@ -409,6 +470,38 @@ function makeStyles(colors: ReturnType<typeof useColors>, isRTL: boolean) {
       fontFamily: "Tajawal_500Medium",
       color: colors.mutedForeground,
     },
+
+    needsActionBanner: {
+      flexDirection: isRTL ? "row-reverse" : "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      backgroundColor: "#fff7ed",
+      borderWidth: 1,
+      borderColor: "#fed7aa",
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      marginBottom: 14,
+      gap: 8,
+    },
+    needsActionLeft: {
+      flexDirection: isRTL ? "row-reverse" : "row",
+      alignItems: "center",
+      gap: 10,
+      flex: 1,
+    },
+    needsActionCount: {
+      fontSize: 14,
+      fontFamily: "Tajawal_700Bold",
+      color: "#c2410c",
+    },
+    needsActionSub: {
+      fontSize: 12,
+      fontFamily: "Tajawal_400Regular",
+      color: "#9a3412",
+      marginTop: 1,
+    },
+
     filterRow: {
       flexDirection: isRTL ? "row-reverse" : "row",
       gap: 8,
@@ -442,10 +535,19 @@ function makeStyles(colors: ReturnType<typeof useColors>, isRTL: boolean) {
       backgroundColor: colors.card,
       borderWidth: 1,
       borderColor: colors.border,
+      position: "relative",
     },
     filterTabSmallActive: {
       backgroundColor: colors.primary + "22",
       borderColor: colors.primary,
+    },
+    filterTabNeedsAction: {
+      borderColor: "#fed7aa",
+      backgroundColor: "#fff7ed",
+    },
+    filterTabNeedsActionActive: {
+      borderColor: "#f97316",
+      backgroundColor: "#ffedd5",
     },
     filterTabSmallText: {
       fontSize: 12,
@@ -454,6 +556,30 @@ function makeStyles(colors: ReturnType<typeof useColors>, isRTL: boolean) {
     },
     filterTabSmallTextActive: {
       color: colors.primary,
+      fontFamily: "Tajawal_700Bold",
+    },
+    filterTabNeedsActionText: {
+      color: "#c2410c",
+    },
+    filterTabNeedsActionTextActive: {
+      color: "#c2410c",
+      fontFamily: "Tajawal_700Bold",
+    },
+    filterBadge: {
+      position: "absolute",
+      top: -6,
+      right: -6,
+      backgroundColor: "#ef4444",
+      borderRadius: 8,
+      minWidth: 16,
+      height: 16,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 3,
+    },
+    filterBadgeText: {
+      color: "#fff",
+      fontSize: 9,
       fontFamily: "Tajawal_700Bold",
     },
 
@@ -490,7 +616,28 @@ function makeStyles(colors: ReturnType<typeof useColors>, isRTL: boolean) {
       borderColor: colors.border,
       gap: 8,
     },
+    cardNeedsAction: {
+      backgroundColor: "#fff7ed",
+      borderColor: "#fdba74",
+      borderStartWidth: 4,
+      borderStartColor: "#f97316",
+    },
     pressed: { opacity: 0.75 },
+
+    needsActionCardBadge: {
+      flexDirection: isRTL ? "row-reverse" : "row",
+      alignItems: "center",
+      gap: 4,
+      alignSelf: isRTL ? "flex-end" : "flex-start",
+    },
+    needsActionCardBadgeRTL: {
+      alignSelf: "flex-end",
+    },
+    needsActionCardBadgeText: {
+      fontSize: 11,
+      fontFamily: "Tajawal_700Bold",
+      color: "#c2410c",
+    },
 
     cardTop: {
       flexDirection: isRTL ? "row-reverse" : "row",
@@ -511,6 +658,9 @@ function makeStyles(colors: ReturnType<typeof useColors>, isRTL: boolean) {
       flexDirection: isRTL ? "row-reverse" : "row",
       gap: 6,
       alignItems: "center",
+    },
+    dateTextNeedsAction: {
+      color: "#c2410c",
     },
     statusBadge: {
       borderRadius: 8,

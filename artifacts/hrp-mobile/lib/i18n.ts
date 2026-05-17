@@ -103,6 +103,9 @@ export const translations = {
     "appointments.filterAll": "الكل",
     "appointments.empty": "لا توجد مواعيد",
     "appointments.totalCount": "موعد",
+    "appointments.needsAction": "تحتاج إجراء",
+    "appointments.needsActionBanner": "مواعيد فائتة بدون تسجيل حضور",
+    "appointments.needsActionHint": "اضغط على البطاقة المحددة لتسجيل الحضور أو الغياب",
 
     "risk.low": "منخفض",
     "risk.medium": "متوسط",
@@ -229,6 +232,9 @@ export const translations = {
     "appointments.filterAll": "All",
     "appointments.empty": "No appointments found",
     "appointments.totalCount": "appt(s)",
+    "appointments.needsAction": "Needs Action",
+    "appointments.needsActionBanner": "past appointments with no attendance recorded",
+    "appointments.needsActionHint": "Tap a highlighted card to record attendance or absence",
 
     "risk.low": "Low",
     "risk.medium": "Medium",
