@@ -492,3 +492,142 @@ jobs:
       - name: Skip — CODEOWNERS not modified in this PR
         if: steps.changed.outputs.modified == 'false'
         run: echo "CODEOWNERS was not modified in this PR — validation skipped."
+
+  check-stale-paths:
+    name: Fail if stale CODEOWNERS paths remain after a directory rename
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # needed to diff against the PR base branch
+
+      - name: Detect renamed directories and fail on stale CODEOWNERS entries
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          CODEOWNERS=".github/CODEOWNERS"
+
+          # ── 1. Collect all file-level renames in this PR ─────────────────────
+          # Output format: R<score> TAB old-path TAB new-path
+          mapfile -t rename_lines < <(
+            git diff --diff-filter=R --name-status "$BASE_SHA" "$HEAD_SHA" 2>/dev/null || true
+          )
+
+          if [[ ${#rename_lines[@]} -eq 0 ]]; then
+            echo "No renamed files in this PR — CODEOWNERS stale-path check skipped."
+            exit 0
+          fi
+
+          echo "Renamed files detected in this PR:"
+          for line in "${rename_lines[@]}"; do
+            echo "  $line"
+          done
+          echo ""
+
+          # ── 2. Infer directory renames from the file renames ─────────────────
+          # A directory rename shows up as many files sharing the same old-prefix
+          # → new-prefix transformation.  We record unique top-level dir pairs.
+
+          declare -A dir_renames   # old_dir/ -> new_dir/
+
+          for line in "${rename_lines[@]}"; do
+            old_path=$(echo "$line" | awk '{print $2}')
+            new_path=$(echo "$line" | awk '{print $3}')
+
+            old_dir=$(dirname "$old_path")
+            new_dir=$(dirname "$new_path")
+
+            [[ "$old_dir" == "." ]] && continue
+            [[ "$new_dir" == "." ]] && continue
+            [[ "$old_dir" == "$new_dir" ]] && continue
+
+            a="$old_dir"
+            b="$new_dir"
+            while [[ "$a" != "." && "$b" != "." ]]; do
+              a_parent=$(dirname "$a")
+              b_parent=$(dirname "$b")
+              if [[ "$a_parent" == "$b_parent" ]]; then
+                dir_renames["${a}/"]="${b}/"
+                break
+              fi
+              a="$a_parent"
+              b="$b_parent"
+            done
+          done
+
+          if [[ ${#dir_renames[@]} -eq 0 ]]; then
+            echo "No directory renames inferred from file renames — nothing to check in CODEOWNERS."
+            exit 0
+          fi
+
+          echo "Inferred directory renames:"
+          for old in "${!dir_renames[@]}"; do
+            echo "  $old  →  ${dir_renames[$old]}"
+          done
+          echo ""
+
+          # ── 3. Scan CODEOWNERS for rules that still reference the old paths ──
+          # A pattern is only stale when BOTH conditions hold:
+          #   a) it matches an inferred old-directory prefix, AND
+          #   b) it matches zero tracked files on the PR HEAD
+          #      (i.e. the path no longer exists in the repo after the rename).
+          # Condition (b) prevents false positives when only some files were moved
+          # out of a directory (partial move) — the old path still has files and
+          # the CODEOWNERS rule is still active and valid.
+          stale=0
+          declare -a stale_entries
+
+          while IFS= read -r rule_line; do
+            [[ "$rule_line" =~ ^[[:space:]]*# ]] && continue
+            [[ -z "${rule_line//[[:space:]]/}" ]] && continue
+
+            read -r -a fields <<< "$rule_line"
+            pattern="${fields[0]}"
+            # Skip the universal wildcard — it always matches every file
+            [[ "$pattern" == "*" ]] && continue
+            pattern_stripped="${pattern#/}"
+
+            for old_dir in "${!dir_renames[@]}"; do
+              new_dir="${dir_renames[$old_dir]}"
+              if [[ "$pattern_stripped" == "${old_dir}"* ]] || \
+                 [[ "$pattern_stripped" == "${old_dir%/}" ]]; then
+
+                # Only flag as stale if the old path has no tracked files on HEAD.
+                # If files are still present the directory was not fully renamed
+                # (partial move) and the rule is still legitimate.
+                if git ls-files -- "$pattern_stripped" | grep -q .; then
+                  echo "✓  $pattern  (path still has tracked files on HEAD — not stale)"
+                  continue
+                fi
+
+                updated="${pattern/$old_dir/$new_dir}"
+                updated="${updated/${old_dir%/}/${new_dir%/}}"
+                stale_entries+=("  stale:    $pattern")
+                stale_entries+=("  expected: $updated")
+                stale_entries+=("")
+                stale=1
+                echo "✗  $pattern  (path matches no tracked files on HEAD — stale)"
+              fi
+            done
+          done < "$CODEOWNERS"
+          echo ""
+
+          if [[ $stale -ne 0 ]]; then
+            echo "ERROR: This PR renames tracked directories but .github/CODEOWNERS still"
+            echo "       references the old paths.  GitHub silently ignores rules whose"
+            echo "       path no longer exists, so review will be skipped until fixed."
+            echo ""
+            echo "Stale entries found:"
+            for entry in "${stale_entries[@]}"; do
+              echo "$entry"
+            done
+            echo "Update .github/CODEOWNERS in this PR to replace the stale patterns above"
+            echo "before merging, or remove the entries if the rule is no longer needed."
+            exit 1
+          fi
+
+          echo "No stale CODEOWNERS paths detected — all renamed directories have been"
+          echo "accounted for in .github/CODEOWNERS (or are not tracked there)."

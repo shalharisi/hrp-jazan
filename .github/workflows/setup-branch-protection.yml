@@ -29,7 +29,8 @@ jobs:
               "Check API codegen is up to date",
               "TypeScript typecheck",
               "Lint (ESLint + Prettier)",
-              "Verify CODEOWNERS entries"
+              "Verify CODEOWNERS entries",
+              "Fail if stale CODEOWNERS paths remain after a directory rename"
             ];
 
             // Fetch current branch protection (may not exist yet)
