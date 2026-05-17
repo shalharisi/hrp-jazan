@@ -65,25 +65,39 @@ export default function AppointmentsScreen() {
   const today = isoToday();
   const week = isoWeekRange();
 
+  const RISK_ORDER: Record<string, number> = {
+    critical: 0,
+    high: 1,
+    medium: 2,
+    low: 3,
+  };
+
   const needsActionCount = useMemo(
     () => all.filter((a) => a.appointmentDate.slice(0, 10) < today && a.attended === null).length,
     [all, today]
   );
 
   const filtered = useMemo(() => {
-    return all.filter((a: (typeof all)[0]) => {
-      const apptDate = a.appointmentDate.slice(0, 10);
-      if (dateFilter === "today" && apptDate !== today) return false;
-      if (dateFilter === "week" && (apptDate < week.start || apptDate > week.end))
-        return false;
-      if (attendanceFilter === "needs_action") {
-        return apptDate < today && a.attended === null;
-      }
-      if (attendanceFilter === "pending" && a.attended !== null) return false;
-      if (attendanceFilter === "attended" && a.attended !== true) return false;
-      if (attendanceFilter === "missed" && a.attended !== false) return false;
-      return true;
-    });
+    return all
+      .filter((a: (typeof all)[0]) => {
+        const apptDate = a.appointmentDate.slice(0, 10);
+        if (dateFilter === "today" && apptDate !== today) return false;
+        if (dateFilter === "week" && (apptDate < week.start || apptDate > week.end))
+          return false;
+        if (attendanceFilter === "needs_action") {
+          return apptDate < today && a.attended === null;
+        }
+        if (attendanceFilter === "pending" && a.attended !== null) return false;
+        if (attendanceFilter === "attended" && a.attended !== true) return false;
+        if (attendanceFilter === "missed" && a.attended !== false) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        const riskA = RISK_ORDER[a.riskLevel ?? ""] ?? 4;
+        const riskB = RISK_ORDER[b.riskLevel ?? ""] ?? 4;
+        if (riskA !== riskB) return riskA - riskB;
+        return a.appointmentDate.localeCompare(b.appointmentDate);
+      });
   }, [all, dateFilter, attendanceFilter, today, week.start, week.end]);
 
   const styles = makeStyles(colors, isRTL);
