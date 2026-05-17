@@ -48,8 +48,9 @@ function loadScreenshots(): { screenshots: Map<string, Buffer>; captureOrder: Ca
   return { screenshots, captureOrder };
 }
 
-async function rebuild(): Promise<void> {
-  console.log(`\n${ts()} 🔄 تغيير مكتشف في لقطات الشاشة — إعادة بناء المستند...`);
+async function rebuild(changed: string[]): Promise<void> {
+  const changedList = changed.length > 0 ? ` — Changed: ${changed.join(", ")}` : "";
+  console.log(`\n${ts()} 🔄 تغيير مكتشف في لقطات الشاشة${changedList} — إعادة بناء المستند...`);
   try {
     const { screenshots, captureOrder } = loadScreenshots();
     const buffer = await buildDocument(
@@ -65,14 +66,18 @@ async function rebuild(): Promise<void> {
 }
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+const pendingChanges = new Set<string>();
 
-function scheduleRebuild(): void {
+function scheduleRebuild(filename: string): void {
+  pendingChanges.add(filename);
   if (debounceTimer !== null) {
     clearTimeout(debounceTimer);
   }
   debounceTimer = setTimeout(() => {
     debounceTimer = null;
-    rebuild().catch(console.error);
+    const changed = [...pendingChanges].sort();
+    pendingChanges.clear();
+    rebuild(changed).catch(console.error);
   }, DEBOUNCE_MS);
 }
 
@@ -87,7 +92,7 @@ function startWatcher(): void {
 
   fs.watch(SCREENSHOTS_DIR, { persistent: true }, (eventType, filename) => {
     if (filename && filename.endsWith(".png")) {
-      scheduleRebuild();
+      scheduleRebuild(filename);
     }
   });
 }
