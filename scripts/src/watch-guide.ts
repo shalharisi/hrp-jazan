@@ -8,6 +8,7 @@ import type { CaptureEntry } from "./generate-user-guide.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SCREENSHOTS_DIR = path.resolve(__dirname, "../screenshots");
 const INDEX_JSON = path.join(SCREENSHOTS_DIR, "index.json");
+const GUIDE_SOURCE = path.resolve(__dirname, "./generate-user-guide.ts");
 const DEBOUNCE_MS = 500;
 
 const OPEN_FLAG = process.argv.includes("--open");
@@ -94,7 +95,7 @@ function buildDiffSummary(changes: Map<string, ChangeKind>): string {
 
 async function rebuild(changes: Map<string, ChangeKind>): Promise<void> {
   const diffInfo = buildDiffSummary(changes);
-  console.log(`\n${ts()} 🔄 تغيير مكتشف في لقطات الشاشة${diffInfo} — إعادة بناء المستند...`);
+  console.log(`\n${ts()} 🔄 تغيير مكتشف${diffInfo} — إعادة بناء المستند...`);
   try {
     const { screenshots, captureOrder } = loadScreenshots();
     const buffer = await buildDocument(
@@ -150,8 +151,10 @@ function startWatcher(): void {
     console.log(`📁 تم إنشاء مجلد لقطات الشاشة: ${SCREENSHOTS_DIR}`);
   }
 
-  console.log(`👁  مراقبة التغييرات في: ${SCREENSHOTS_DIR}`);
-  console.log(`    (أي تغيير في ملفات PNG سيُعيد بناء المستند بعد ${DEBOUNCE_MS}ms)`);
+  console.log(`👁  المسارات التي تتم مراقبتها:`);
+  console.log(`    • ${SCREENSHOTS_DIR}  (ملفات PNG)`);
+  console.log(`    • ${GUIDE_SOURCE}`);
+  console.log(`    (أي تغيير سيُعيد بناء المستند بعد ${DEBOUNCE_MS}ms)`);
   if (OPEN_FLAG) {
     console.log(`    (--open مُفعَّل: سيُفتح الملف تلقائياً بعد كل إعادة بناء ناجحة)`);
   }
@@ -161,6 +164,10 @@ function startWatcher(): void {
     if (filename && filename.endsWith(".png")) {
       scheduleRebuild(filename, eventType);
     }
+  });
+
+  fs.watch(GUIDE_SOURCE, { persistent: true }, (eventType, filename) => {
+    scheduleRebuild(filename ?? path.basename(GUIDE_SOURCE), eventType ?? "change");
   });
 }
 
