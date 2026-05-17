@@ -1126,6 +1126,7 @@ export default function UserGuide() {
   const [currentStep, setCurrentStep] = useState<string | null>(null);
   const [lastDuration, setLastDuration] = useState<number | null>(() => getLastStoredDuration());
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
   const [activeSection, setActiveSection] = useState<string | null>(null);
   // Tracks whether the current generating state was triggered by the button (SSE stream
   // is active) vs detected from the server's status response (startup auto-generation).
@@ -1192,7 +1193,12 @@ export default function UserGuide() {
   }, []);
 
   useEffect(() => {
-    const onScroll = () => setShowBackToTop(window.scrollY > 400);
+    const onScroll = () => {
+      const scrollY = window.scrollY;
+      setShowBackToTop(scrollY > 400);
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      setScrollProgress(docHeight > 0 ? Math.min(100, (scrollY / docHeight) * 100) : 0);
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -2026,16 +2032,25 @@ export default function UserGuide() {
             </div>
           )}
 
-          {/* Sections picker button */}
-          <button
-            onClick={() => setShowJumpMenu((v) => !v)}
-            aria-label={lang === "ar" ? "الانتقال إلى قسم" : "Jump to section"}
-            aria-expanded={showJumpMenu}
-            className={`flex items-center gap-1.5 rounded-full border px-3 py-2 text-sm font-medium shadow-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${showJumpMenu ? "border-emerald-700 bg-emerald-700 text-white hover:bg-emerald-800" : "border-emerald-700 bg-white text-emerald-700 hover:bg-emerald-50"}`}
-          >
-            <List className="h-4 w-4" />
-            {lang === "ar" ? "الأقسام" : "Sections"}
-          </button>
+          {/* Sections picker button + scroll progress bar */}
+          <div className="flex flex-col gap-1">
+            <button
+              onClick={() => setShowJumpMenu((v) => !v)}
+              aria-label={lang === "ar" ? "الانتقال إلى قسم" : "Jump to section"}
+              aria-expanded={showJumpMenu}
+              className={`flex items-center gap-1.5 rounded-full border px-3 py-2 text-sm font-medium shadow-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${showJumpMenu ? "border-emerald-700 bg-emerald-700 text-white hover:bg-emerald-800" : "border-emerald-700 bg-white text-emerald-700 hover:bg-emerald-50"}`}
+            >
+              <List className="h-4 w-4" />
+              {lang === "ar" ? "الأقسام" : "Sections"}
+            </button>
+            {/* Mini scroll-progress bar */}
+            <div className="h-1 w-full rounded-full bg-emerald-100 overflow-hidden" aria-hidden="true">
+              <div
+                className="h-full rounded-full bg-emerald-500 transition-[width] duration-150 ease-out"
+                style={{ width: `${scrollProgress}%` }}
+              />
+            </div>
+          </div>
 
           {/* Back to top button */}
           <button
