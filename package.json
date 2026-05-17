@@ -7,7 +7,7 @@
     "prepare": "simple-git-hooks",
     "build": "pnpm run check:codegen && pnpm run typecheck && pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",
-    "typecheck": "pnpm run check:codegen && pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
+    "typecheck": "pnpm run check:codegen && pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --filter \"./lib/**\" --if-present run typecheck",
     "check:codegen": "pnpm --filter @workspace/scripts run check:codegen",
     "lint": "eslint artifacts/ lib/ scripts/ && prettier --check \"artifacts/**/*.{ts,tsx}\" \"lib/**/*.{ts,tsx}\" \"scripts/**/*.{ts,tsx}\" --ignore-path .gitignore"
   },
