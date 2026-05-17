@@ -33,6 +33,26 @@ Critical areas of the codebase are protected by a [CODEOWNERS](.github/CODEOWNER
 
 To update ownership rules, edit `.github/CODEOWNERS` and open a PR — the `.github/` rule means admins must approve that change too.
 
+### Provisioning GitHub Teams (one-time, repository admin)
+
+CODEOWNERS rules are enforced via five teams under the `@jazan-health` organisation. These teams must exist in GitHub before review requests are sent.
+
+1. Create a Personal Access Token (PAT) with **`admin:org`** scope in your GitHub account settings.
+2. Store it as a repository secret named **`ORG_ADMIN_PAT`**.
+3. Go to **Actions → Create GitHub Teams** and click **Run workflow**.
+
+The workflow creates all five teams (if they do not already exist) and adds `@Shalharisi` as the initial maintainer of each:
+
+| Team slug | Responsibility |
+|---|---|
+| `maintainers` | Project leads — fallback reviewers for all paths |
+| `backend-leads` | API, database, and server-side engineers |
+| `frontend-leads` | Web and mobile UI engineers |
+| `clinical-leads` | Clinical informatics / patient-safety reviewers |
+| `admins` | Organisation and repository administrators |
+
+After the teams are created, add the appropriate members via **Settings → Teams** on GitHub, then run the **Setup Branch Protection** workflow (see below) so CODEOWNERS rules take effect.
+
 ### Configuring Branch Protection (repository admin)
 
 Branch protection rules must be set in GitHub repository settings. Run the automated setup workflow to apply them, or configure them manually.

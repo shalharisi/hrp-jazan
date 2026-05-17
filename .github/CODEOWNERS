@@ -10,49 +10,49 @@
 # Place broader patterns first and more specific patterns last so that specific
 # rules win.
 #
-# To add GitHub team co-owners (e.g. @jazan-health/backend-leads), append them
-# after the individual username on the relevant lines once those teams exist in
-# your GitHub organisation.
+# Teams referenced here must exist in the @jazan-health GitHub organisation.
+# Run the create-teams workflow once to provision them:
+#   Actions → Create GitHub Teams → Run workflow
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Fallback — everything not matched by a more specific rule below
 # ──────────────────────────────────────────────────────────────────────────────
-*                                       @Shalharisi
+*                                       @jazan-health/maintainers
 
 # ──────────────────────────────────────────────────────────────────────────────
 # API contract (OpenAPI spec + generated client/schemas)
 # Changing the spec affects every consumer; backend lead approval required.
 # ──────────────────────────────────────────────────────────────────────────────
-lib/api-spec/                           @Shalharisi
-lib/api-zod/                            @Shalharisi
-lib/api-client-react/                   @Shalharisi
+lib/api-spec/                           @jazan-health/backend-leads
+lib/api-zod/                            @jazan-health/backend-leads
+lib/api-client-react/                   @jazan-health/backend-leads
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Database schema
 # Schema changes are irreversible in production; backend lead approval required.
 # ──────────────────────────────────────────────────────────────────────────────
-lib/db/                                 @Shalharisi
+lib/db/                                 @jazan-health/backend-leads
 
 # ──────────────────────────────────────────────────────────────────────────────
 # API server (broad rule — backend leads own all server code)
 # ──────────────────────────────────────────────────────────────────────────────
-artifacts/api-server/                   @Shalharisi
+artifacts/api-server/                   @jazan-health/backend-leads
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Frontend (web tracker)
 # ──────────────────────────────────────────────────────────────────────────────
-artifacts/hrp-tracker/                  @Shalharisi
+artifacts/hrp-tracker/                  @jazan-health/frontend-leads
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Mobile app
 # ──────────────────────────────────────────────────────────────────────────────
-artifacts/hrp-mobile/                   @Shalharisi
+artifacts/hrp-mobile/                   @jazan-health/frontend-leads
 
 # ──────────────────────────────────────────────────────────────────────────────
 # CI / GitHub configuration
 # Workflow and branch-protection changes must be reviewed by repository admins.
 # ──────────────────────────────────────────────────────────────────────────────
-.github/                                @Shalharisi
+.github/                                @jazan-health/admins
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Clinical / compliance logic  (MUST come after the broad api-server rule above)
@@ -61,5 +61,5 @@ artifacts/hrp-mobile/                   @Shalharisi
 # both owners on the same line because GitHub applies only the LAST matching
 # rule; multiple owners on one line are all required.
 # ──────────────────────────────────────────────────────────────────────────────
-artifacts/api-server/src/lib/compliance.ts    @Shalharisi
-artifacts/api-server/src/routes/alerts.ts     @Shalharisi
+artifacts/api-server/src/lib/compliance.ts    @jazan-health/clinical-leads @jazan-health/backend-leads
+artifacts/api-server/src/routes/alerts.ts     @jazan-health/clinical-leads @jazan-health/backend-leads

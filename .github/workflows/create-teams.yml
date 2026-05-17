@@ -1,0 +1,92 @@
+name: Create GitHub Teams
+
+on:
+  workflow_dispatch:
+    inputs:
+      initial_member:
+        description: GitHub username to add as maintainer of every team
+        required: true
+        default: Shalharisi
+
+permissions:
+  contents: read
+
+jobs:
+  create-teams:
+    name: Provision @jazan-health teams
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create teams and add initial member
+        uses: actions/github-script@v7
+        with:
+          # A Personal Access Token with `admin:org` scope is required because
+          # GITHUB_TOKEN cannot manage organisation teams.
+          # Store it as a repository secret named ORG_ADMIN_PAT.
+          github-token: ${{ secrets.ORG_ADMIN_PAT }}
+          script: |
+            const org = "jazan-health";
+
+            // Initial member added to every team as maintainer (configurable via workflow input)
+            const initialMember = "${{ inputs.initial_member }}";
+
+            const teams = [
+              {
+                name: "maintainers",
+                description: "Project leads and repository maintainers — fallback reviewers for all paths",
+                privacy: "closed"
+              },
+              {
+                name: "backend-leads",
+                description: "API, database, and server-side engineers — own openapi spec, DB schema, and api-server",
+                privacy: "closed"
+              },
+              {
+                name: "frontend-leads",
+                description: "Web and mobile UI engineers — own hrp-tracker and hrp-mobile",
+                privacy: "closed"
+              },
+              {
+                name: "clinical-leads",
+                description: "Clinical informatics / patient-safety reviewers — must approve compliance and alert logic changes",
+                privacy: "closed"
+              },
+              {
+                name: "admins",
+                description: "Organisation and repository administrators — must approve .github/ changes",
+                privacy: "closed"
+              }
+            ];
+
+            for (const team of teams) {
+              let teamData;
+              try {
+                // Try to fetch first — idempotent if the team already exists.
+                const { data } = await github.rest.teams.getByName({ org, team_slug: team.name });
+                teamData = data;
+                console.log(`Team '${team.name}' already exists (id: ${teamData.id}) — skipping creation.`);
+              } catch (err) {
+                if (err.status !== 404) throw err;
+                // Team does not exist yet — create it.
+                const { data } = await github.rest.teams.create({
+                  org,
+                  name: team.name,
+                  description: team.description,
+                  privacy: team.privacy
+                });
+                teamData = data;
+                console.log(`Created team '${team.name}' (id: ${teamData.id}).`);
+              }
+
+              // Ensure the initial member belongs to the team.
+              // This step is required — throw on failure so the job does not
+              // succeed without a member in every team.
+              await github.rest.teams.addOrUpdateMembershipForUserInOrg({
+                org,
+                team_slug: team.name,
+                username: initialMember,
+                role: "maintainer"
+              });
+              console.log(`  Added '${initialMember}' as maintainer of '${team.name}'.`);
+            }
+
+            console.log("\nAll done. Re-run the Setup Branch Protection workflow to ensure CODEOWNERS rules take effect.");
