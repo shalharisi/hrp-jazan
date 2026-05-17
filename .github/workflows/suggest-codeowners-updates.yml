@@ -84,6 +84,35 @@ jobs:
           fi
           echo ""
 
+          # ── Shared marker & cleanup helper ───────────────────────────────────
+          # Define MARKER early so the helper below can reference it before the
+          # comment-posting block at step 6.
+          MARKER="<!-- codeowners-rename-bot -->"
+
+          # delete_bot_comment — removes any existing bot comment when CODEOWNERS
+          # is already in sync and no action is required.  A failure to delete
+          # (e.g. insufficient permissions on a fork PR) is logged as a warning
+          # rather than treated as an error.
+          delete_bot_comment() {
+            local existing_id
+            existing_id=$(
+              gh api "repos/$REPO/issues/$PR_NUMBER/comments" \
+                --jq ".[] | select(.body | startswith(\"${MARKER}\")) | .id" \
+                2>/dev/null | head -1 || true
+            )
+            if [[ -n "$existing_id" ]]; then
+              echo "CODEOWNERS is already in sync — removing stale bot comment #${existing_id} …"
+              if gh api "repos/$REPO/issues/comments/${existing_id}" \
+                   --method DELETE 2>/dev/null; then
+                echo "Stale bot comment deleted successfully."
+              else
+                echo "WARNING: Could not delete existing bot comment (insufficient permissions — expected on fork PRs)."
+              fi
+            else
+              echo "No existing bot comment to clean up."
+            fi
+          }
+
           # ── 1. Collect all file-level renames in this PR ─────────────────────
           # Output format: R<score> TAB old-path TAB new-path
           mapfile -t rename_lines < <(
@@ -92,6 +121,8 @@ jobs:
 
           if [[ ${#rename_lines[@]} -eq 0 ]]; then
             echo "No renamed files detected in this PR — nothing to check."
+            delete_bot_comment
+            echo "Job summary: nothing to do (no file renames in this PR)."
             exit 0
           fi
 
@@ -144,6 +175,8 @@ jobs:
 
           if [[ ${#dir_renames[@]} -eq 0 ]]; then
             echo "No directory renames detected — nothing to check in CODEOWNERS."
+            delete_bot_comment
+            echo "Job summary: nothing to do (no directory renames in this PR)."
             exit 0
           fi
 
@@ -185,7 +218,9 @@ jobs:
           done < "$CODEOWNERS"
 
           if [[ ${#suggestions[@]} -eq 0 ]]; then
-            echo "No CODEOWNERS rules reference the renamed directories — no comment needed."
+            echo "No CODEOWNERS rules reference the renamed directories — CODEOWNERS is already in sync."
+            delete_bot_comment
+            echo "Job summary: nothing to do (CODEOWNERS already reflects all renamed directories)."
             exit 0
           fi
 
@@ -237,7 +272,9 @@ jobs:
 
             if git diff --cached --quiet; then
               echo "CODEOWNERS was already up to date — no commit needed."
-              PUSHED=true  # treat as success so we post the auto-updated comment
+              delete_bot_comment
+              echo "Job summary: nothing to do (CODEOWNERS was already in sync — no commit pushed)."
+              exit 0
             else
               git commit -m "chore: auto-update CODEOWNERS for renamed directories [skip ci]"
 
@@ -245,6 +282,7 @@ jobs:
                 PUSHED=true
                 COMMITTED=true
                 echo "Successfully pushed CODEOWNERS update to '${HEAD_BRANCH}'."
+                echo "Job summary: changes applied (${#unique_replacements[@]} replacement(s) committed and pushed)."
               else
                 echo "WARNING: Could not push to '${HEAD_BRANCH}' (fork PR or protected branch)."
                 echo "Reverting local commit and falling back to comment-only mode."
@@ -255,7 +293,9 @@ jobs:
           fi
 
           # ── 6. Post (or update) a PR comment ─────────────────────────────────
-          MARKER="<!-- codeowners-rename-bot -->"
+          # At this point CODEOWNERS needed changes and the bot either committed
+          # them (COMMITTED=true), could not push (PUSHED=false), or is in
+          # dry-run mode.  MARKER was defined earlier alongside delete_bot_comment.
 
           if [[ "$DRY_RUN" == "true" ]]; then
             # ── Dry-run comment ───────────────────────────────────────────────
