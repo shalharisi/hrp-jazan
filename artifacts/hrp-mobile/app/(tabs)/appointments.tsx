@@ -79,6 +79,7 @@ export default function AppointmentsScreen() {
     if (params.filter === "needs_action") {
       setAttendanceFilter("needs_action");
       setDateFilter("all");
+      setRiskFilter("all");
     } else {
       setAttendanceFilter("all");
       setDateFilter("today");
