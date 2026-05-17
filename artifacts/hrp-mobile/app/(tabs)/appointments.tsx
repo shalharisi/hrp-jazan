@@ -5,6 +5,7 @@ import {
   useListHospitals,
   useUpdateAppointment,
 } from "@workspace/api-client-react";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
@@ -22,7 +23,7 @@ import { useI18n } from "@/context/I18nContext";
 import { useColors } from "@/hooks/useColors";
 import { NewAppointmentModal } from "@/components/NewAppointmentModal";
 
-type DateFilter = "today" | "week" | "all";
+type DateFilter = "today" | "week" | "all" | "custom";
 type AttendanceFilter = "all" | "pending" | "attended" | "missed" | "needs_action";
 type RiskFilter = "all" | "critical" | "high" | "medium" | "low";
 
@@ -64,6 +65,12 @@ export default function AppointmentsScreen() {
   const [attendanceFilter, setAttendanceFilter] =
     useState<AttendanceFilter>("all");
   const [riskFilter, setRiskFilter] = useState<RiskFilter>("all");
+
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
+  const [draftStartDate, setDraftStartDate] = useState<Date>(new Date());
+  const [draftEndDate, setDraftEndDate] = useState<Date>(new Date());
+  const [showCustomPicker, setShowCustomPicker] = useState(false);
 
   useEffect(() => {
     if (params.filter === "needs_action") {
@@ -116,6 +123,10 @@ export default function AppointmentsScreen() {
         if (dateFilter === "today" && apptDate !== today) return false;
         if (dateFilter === "week" && (apptDate < week.start || apptDate > week.end))
           return false;
+        if (dateFilter === "custom") {
+          if (customStart && apptDate < customStart) return false;
+          if (customEnd && apptDate > customEnd) return false;
+        }
         if (attendanceFilter === "needs_action") {
           return apptDate < today && a.attended === null;
         }
@@ -131,14 +142,48 @@ export default function AppointmentsScreen() {
         if (riskA !== riskB) return riskA - riskB;
         return a.appointmentDate.localeCompare(b.appointmentDate);
       });
-  }, [all, dateFilter, attendanceFilter, riskFilter, today, week.start, week.end]);
+  }, [all, dateFilter, attendanceFilter, riskFilter, today, week.start, week.end, customStart, customEnd]);
 
   const styles = makeStyles(colors, isRTL);
+
+  function parseDateStr(str: string): Date {
+    const d = new Date(str + "T00:00:00");
+    return isNaN(d.getTime()) ? new Date() : d;
+  }
+
+  function openCustomPicker() {
+    setDraftStartDate(customStart ? parseDateStr(customStart) : new Date());
+    setDraftEndDate(customEnd ? parseDateStr(customEnd) : new Date());
+    setShowCustomPicker(true);
+  }
+
+  function applyCustomRange() {
+    const start = localDateStr(draftStartDate);
+    const end = localDateStr(draftEndDate);
+    if (start > end) return;
+    setCustomStart(start);
+    setCustomEnd(end);
+    setDateFilter("custom");
+    setShowCustomPicker(false);
+  }
+
+  function customRangeLabel(): string {
+    if (customStart && customEnd) {
+      return t("appointments.customRangeLabel")
+        .replace("{start}", customStart)
+        .replace("{end}", customEnd);
+    }
+    return t("appointments.filterCustom");
+  }
+
+  const isCustomDraftValid =
+    localDateStr(draftStartDate) <= localDateStr(draftEndDate);
 
   const dateFilterTabs: { key: DateFilter; label: string }[] = [
     { key: "today", label: t("appointments.filterToday") },
     { key: "week", label: t("appointments.filterWeek") },
     { key: "all", label: t("appointments.filterAll") },
+    { key: "custom", label: dateFilter === "custom" && customStart && customEnd ? customRangeLabel() : t("appointments.filterCustom") },
   ];
 
   const attendanceFilterTabs: { key: AttendanceFilter; label: string }[] = [
@@ -343,27 +388,50 @@ export default function AppointmentsScreen() {
         </Pressable>
       )}
 
-      <View style={[styles.filterRow, isRTL && styles.rowReverse]}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={[styles.filterRow, isRTL && styles.filterRowRTL]}
+      >
         {dateFilterTabs.map((tab) => (
           <Pressable
             key={tab.key}
             style={[
               styles.filterTab,
               dateFilter === tab.key && styles.filterTabActive,
+              tab.key === "custom" && styles.filterTabCustom,
+              tab.key === "custom" && dateFilter === "custom" && styles.filterTabCustomActive,
             ]}
-            onPress={() => setDateFilter(tab.key)}
+            onPress={() => {
+              if (tab.key === "custom") {
+                openCustomPicker();
+              } else {
+                setDateFilter(tab.key);
+              }
+            }}
           >
+            {tab.key === "custom" && (
+              <Ionicons
+                name="calendar-outline"
+                size={13}
+                color={dateFilter === "custom" ? "#fff" : colors.primary}
+                style={{ marginEnd: 4 }}
+              />
+            )}
             <Text
               style={[
                 styles.filterTabText,
                 dateFilter === tab.key && styles.filterTabTextActive,
+                tab.key === "custom" && styles.filterTabCustomText,
+                tab.key === "custom" && dateFilter === "custom" && styles.filterTabCustomTextActive,
               ]}
+              numberOfLines={1}
             >
               {tab.label}
             </Text>
           </Pressable>
         ))}
-      </View>
+      </ScrollView>
 
       <View style={[styles.filterRow, isRTL && styles.rowReverse]}>
         {attendanceFilterTabs.map((tab) => (
@@ -743,6 +811,99 @@ export default function AppointmentsScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
+      {/* Custom date range picker modal */}
+      <Modal
+        visible={showCustomPicker}
+        animationType="slide"
+        presentationStyle="formSheet"
+        onRequestClose={() => setShowCustomPicker(false)}
+      >
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <View
+            style={[
+              styles.modalContainer,
+              { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 },
+            ]}
+          >
+            <View style={[styles.modalHeader, isRTL && styles.rowReverse]}>
+              <Text style={[styles.modalTitle, isRTL && styles.rtlText]}>
+                {t("appointments.customRangeTitle")}
+              </Text>
+              <Pressable
+                style={styles.closeBtn}
+                onPress={() => setShowCustomPicker(false)}
+                hitSlop={8}
+              >
+                <Ionicons name="close" size={24} color={colors.foreground} />
+              </Pressable>
+            </View>
+
+            <View style={{ gap: 4 }}>
+              <View style={styles.datePickerSection}>
+                <Text style={[styles.sectionLabel, isRTL && styles.rtlText]}>
+                  {t("appointments.customStart")}
+                </Text>
+                <View style={styles.datePickerWrapper}>
+                  <DateTimePicker
+                    value={draftStartDate}
+                    mode="date"
+                    display={Platform.OS === "web" ? "default" : "spinner"}
+                    onChange={(_, date) => {
+                      if (date) setDraftStartDate(date);
+                    }}
+                    style={styles.datePicker}
+                    textColor={colors.foreground}
+                    accentColor={colors.primary}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.datePickerSection}>
+                <Text style={[styles.sectionLabel, isRTL && styles.rtlText]}>
+                  {t("appointments.customEnd")}
+                </Text>
+                <View style={styles.datePickerWrapper}>
+                  <DateTimePicker
+                    value={draftEndDate}
+                    mode="date"
+                    display={Platform.OS === "web" ? "default" : "spinner"}
+                    onChange={(_, date) => {
+                      if (date) setDraftEndDate(date);
+                    }}
+                    style={styles.datePicker}
+                    textColor={colors.foreground}
+                    accentColor={colors.primary}
+                  />
+                </View>
+              </View>
+
+              {!isCustomDraftValid && (
+                <Text style={styles.customRangeError}>
+                  {t("appointments.customRangeError")}
+                </Text>
+              )}
+
+              <Pressable
+                style={[
+                  styles.submitBtn,
+                  !isCustomDraftValid && styles.submitBtnDisabled,
+                  { marginTop: 8 },
+                ]}
+                onPress={applyCustomRange}
+                disabled={!isCustomDraftValid}
+              >
+                <Text style={styles.submitBtnText}>
+                  {t("appointments.applyRange")}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
       <NewAppointmentModal
         visible={showNewModal}
         onClose={() => setShowNewModal(false)}
@@ -834,18 +995,34 @@ function makeStyles(colors: ReturnType<typeof useColors>, isRTL: boolean) {
       gap: 8,
       marginBottom: 10,
     },
+    filterRowRTL: {
+      flexDirection: "row-reverse",
+    },
     filterTab: {
-      flex: 1,
+      flexDirection: "row",
       alignItems: "center",
+      justifyContent: "center",
       paddingVertical: 8,
+      paddingHorizontal: 12,
       borderRadius: 10,
       backgroundColor: colors.card,
       borderWidth: 1,
       borderColor: colors.border,
+      minWidth: 70,
     },
     filterTabActive: {
       backgroundColor: colors.primary,
       borderColor: colors.primary,
+    },
+    filterTabCustom: {
+      borderStyle: "dashed",
+      borderColor: colors.primary,
+      paddingHorizontal: 10,
+      minWidth: 110,
+    },
+    filterTabCustomActive: {
+      backgroundColor: colors.primary,
+      borderStyle: "solid",
     },
     filterTabText: {
       fontSize: 13,
@@ -853,6 +1030,33 @@ function makeStyles(colors: ReturnType<typeof useColors>, isRTL: boolean) {
       color: colors.foreground,
     },
     filterTabTextActive: { color: "#fff" },
+    filterTabCustomText: {
+      color: colors.primary,
+      fontSize: 12,
+    },
+    filterTabCustomTextActive: {
+      color: "#fff",
+    },
+    customRangeError: {
+      fontSize: 12,
+      fontFamily: "Tajawal_400Regular",
+      color: "#b91c1c",
+      textAlign: isRTL ? "right" : "left",
+    },
+    datePickerSection: {
+      gap: 4,
+    },
+    datePickerWrapper: {
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      overflow: "hidden",
+    },
+    datePicker: {
+      height: Platform.OS === "web" ? 44 : 130,
+      width: "100%",
+    },
 
     filterTabSmall: {
       flex: 1,
