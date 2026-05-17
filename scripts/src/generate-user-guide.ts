@@ -1756,37 +1756,58 @@ ${body}
 </html>`;
 }
 
-// ── Resolve Puppeteer executable (prefers system Nix chromium over bundled) ───
-function resolvePuppeteerExecutable(): string | undefined {
-  // 1. System chromium from PATH (Nix-managed — has correct library paths)
+// ── Resolve Puppeteer executable ─────────────────────────────────────────────
+// Resolution order (no hardcoded Nix store hashes — those change on upgrade):
+//   1. PUPPETEER_EXECUTABLE_PATH env var (explicit override)
+//   2. `chromium` on PATH  (Nix-managed system install)
+//   3. `chromium-browser` on PATH (Debian/Ubuntu alias)
+//   4. `google-chrome` on PATH
+//   5. puppeteer's own executablePath() — the browser it downloaded itself
+// Throws with a clear message when nothing is found so the developer knows
+// exactly what to do rather than getting a cryptic launch failure.
+async function resolvePuppeteerExecutable(): Promise<string> {
+  // 1. Explicit env-var override
+  const envPath = process.env["PUPPETEER_EXECUTABLE_PATH"];
+  if (envPath) {
+    if (!fs.existsSync(envPath)) {
+      throw new Error(
+        `PUPPETEER_EXECUTABLE_PATH is set to "${envPath}" but the file does not exist.`
+      );
+    }
+    return envPath;
+  }
+
+  // 2-4. Well-known binary names available on PATH
+  for (const name of ["chromium", "chromium-browser", "google-chrome"]) {
+    try {
+      const out = execFileSync("which", [name], { stdio: ["ignore", "pipe", "ignore"] })
+        .toString()
+        .trim();
+      if (out && fs.existsSync(out)) return out;
+    } catch { /* not on PATH — continue */ }
+  }
+
+  // 5. Browser downloaded by puppeteer itself
   try {
-    const out = execFileSync("which", ["chromium"]).toString().trim();
-    if (out && fs.existsSync(out)) return out;
-  } catch { /* ignore */ }
-  // 2. Common Nix store path patterns
-  const nixCandidates = [
-    "/nix/store/qa9cnw4v5xkxyip6mb9kxqfq1z4x2dx1-chromium-138.0.7204.100/bin/chromium",
-  ];
-  for (const c of nixCandidates) {
-    if (fs.existsSync(c)) return c;
-  }
-  // 3. Puppeteer cache
-  const homeDir = process.env["HOME"] ?? "/root";
-  const cacheDir = process.env["PUPPETEER_CACHE_DIR"] ?? path.join(homeDir, ".cache", "puppeteer");
-  const cacheCandidates = [
-    path.join(cacheDir, "chrome-headless-shell", "linux-148.0.7778.167", "chrome-headless-shell-linux64", "chrome-headless-shell"),
-    path.join(cacheDir, "chrome", "linux-148.0.7778.167", "chrome-linux64", "chrome"),
-  ];
-  for (const candidate of cacheCandidates) {
-    if (fs.existsSync(candidate)) return candidate;
-  }
-  return undefined;
+    const p = await puppeteer.executablePath();
+    if (p && fs.existsSync(p)) return p;
+  } catch { /* puppeteer didn't download a browser — continue */ }
+
+  throw new Error(
+    "No Chromium/Chrome executable found.\n" +
+    "Fix options (choose one):\n" +
+    "  • Install Chromium via Nix/system package manager so `chromium` is on PATH\n" +
+    "  • Set the PUPPETEER_EXECUTABLE_PATH environment variable to the browser binary\n" +
+    "  • Run `npx puppeteer browsers install chrome` inside the scripts package to let\n" +
+    "    Puppeteer download its own browser\n" +
+    "  • Pass --no-pdf to skip PDF generation if a browser is not available"
+  );
 }
 
 // ── Generate PDF using Puppeteer ──────────────────────────────────────────────
 async function buildPdf(): Promise<Buffer> {
   const html = buildHtml();
-  const executablePath = resolvePuppeteerExecutable();
+  const executablePath = await resolvePuppeteerExecutable();
   const browser = await puppeteer.launch({
     executablePath,
     args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
