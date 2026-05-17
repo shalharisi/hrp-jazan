@@ -12,6 +12,22 @@ on:
   pull_request:
     branches: ["**"]
 
+# Token strategy for team validation
+# ─────────────────────────────────────────────────────────────────────────────
+# GitHub's default GITHUB_TOKEN does not include read:org scope.  Calls to
+# /orgs/{org}/teams/{team} will fail silently for team entries (@org/team)
+# when the token lacks that scope, causing false-negative failures.
+#
+# To fix this, create a fine-grained or classic PAT with the `read:org` scope
+# (classic PAT) or the "Members" organisation permission set to "Read-only"
+# (fine-grained PAT), then store it as a repository secret named GH_PAT:
+#
+#   GitHub → repository → Settings → Secrets and variables → Actions
+#   → New repository secret → Name: GH_PAT  → Value: <your PAT>
+#
+# When GH_PAT is present it is used automatically; if it is absent the
+# workflow falls back to GITHUB_TOKEN (fine for user-only CODEOWNERS files).
+
 permissions:
   contents: read   # for checkout + git diff
 
@@ -85,8 +101,11 @@ jobs:
                   echo "✓"
                 else
                   echo "✗  NOT FOUND"
-                  echo "   The team may have been renamed or deleted, or GITHUB_TOKEN"
-                  echo "   may lack read:org scope. See README for GH_PAT fallback."
+                  echo "   The team may have been renamed or deleted, or the token"
+                  echo "   lacks read:org scope. Add a repository secret named GH_PAT"
+                  echo "   (classic PAT with read:org, or fine-grained PAT with Members"
+                  echo "   read-only) — see the comment at the top of this workflow and"
+                  echo "   the 'CODEOWNERS team validation' section in CONTRIBUTING.md."
                   failed=1
                 fi
               else
@@ -111,9 +130,11 @@ jobs:
             echo "Tips:"
             echo "  • Team renamed/deleted → update the slug in .github/CODEOWNERS."
             echo "  • Username renamed/deleted → update or remove the @username entry."
-            echo "  • Token lacks read:org → add a repository secret GH_PAT with"
-            echo "    read:org scope and replace 'secrets.GITHUB_TOKEN' in this"
-            echo "    workflow with 'secrets.GH_PAT'."
+            echo "  • Token lacks read:org → add a repository secret GH_PAT (classic"
+            echo "    PAT with read:org scope, or fine-grained PAT with Members read-only)."
+            echo "    The workflow uses GH_PAT automatically when the secret is present."
+            echo "    See the token-strategy comment at the top of this file and the"
+            echo "    'CODEOWNERS team validation' section in CONTRIBUTING.md."
             exit 1
           fi
 

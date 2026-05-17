@@ -60,6 +60,20 @@ Branch protection rules must be set in GitHub repository settings. Run the autom
 6. Enable **Require branches to be up to date before merging**.
 7. Save the rule.
 
+### CODEOWNERS team validation and the `GH_PAT` secret
+
+The `Validate CODEOWNERS` workflow checks that every `@org/team` entry in `.github/CODEOWNERS` resolves to a real GitHub team.  GitHub's built-in `GITHUB_TOKEN` does **not** carry `read:org` scope, so team lookups fail when using the default token on organisations that restrict token permissions.
+
+To make team validation reliable, add a repository secret named `GH_PAT`:
+
+| Step | Detail |
+|---|---|
+| 1. Create the PAT | **Classic PAT** — enable the `read:org` scope under *Organisation* permissions. **Fine-grained PAT** — set *Members* to *Read-only* under *Organisation permissions*. |
+| 2. Store the secret | Repository → **Settings → Secrets and variables → Actions → New repository secret** → Name: `GH_PAT`, Value: `<your PAT>`. |
+| 3. Done | The workflow automatically uses `GH_PAT` when present and falls back to `GITHUB_TOKEN` otherwise. |
+
+> **When is this needed?**  Only when `.github/CODEOWNERS` contains `@org/team` entries (as this repository does).  Individual `@username` entries resolve via the public `/users/{handle}` API and do not require extra scope.
+
 ## Local Development Checks
 
 The same checks that CI runs are also enforced locally:
