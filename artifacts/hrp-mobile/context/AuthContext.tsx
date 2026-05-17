@@ -1,12 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { Platform } from "react-native";
 
 const TOKEN_KEY = "hrp_access_token";
@@ -76,9 +70,7 @@ async function cleanUpStaleBannerKeys(currentUserId: number): Promise<void> {
       keysToRemove.forEach((k) => localStorage.removeItem(k));
     } else {
       const allKeys = await AsyncStorage.getAllKeys();
-      const staleKeys = allKeys.filter(
-        (k) => k.startsWith(BANNER_KEY_PREFIX) && k !== currentKey
-      );
+      const staleKeys = allKeys.filter((k) => k.startsWith(BANNER_KEY_PREFIX) && k !== currentKey);
       if (staleKeys.length > 0) {
         await AsyncStorage.multiRemove(staleKeys);
       }

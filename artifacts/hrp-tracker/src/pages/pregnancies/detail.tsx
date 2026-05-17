@@ -2,10 +2,16 @@ import React, { useState } from "react";
 import { useParams, Link } from "wouter";
 import { useI18n } from "@/lib/i18n-context";
 import {
-  useGetPregnancy, useUpdatePregnancy, useListHospitals,
-  useCreateAppointment, useUpdateAppointment,
-  useUpdatePatient, useListSectors, useListHealthCenters,
-  PregnancyUpdateRiskLevel, PregnancyUpdateReferralRecommendation
+  useGetPregnancy,
+  useUpdatePregnancy,
+  useListHospitals,
+  useCreateAppointment,
+  useUpdateAppointment,
+  useUpdatePatient,
+  useListSectors,
+  useListHealthCenters,
+  PregnancyUpdateRiskLevel,
+  PregnancyUpdateReferralRecommendation,
 } from "@workspace/api-client-react";
 import type { PregnancyDetail } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,22 +19,49 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RiskBadge, ComplianceBadge, ReferralBadge } from "@/components/ui/status-badges";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Pencil, X, Save, Plus, CheckCircle2, XCircle, RotateCcw, FileDown } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 
 const RISK_FACTORS_G1 = [
-  "تعدد الأجنة", "عمر الأم فوق 40", "عمر الأم أقل من 16",
-  "BMI 35 أو أكثر", "حمل IVF", "مدخنة",
+  "تعدد الأجنة",
+  "عمر الأم فوق 40",
+  "عمر الأم أقل من 16",
+  "BMI 35 أو أكثر",
+  "حمل IVF",
+  "مدخنة",
   "نتائج فحص الفصل الأول إيجابية",
-  "3 إجهاضات أو أكثر", "ولادة مبكرة سابقة", "وفاة جنينية سابقة",
-  "عملية قيصرية سابقة", "سوابق تسمم الحمل", "جلطات وريدية سابقة",
+  "3 إجهاضات أو أكثر",
+  "ولادة مبكرة سابقة",
+  "وفاة جنينية سابقة",
+  "عملية قيصرية سابقة",
+  "سوابق تسمم الحمل",
+  "جلطات وريدية سابقة",
   "سابقة إصابة بنزيف ما بعد الولادة",
 ];
 
@@ -93,10 +126,15 @@ type PatientForm = {
 };
 
 const riskLabelAr: Record<string, string> = {
-  low: "منخفض", medium: "متوسط", high: "عالي", critical: "حرج",
+  low: "منخفض",
+  medium: "متوسط",
+  high: "عالي",
+  critical: "حرج",
 };
 const complianceLabelAr: Record<string, string> = {
-  compliant: "ملتزم", non_compliant: "غير ملتزم", pending: "بانتظار موعد",
+  compliant: "ملتزم",
+  non_compliant: "غير ملتزم",
+  pending: "بانتظار موعد",
 };
 const referralLabelAr: Record<string, string> = {
   follow_at_center: "متابعة في المركز",
@@ -117,17 +155,22 @@ function exportToPdf(detail: PregnancyDetail) {
 
   function chipList(items: string[] | null | undefined) {
     if (!items || items.length === 0) return "<span class='none'>لا يوجد</span>";
-    return items.map(i => `<span class="chip">${i}</span>`).join(" ");
+    return items.map((i) => `<span class="chip">${i}</span>`).join(" ");
   }
 
-  const aptRows = appointments && appointments.length > 0
-    ? appointments.map(a => `<tr>
+  const aptRows =
+    appointments && appointments.length > 0
+      ? appointments
+          .map(
+            (a) => `<tr>
         <td>${new Date(a.appointmentDate).toLocaleDateString("ar-SA")}</td>
         <td>${a.hospitalNameAr ?? "—"}</td>
         <td>${a.attended === true ? "حضر" : a.attended === false ? "غائب" : "مجدول"}</td>
         <td>${a.attendanceNote ?? "—"}</td>
-      </tr>`).join("")
-    : `<tr><td colspan="4" class="none-row">لا توجد مواعيد مسجلة</td></tr>`;
+      </tr>`,
+          )
+          .join("")
+      : `<tr><td colspan="4" class="none-row">لا توجد مواعيد مسجلة</td></tr>`;
 
   const html = `<!DOCTYPE html>
 <html dir="rtl" lang="ar">
@@ -191,7 +234,9 @@ function exportToPdf(detail: PregnancyDetail) {
     ${p.referralExplained === true ? '<span class="badge badge-green">الإحالة مُوضَّحة</span>' : p.referralExplained === false ? '<span class="badge badge-red">الإحالة غير مُوضَّحة</span>' : ""}
   </div>
 
-  ${section("بيانات المريضة", `<table class="info">
+  ${section(
+    "بيانات المريضة",
+    `<table class="info">
     ${row("الاسم", patient?.nameAr ?? "")}
     ${row("الهوية الوطنية", patient?.nationalId ?? "")}
     ${row("العمر", patient?.age != null ? `${patient.age} سنة` : "")}
@@ -200,21 +245,27 @@ function exportToPdf(detail: PregnancyDetail) {
     ${patient?.address ? row("العنوان", patient.address) : ""}
     ${row("المركز الصحي", patient?.healthCenterNameAr ?? "")}
     ${row("القطاع", patient?.sectorNameAr ?? "")}
-  </table>`)}
+  </table>`,
+  )}
 
-  ${section("بيانات الزيارة", `<table class="info">
+  ${section(
+    "بيانات الزيارة",
+    `<table class="info">
     ${row("تاريخ الزيارة", p.visitDate ? new Date(p.visitDate).toLocaleDateString("ar-SA") : "")}
     ${row("تاريخ آخر دورة (LMP)", p.lmpDate ? new Date(p.lmpDate).toLocaleDateString("ar-SA") : "")}
     ${row("عمر الحمل", p.gestationalAge != null ? `${p.gestationalAge} أسبوع` : "")}
     ${row("درجة الخطورة", riskLabelAr[p.riskLevel] ?? p.riskLevel)}
     ${row("اسم الطبيب", p.doctorName ?? "")}
-  </table>`)}
+  </table>`,
+  )}
 
   ${section("عوامل الخطر العامة (المجموعة 1)", `<div class="chips-cell">${chipList(p.riskFactors)}</div>`)}
   ${section("عوامل خطر الحمل (المجموعة 2)", `<div class="chips-cell">${chipList(p.pregnancyRiskFactors)}</div>`)}
   ${section("الأمراض المزمنة (المجموعة 3)", `<div class="chips-cell">${chipList(p.medicalConditions)}</div>`)}
 
-  ${section("الأدوية والإحالة", `<table class="info">
+  ${section(
+    "الأدوية والإحالة",
+    `<table class="info">
     ${row("الأدوية", p.medications ?? "")}
     ${row("خطر التجلط (VTE)", p.isVteHighRisk ? "نعم" : "لا")}
     ${row("Enoxaparin موصوف", p.enoxaparinPrescribed ? "نعم" : "لا")}
@@ -224,17 +275,24 @@ function exportToPdf(detail: PregnancyDetail) {
     ${row("تاريخ الموعد", p.appointmentDate ? new Date(p.appointmentDate).toLocaleDateString("ar-SA") : "")}
     ${row("الالتزام", complianceLabelAr[p.compliance] ?? p.compliance)}
     ${p.workingDaysToAppointment != null ? row("أيام العمل للموعد", `${p.workingDaysToAppointment} يوم`) : ""}
-  </table>`)}
+  </table>`,
+  )}
 
-  ${section("الملاحظات", `<table class="info">
+  ${section(
+    "الملاحظات",
+    `<table class="info">
     ${row("ملاحظات عامة", p.notes ?? "")}
     ${row("ملاحظات المتابعة والتواصل", p.followUpNotes ?? "")}
-  </table>`)}
+  </table>`,
+  )}
 
-  ${section("المواعيد في المستشفى", `<table class="appt">
+  ${section(
+    "المواعيد في المستشفى",
+    `<table class="appt">
     <thead><tr><th>التاريخ</th><th>المستشفى</th><th>الحضور</th><th>ملاحظة</th></tr></thead>
     <tbody>${aptRows}</tbody>
-  </table>`)}
+  </table>`,
+  )}
 
   <div class="footer">
     منظومة تتبع الحمل عالي الخطورة – تجمع جازان الصحي &nbsp;|&nbsp; ${new Date().toLocaleDateString("ar-SA")}
@@ -247,7 +305,9 @@ function exportToPdf(detail: PregnancyDetail) {
   win.document.write(html);
   win.document.close();
   win.focus();
-  setTimeout(() => { win.print(); }, 800);
+  setTimeout(() => {
+    win.print();
+  }, 800);
 }
 
 export default function PregnancyDetail() {
@@ -257,8 +317,12 @@ export default function PregnancyDetail() {
   const { toast } = useToast();
   const [editMode, setEditMode] = useState(false);
 
-  const { data: detail, isLoading, refetch } = useGetPregnancy(pregnancyId, {
-    query: { queryKey: ["pregnancy", pregnancyId], enabled: !!pregnancyId }
+  const {
+    data: detail,
+    isLoading,
+    refetch,
+  } = useGetPregnancy(pregnancyId, {
+    query: { queryKey: ["pregnancy", pregnancyId], enabled: !!pregnancyId },
   });
 
   const { data: hospitals } = useListHospitals();
@@ -271,11 +335,16 @@ export default function PregnancyDetail() {
   const [selectedSectorId, setSelectedSectorId] = useState<number | null>(null);
   const { data: healthCenters } = useListHealthCenters(
     { sectorId: selectedSectorId ? Number(selectedSectorId) : undefined },
-    { query: { queryKey: ["health-centers", selectedSectorId], enabled: !!selectedSectorId } }
+    { query: { queryKey: ["health-centers", selectedSectorId], enabled: !!selectedSectorId } },
   );
 
   const [patientForm, setPatientForm] = useState<PatientForm>({
-    nameAr: "", dateOfBirth: "", phone: "", doctorPhone: "", address: "", healthCenterId: 0,
+    nameAr: "",
+    dateOfBirth: "",
+    phone: "",
+    doctorPhone: "",
+    address: "",
+    healthCenterId: 0,
   });
 
   // ── Attendance dialog state ────────────────────────────────────────────
@@ -297,22 +366,32 @@ export default function PregnancyDetail() {
   function saveAttendance() {
     if (attendDlg.appointmentId == null) return;
     updateAppointmentMutation.mutate(
-      { id: attendDlg.appointmentId, data: { attended: attendDlg.attended, attendanceNote: attendDlg.note || null } },
+      {
+        id: attendDlg.appointmentId,
+        data: { attended: attendDlg.attended, attendanceNote: attendDlg.note || null },
+      },
       {
         onSuccess: () => {
           toast({ title: t("appt.updateSuccess") });
           setAttendDlg({ open: false, appointmentId: null, attended: true, note: "" });
           refetch();
         },
-        onError: () => toast({ title: "خطأ", description: t("general.saveError"), variant: "destructive" }),
-      }
+        onError: () =>
+          toast({ title: "خطأ", description: t("general.saveError"), variant: "destructive" }),
+      },
     );
   }
 
   function submitNewAppt() {
     if (!newAppt.date || !newAppt.hospitalId) return;
     createAppointmentMutation.mutate(
-      { data: { pregnancyId, hospitalId: Number(newAppt.hospitalId), appointmentDate: newAppt.date } },
+      {
+        data: {
+          pregnancyId,
+          hospitalId: Number(newAppt.hospitalId),
+          appointmentDate: newAppt.date,
+        },
+      },
       {
         onSuccess: () => {
           toast({ title: t("appt.addSuccess") });
@@ -320,17 +399,30 @@ export default function PregnancyDetail() {
           setNewAppt({ date: "", hospitalId: "" });
           refetch();
         },
-        onError: () => toast({ title: "خطأ", description: t("general.saveError"), variant: "destructive" }),
-      }
+        onError: () =>
+          toast({ title: "خطأ", description: t("general.saveError"), variant: "destructive" }),
+      },
     );
   }
 
   const [form, setForm] = useState<EditForm>({
-    visitDate: "", lmpDate: "", gestationalAge: "", riskLevel: "", referralRecommendation: "",
-    riskFactors: [], pregnancyRiskFactors: [], medicalConditions: [],
-    medications: "", isVteHighRisk: false, enoxaparinPrescribed: false,
-    referralExplained: null, doctorName: "", referredHospitalId: "",
-    appointmentDate: "", notes: "", followUpNotes: "",
+    visitDate: "",
+    lmpDate: "",
+    gestationalAge: "",
+    riskLevel: "",
+    referralRecommendation: "",
+    riskFactors: [],
+    pregnancyRiskFactors: [],
+    medicalConditions: [],
+    medications: "",
+    isVteHighRisk: false,
+    enoxaparinPrescribed: false,
+    referralExplained: null,
+    doctorName: "",
+    referredHospitalId: "",
+    appointmentDate: "",
+    notes: "",
+    followUpNotes: "",
   });
 
   function startEdit() {
@@ -373,7 +465,7 @@ export default function PregnancyDetail() {
   }
 
   function toggleInArray(arr: string[], val: string): string[] {
-    return arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val];
+    return arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val];
   }
 
   function saveEdit() {
@@ -386,8 +478,9 @@ export default function PregnancyDetail() {
             visitDate: form.visitDate || undefined,
             lmpDate: form.lmpDate || null,
             gestationalAge: form.gestationalAge ? Number(form.gestationalAge) : null,
-            riskLevel: form.riskLevel as PregnancyUpdateRiskLevel || undefined,
-            referralRecommendation: form.referralRecommendation as PregnancyUpdateReferralRecommendation || undefined,
+            riskLevel: (form.riskLevel as PregnancyUpdateRiskLevel) || undefined,
+            referralRecommendation:
+              (form.referralRecommendation as PregnancyUpdateReferralRecommendation) || undefined,
             riskFactors: form.riskFactors,
             pregnancyRiskFactors: form.pregnancyRiskFactors,
             medicalConditions: form.medicalConditions,
@@ -402,7 +495,7 @@ export default function PregnancyDetail() {
             followUpNotes: form.followUpNotes || null,
           },
         },
-        { onSuccess: () => resolve(), onError: (e) => reject(e) }
+        { onSuccess: () => resolve(), onError: (e) => reject(e) },
       );
     });
 
@@ -420,7 +513,7 @@ export default function PregnancyDetail() {
                 healthCenterId: patientForm.healthCenterId || undefined,
               },
             },
-            { onSuccess: () => resolve(), onError: (e) => reject(e) }
+            { onSuccess: () => resolve(), onError: (e) => reject(e) },
           );
         })
       : Promise.resolve();
@@ -491,42 +584,68 @@ export default function PregnancyDetail() {
           <CardHeader className="pb-2 pt-4">
             <CardTitle className="text-base flex items-center gap-2">
               {editMode ? "تعديل بيانات المريضة" : t("patients.name")}
-              {!editMode && <span className="font-normal text-muted-foreground text-sm">— {patient.nameAr}</span>}
+              {!editMode && (
+                <span className="font-normal text-muted-foreground text-sm">
+                  — {patient.nameAr}
+                </span>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {editMode ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Field label={t("patients.name")}>
-                  <Input value={patientForm.nameAr} onChange={e => setPatientForm(f => ({ ...f, nameAr: e.target.value }))} />
+                  <Input
+                    value={patientForm.nameAr}
+                    onChange={(e) => setPatientForm((f) => ({ ...f, nameAr: e.target.value }))}
+                  />
                 </Field>
                 <Field label={t("patients.nationalId")}>
                   <Input value={patient.nationalId} disabled className="bg-muted" dir="ltr" />
                 </Field>
                 <Field label={t("patients.dateOfBirth")}>
-                  <Input type="date" value={patientForm.dateOfBirth} onChange={e => setPatientForm(f => ({ ...f, dateOfBirth: e.target.value }))} />
+                  <Input
+                    type="date"
+                    value={patientForm.dateOfBirth}
+                    onChange={(e) => setPatientForm((f) => ({ ...f, dateOfBirth: e.target.value }))}
+                  />
                 </Field>
                 <Field label={t("patients.phone")}>
-                  <Input value={patientForm.phone} onChange={e => setPatientForm(f => ({ ...f, phone: e.target.value }))} dir="ltr" />
+                  <Input
+                    value={patientForm.phone}
+                    onChange={(e) => setPatientForm((f) => ({ ...f, phone: e.target.value }))}
+                    dir="ltr"
+                  />
                 </Field>
                 <Field label={t("patients.doctorPhone")}>
-                  <Input value={patientForm.doctorPhone} onChange={e => setPatientForm(f => ({ ...f, doctorPhone: e.target.value }))} dir="ltr" />
+                  <Input
+                    value={patientForm.doctorPhone}
+                    onChange={(e) => setPatientForm((f) => ({ ...f, doctorPhone: e.target.value }))}
+                    dir="ltr"
+                  />
                 </Field>
                 <Field label={t("patients.address")}>
-                  <Input value={patientForm.address} onChange={e => setPatientForm(f => ({ ...f, address: e.target.value }))} />
+                  <Input
+                    value={patientForm.address}
+                    onChange={(e) => setPatientForm((f) => ({ ...f, address: e.target.value }))}
+                  />
                 </Field>
                 <Field label={t("patients.sector")}>
                   <Select
                     value={selectedSectorId ? String(selectedSectorId) : ""}
-                    onValueChange={v => {
+                    onValueChange={(v) => {
                       setSelectedSectorId(Number(v));
-                      setPatientForm(f => ({ ...f, healthCenterId: 0 }));
+                      setPatientForm((f) => ({ ...f, healthCenterId: 0 }));
                     }}
                   >
-                    <SelectTrigger><SelectValue placeholder="اختر القطاع" /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue placeholder="اختر القطاع" />
+                    </SelectTrigger>
                     <SelectContent>
-                      {sectors?.map(s => (
-                        <SelectItem key={s.id} value={String(s.id)}>{s.nameAr}</SelectItem>
+                      {sectors?.map((s) => (
+                        <SelectItem key={s.id} value={String(s.id)}>
+                          {s.nameAr}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -534,13 +653,19 @@ export default function PregnancyDetail() {
                 <Field label={t("patients.healthCenter")}>
                   <Select
                     value={patientForm.healthCenterId ? String(patientForm.healthCenterId) : ""}
-                    onValueChange={v => setPatientForm(f => ({ ...f, healthCenterId: Number(v) }))}
+                    onValueChange={(v) =>
+                      setPatientForm((f) => ({ ...f, healthCenterId: Number(v) }))
+                    }
                     disabled={!selectedSectorId}
                   >
-                    <SelectTrigger><SelectValue placeholder="اختر المركز الصحي" /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue placeholder="اختر المركز الصحي" />
+                    </SelectTrigger>
                     <SelectContent>
-                      {healthCenters?.map(hc => (
-                        <SelectItem key={hc.id} value={String(hc.id)}>{hc.nameAr}</SelectItem>
+                      {healthCenters?.map((hc) => (
+                        <SelectItem key={hc.id} value={String(hc.id)}>
+                          {hc.nameAr}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -548,17 +673,46 @@ export default function PregnancyDetail() {
               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                <div><span className="text-muted-foreground">{t("patients.nationalId")}: </span><span className="font-medium" dir="ltr">{patient.nationalId}</span></div>
-                <div><span className="text-muted-foreground">{t("patients.age")}: </span><span className="font-medium">{patient.age != null ? `${patient.age} سنة` : "—"}</span></div>
-                <div><span className="text-muted-foreground">{t("patients.phone")}: </span><span className="font-medium" dir="ltr">{patient.phone}</span></div>
+                <div>
+                  <span className="text-muted-foreground">{t("patients.nationalId")}: </span>
+                  <span className="font-medium" dir="ltr">
+                    {patient.nationalId}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">{t("patients.age")}: </span>
+                  <span className="font-medium">
+                    {patient.age != null ? `${patient.age} سنة` : "—"}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">{t("patients.phone")}: </span>
+                  <span className="font-medium" dir="ltr">
+                    {patient.phone}
+                  </span>
+                </div>
                 {patient.doctorPhone && (
-                  <div><span className="text-muted-foreground">{t("patients.doctorPhone")}: </span><span className="font-medium" dir="ltr">{patient.doctorPhone}</span></div>
+                  <div>
+                    <span className="text-muted-foreground">{t("patients.doctorPhone")}: </span>
+                    <span className="font-medium" dir="ltr">
+                      {patient.doctorPhone}
+                    </span>
+                  </div>
                 )}
                 {patient.address && (
-                  <div><span className="text-muted-foreground">{t("patients.address")}: </span><span className="font-medium">{patient.address}</span></div>
+                  <div>
+                    <span className="text-muted-foreground">{t("patients.address")}: </span>
+                    <span className="font-medium">{patient.address}</span>
+                  </div>
                 )}
-                <div><span className="text-muted-foreground">{t("patients.sector")}: </span><span className="font-medium">{patient.sectorNameAr ?? "—"}</span></div>
-                <div><span className="text-muted-foreground">{t("patients.healthCenter")}: </span><span className="font-medium">{patient.healthCenterNameAr ?? "—"}</span></div>
+                <div>
+                  <span className="text-muted-foreground">{t("patients.sector")}: </span>
+                  <span className="font-medium">{patient.sectorNameAr ?? "—"}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">{t("patients.healthCenter")}: </span>
+                  <span className="font-medium">{patient.healthCenterNameAr ?? "—"}</span>
+                </div>
               </div>
             )}
           </CardContent>
@@ -572,36 +726,88 @@ export default function PregnancyDetail() {
           <ComplianceBadge status={p.compliance} />
           <ReferralBadge recommendation={p.referralRecommendation} />
           {p.isVteHighRisk && <Badge variant="destructive">VTE عالي الخطورة</Badge>}
-          {p.enoxaparinPrescribed && <Badge className="bg-blue-100 text-blue-800">Enoxaparin موصوف</Badge>}
-          {p.referralExplained === true && <Badge className="bg-green-100 text-green-800">الإحالة مُوضَّحة ✓</Badge>}
-          {p.referralExplained === false && <Badge className="bg-red-100 text-red-800">الإحالة غير مُوضَّحة</Badge>}
+          {p.enoxaparinPrescribed && (
+            <Badge className="bg-blue-100 text-blue-800">Enoxaparin موصوف</Badge>
+          )}
+          {p.referralExplained === true && (
+            <Badge className="bg-green-100 text-green-800">الإحالة مُوضَّحة ✓</Badge>
+          )}
+          {p.referralExplained === false && (
+            <Badge className="bg-red-100 text-red-800">الإحالة غير مُوضَّحة</Badge>
+          )}
         </div>
       )}
 
       {/* Main form */}
       <Card>
-        <CardHeader><CardTitle>بيانات الزيارة</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>بيانات الزيارة</CardTitle>
+        </CardHeader>
         <CardContent>
           {editMode ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Field label={t("pregnancy.visitDate")}><Input type="date" value={form.visitDate} onChange={e => setForm(f => ({ ...f, visitDate: e.target.value }))} /></Field>
-              <Field label={t("pregnancy.lmpDate")}><Input type="date" value={form.lmpDate} onChange={e => setForm(f => ({ ...f, lmpDate: e.target.value }))} /></Field>
-              <Field label={t("pregnancy.gestationalAge")}><Input type="number" min={0} max={45} value={form.gestationalAge} onChange={e => setForm(f => ({ ...f, gestationalAge: e.target.value }))} placeholder="أسبوع" /></Field>
+              <Field label={t("pregnancy.visitDate")}>
+                <Input
+                  type="date"
+                  value={form.visitDate}
+                  onChange={(e) => setForm((f) => ({ ...f, visitDate: e.target.value }))}
+                />
+              </Field>
+              <Field label={t("pregnancy.lmpDate")}>
+                <Input
+                  type="date"
+                  value={form.lmpDate}
+                  onChange={(e) => setForm((f) => ({ ...f, lmpDate: e.target.value }))}
+                />
+              </Field>
+              <Field label={t("pregnancy.gestationalAge")}>
+                <Input
+                  type="number"
+                  min={0}
+                  max={45}
+                  value={form.gestationalAge}
+                  onChange={(e) => setForm((f) => ({ ...f, gestationalAge: e.target.value }))}
+                  placeholder="أسبوع"
+                />
+              </Field>
               <Field label={t("pregnancy.riskLevel")}>
-                <Select value={form.riskLevel} onValueChange={v => setForm(f => ({ ...f, riskLevel: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select
+                  value={form.riskLevel}
+                  onValueChange={(v) => setForm((f) => ({ ...f, riskLevel: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
-                    {["low","medium","high","critical"].map(l => <SelectItem key={l} value={l}>{t(`risk.${l}` as any)}</SelectItem>)}
+                    {["low", "medium", "high", "critical"].map((l) => (
+                      <SelectItem key={l} value={l}>
+                        {t(`risk.${l}` as any)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </Field>
-              <Field label={t("pregnancy.doctorName")}><Input value={form.doctorName} onChange={e => setForm(f => ({ ...f, doctorName: e.target.value }))} /></Field>
+              <Field label={t("pregnancy.doctorName")}>
+                <Input
+                  value={form.doctorName}
+                  onChange={(e) => setForm((f) => ({ ...f, doctorName: e.target.value }))}
+                />
+              </Field>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-              <InfoRow label={t("pregnancy.visitDate")} value={p.visitDate ? new Date(p.visitDate).toLocaleDateString("ar-SA") : "—"} />
-              <InfoRow label={t("pregnancy.lmpDate")} value={p.lmpDate ? new Date(p.lmpDate).toLocaleDateString("ar-SA") : "—"} />
-              <InfoRow label={t("pregnancy.gestationalAge")} value={p.gestationalAge != null ? `${p.gestationalAge} أسبوع` : "—"} />
+              <InfoRow
+                label={t("pregnancy.visitDate")}
+                value={p.visitDate ? new Date(p.visitDate).toLocaleDateString("ar-SA") : "—"}
+              />
+              <InfoRow
+                label={t("pregnancy.lmpDate")}
+                value={p.lmpDate ? new Date(p.lmpDate).toLocaleDateString("ar-SA") : "—"}
+              />
+              <InfoRow
+                label={t("pregnancy.gestationalAge")}
+                value={p.gestationalAge != null ? `${p.gestationalAge} أسبوع` : "—"}
+              />
               <InfoRow label={t("pregnancy.riskLevel")} value={t(`risk.${p.riskLevel}` as any)} />
               <InfoRow label={t("pregnancy.doctorName")} value={p.doctorName ?? "—"} />
             </div>
@@ -618,9 +824,20 @@ export default function PregnancyDetail() {
         <CardContent>
           {editMode ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {RISK_FACTORS_G1.map(f => (
-                <label key={f} className="flex items-center gap-3 rounded-md border p-3 cursor-pointer hover:bg-muted">
-                  <Checkbox checked={form.riskFactors.includes(f)} onCheckedChange={() => setForm(prev => ({ ...prev, riskFactors: toggleInArray(prev.riskFactors, f) }))} />
+              {RISK_FACTORS_G1.map((f) => (
+                <label
+                  key={f}
+                  className="flex items-center gap-3 rounded-md border p-3 cursor-pointer hover:bg-muted"
+                >
+                  <Checkbox
+                    checked={form.riskFactors.includes(f)}
+                    onCheckedChange={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        riskFactors: toggleInArray(prev.riskFactors, f),
+                      }))
+                    }
+                  />
                   <span className="text-sm">{f}</span>
                 </label>
               ))}
@@ -640,9 +857,20 @@ export default function PregnancyDetail() {
         <CardContent>
           {editMode ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {RISK_FACTORS_G2.map(f => (
-                <label key={f} className="flex items-center gap-3 rounded-md border p-3 cursor-pointer hover:bg-muted">
-                  <Checkbox checked={form.pregnancyRiskFactors.includes(f)} onCheckedChange={() => setForm(prev => ({ ...prev, pregnancyRiskFactors: toggleInArray(prev.pregnancyRiskFactors, f) }))} />
+              {RISK_FACTORS_G2.map((f) => (
+                <label
+                  key={f}
+                  className="flex items-center gap-3 rounded-md border p-3 cursor-pointer hover:bg-muted"
+                >
+                  <Checkbox
+                    checked={form.pregnancyRiskFactors.includes(f)}
+                    onCheckedChange={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        pregnancyRiskFactors: toggleInArray(prev.pregnancyRiskFactors, f),
+                      }))
+                    }
+                  />
                   <span className="text-sm">{f}</span>
                 </label>
               ))}
@@ -662,9 +890,20 @@ export default function PregnancyDetail() {
         <CardContent>
           {editMode ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {RISK_FACTORS_G3.map(f => (
-                <label key={f} className="flex items-center gap-3 rounded-md border p-3 cursor-pointer hover:bg-muted">
-                  <Checkbox checked={form.medicalConditions.includes(f)} onCheckedChange={() => setForm(prev => ({ ...prev, medicalConditions: toggleInArray(prev.medicalConditions, f) }))} />
+              {RISK_FACTORS_G3.map((f) => (
+                <label
+                  key={f}
+                  className="flex items-center gap-3 rounded-md border p-3 cursor-pointer hover:bg-muted"
+                >
+                  <Checkbox
+                    checked={form.medicalConditions.includes(f)}
+                    onCheckedChange={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        medicalConditions: toggleInArray(prev.medicalConditions, f),
+                      }))
+                    }
+                  />
                   <span className="text-sm">{f}</span>
                 </label>
               ))}
@@ -677,40 +916,75 @@ export default function PregnancyDetail() {
 
       {/* Medications + VTE + Referral */}
       <Card>
-        <CardHeader><CardTitle>الأدوية والإحالة</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>الأدوية والإحالة</CardTitle>
+        </CardHeader>
         <CardContent className="space-y-4">
           {editMode ? (
             <>
               <Field label={t("pregnancy.medications")}>
-                <p className="text-xs text-muted-foreground mb-1">{t("pregnancy.medicationsDesc")}</p>
-                <Textarea value={form.medications} onChange={e => setForm(f => ({ ...f, medications: e.target.value }))} rows={2} placeholder="اذكر الدواء إن وُجد..." />
+                <p className="text-xs text-muted-foreground mb-1">
+                  {t("pregnancy.medicationsDesc")}
+                </p>
+                <Textarea
+                  value={form.medications}
+                  onChange={(e) => setForm((f) => ({ ...f, medications: e.target.value }))}
+                  rows={2}
+                  placeholder="اذكر الدواء إن وُجد..."
+                />
               </Field>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <label className="flex items-center gap-3 rounded-md border p-4 cursor-pointer hover:bg-muted">
-                  <Checkbox checked={form.isVteHighRisk} onCheckedChange={v => setForm(f => ({ ...f, isVteHighRisk: !!v }))} />
+                  <Checkbox
+                    checked={form.isVteHighRisk}
+                    onCheckedChange={(v) => setForm((f) => ({ ...f, isVteHighRisk: !!v }))}
+                  />
                   <span className="text-sm font-medium">{t("pregnancy.isVteHighRisk")}</span>
                 </label>
                 <label className="flex items-center gap-3 rounded-md border p-4 cursor-pointer hover:bg-muted">
-                  <Checkbox checked={form.enoxaparinPrescribed} onCheckedChange={v => setForm(f => ({ ...f, enoxaparinPrescribed: !!v }))} />
+                  <Checkbox
+                    checked={form.enoxaparinPrescribed}
+                    onCheckedChange={(v) => setForm((f) => ({ ...f, enoxaparinPrescribed: !!v }))}
+                  />
                   <span className="text-sm font-medium">{t("pregnancy.enoxaparinPrescribed")}</span>
                 </label>
               </div>
               <Field label={t("pregnancy.referralRecommendation")}>
-                <Select value={form.referralRecommendation} onValueChange={v => setForm(f => ({ ...f, referralRecommendation: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select
+                  value={form.referralRecommendation}
+                  onValueChange={(v) => setForm((f) => ({ ...f, referralRecommendation: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
-                    {["follow_at_center","follow_at_hospital","transfer_kfch"].map(r => (
-                      <SelectItem key={r} value={r}>{t(`referral.${r}` as any)}</SelectItem>
+                    {["follow_at_center", "follow_at_hospital", "transfer_kfch"].map((r) => (
+                      <SelectItem key={r} value={r}>
+                        {t(`referral.${r}` as any)}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </Field>
               <Field label={t("pregnancy.referralExplained")}>
                 <Select
-                  value={form.referralExplained === true ? "yes" : form.referralExplained === false ? "no" : ""}
-                  onValueChange={v => setForm(f => ({ ...f, referralExplained: v === "yes" ? true : v === "no" ? false : null }))}
+                  value={
+                    form.referralExplained === true
+                      ? "yes"
+                      : form.referralExplained === false
+                        ? "no"
+                        : ""
+                  }
+                  onValueChange={(v) =>
+                    setForm((f) => ({
+                      ...f,
+                      referralExplained: v === "yes" ? true : v === "no" ? false : null,
+                    }))
+                  }
                 >
-                  <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر..." />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="yes">{t("pregnancy.yes")}</SelectItem>
                     <SelectItem value="no">{t("pregnancy.no")}</SelectItem>
@@ -719,28 +993,66 @@ export default function PregnancyDetail() {
               </Field>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Field label={t("pregnancy.referredHospital")}>
-                  <Select value={form.referredHospitalId} onValueChange={v => setForm(f => ({ ...f, referredHospitalId: v }))}>
-                    <SelectTrigger><SelectValue placeholder="اختر المستشفى" /></SelectTrigger>
+                  <Select
+                    value={form.referredHospitalId}
+                    onValueChange={(v) => setForm((f) => ({ ...f, referredHospitalId: v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="اختر المستشفى" />
+                    </SelectTrigger>
                     <SelectContent>
-                      {hospitals?.map(h => <SelectItem key={h.id} value={String(h.id)}>{h.nameAr}</SelectItem>)}
+                      {hospitals?.map((h) => (
+                        <SelectItem key={h.id} value={String(h.id)}>
+                          {h.nameAr}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </Field>
                 <Field label={t("pregnancy.appointmentDate")}>
-                  <Input type="date" value={form.appointmentDate} onChange={e => setForm(f => ({ ...f, appointmentDate: e.target.value }))} />
+                  <Input
+                    type="date"
+                    value={form.appointmentDate}
+                    onChange={(e) => setForm((f) => ({ ...f, appointmentDate: e.target.value }))}
+                  />
                 </Field>
               </div>
             </>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <InfoRow label={t("pregnancy.medications")} value={p.medications ?? "—"} />
-              <InfoRow label={t("pregnancy.isVteHighRisk")} value={p.isVteHighRisk ? "نعم" : "لا"} />
-              <InfoRow label={t("pregnancy.enoxaparinPrescribed")} value={p.enoxaparinPrescribed ? "نعم" : "لا"} />
-              <InfoRow label={t("pregnancy.referralExplained")} value={p.referralExplained === true ? "نعم" : p.referralExplained === false ? "لا" : "—"} />
-              <InfoRow label={t("pregnancy.referralRecommendation")} value={t(`referral.${p.referralRecommendation}` as any)} />
-              <InfoRow label={t("pregnancy.referredHospital")} value={p.referredHospitalNameAr ?? "—"} />
-              <InfoRow label={t("pregnancy.appointmentDate")} value={p.appointmentDate ? new Date(p.appointmentDate).toLocaleDateString("ar-SA") : "—"} />
-              <InfoRow label={t("pregnancy.compliance")} value={t(`compliance.${p.compliance}` as any)} />
+              <InfoRow
+                label={t("pregnancy.isVteHighRisk")}
+                value={p.isVteHighRisk ? "نعم" : "لا"}
+              />
+              <InfoRow
+                label={t("pregnancy.enoxaparinPrescribed")}
+                value={p.enoxaparinPrescribed ? "نعم" : "لا"}
+              />
+              <InfoRow
+                label={t("pregnancy.referralExplained")}
+                value={
+                  p.referralExplained === true ? "نعم" : p.referralExplained === false ? "لا" : "—"
+                }
+              />
+              <InfoRow
+                label={t("pregnancy.referralRecommendation")}
+                value={t(`referral.${p.referralRecommendation}` as any)}
+              />
+              <InfoRow
+                label={t("pregnancy.referredHospital")}
+                value={p.referredHospitalNameAr ?? "—"}
+              />
+              <InfoRow
+                label={t("pregnancy.appointmentDate")}
+                value={
+                  p.appointmentDate ? new Date(p.appointmentDate).toLocaleDateString("ar-SA") : "—"
+                }
+              />
+              <InfoRow
+                label={t("pregnancy.compliance")}
+                value={t(`compliance.${p.compliance}` as any)}
+              />
               {p.workingDaysToAppointment != null && (
                 <InfoRow label="أيام العمل للموعد" value={`${p.workingDaysToAppointment} يوم`} />
               )}
@@ -751,15 +1063,27 @@ export default function PregnancyDetail() {
 
       {/* Notes */}
       <Card>
-        <CardHeader><CardTitle>الملاحظات</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>الملاحظات</CardTitle>
+        </CardHeader>
         <CardContent className="space-y-4">
           {editMode ? (
             <>
               <Field label={t("pregnancy.notes")}>
-                <Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} placeholder="ملاحظات عامة..." />
+                <Textarea
+                  value={form.notes}
+                  onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                  rows={2}
+                  placeholder="ملاحظات عامة..."
+                />
               </Field>
               <Field label={t("pregnancy.followUpNotes")}>
-                <Textarea value={form.followUpNotes} onChange={e => setForm(f => ({ ...f, followUpNotes: e.target.value }))} rows={2} placeholder="استجابات تواصل المراجعة..." />
+                <Textarea
+                  value={form.followUpNotes}
+                  onChange={(e) => setForm((f) => ({ ...f, followUpNotes: e.target.value }))}
+                  rows={2}
+                  placeholder="استجابات تواصل المراجعة..."
+                />
               </Field>
             </>
           ) : (
@@ -780,7 +1104,7 @@ export default function PregnancyDetail() {
               size="sm"
               variant="outline"
               style={{ borderColor: "#006633", color: "#006633" }}
-              onClick={() => setShowAddAppt(v => !v)}
+              onClick={() => setShowAddAppt((v) => !v)}
             >
               <Plus className="w-4 h-4 ms-1" />
               {t("appt.addAppointment")}
@@ -790,26 +1114,36 @@ export default function PregnancyDetail() {
         <CardContent className="space-y-4">
           {/* ── Add appointment inline form ── */}
           {showAddAppt && (
-            <div className="rounded-lg border border-dashed p-4 space-y-3 bg-muted/30" style={{ borderColor: "#006633" }}>
-              <p className="text-sm font-medium" style={{ color: "#006633" }}>{t("appt.addAppointment")}</p>
+            <div
+              className="rounded-lg border border-dashed p-4 space-y-3 bg-muted/30"
+              style={{ borderColor: "#006633" }}
+            >
+              <p className="text-sm font-medium" style={{ color: "#006633" }}>
+                {t("appt.addAppointment")}
+              </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label className="text-xs">{t("pregnancy.appointmentDate")}</Label>
                   <Input
                     type="date"
                     value={newAppt.date}
-                    onChange={e => setNewAppt(v => ({ ...v, date: e.target.value }))}
+                    onChange={(e) => setNewAppt((v) => ({ ...v, date: e.target.value }))}
                   />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">{t("pregnancy.referredHospital")}</Label>
-                  <Select value={newAppt.hospitalId} onValueChange={v => setNewAppt(prev => ({ ...prev, hospitalId: v }))}>
+                  <Select
+                    value={newAppt.hospitalId}
+                    onValueChange={(v) => setNewAppt((prev) => ({ ...prev, hospitalId: v }))}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder={t("appt.selectHospital")} />
                     </SelectTrigger>
                     <SelectContent>
-                      {hospitals?.map(h => (
-                        <SelectItem key={h.id} value={String(h.id)}>{h.nameAr}</SelectItem>
+                      {hospitals?.map((h) => (
+                        <SelectItem key={h.id} value={String(h.id)}>
+                          {h.nameAr}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -820,12 +1154,21 @@ export default function PregnancyDetail() {
                   size="sm"
                   style={{ background: "#006633", color: "#fff" }}
                   onClick={submitNewAppt}
-                  disabled={createAppointmentMutation.isPending || !newAppt.date || !newAppt.hospitalId}
+                  disabled={
+                    createAppointmentMutation.isPending || !newAppt.date || !newAppt.hospitalId
+                  }
                 >
                   <Save className="w-4 h-4 ms-1" />
                   {t("general.save")}
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => { setShowAddAppt(false); setNewAppt({ date: "", hospitalId: "" }); }}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setShowAddAppt(false);
+                    setNewAppt({ date: "", hospitalId: "" });
+                  }}
+                >
                   <X className="w-4 h-4 ms-1" />
                   {t("general.cancel")}
                 </Button>
@@ -852,7 +1195,7 @@ export default function PregnancyDetail() {
                   </TableCell>
                 </TableRow>
               ) : (
-                appointments.map(apt => (
+                appointments.map((apt) => (
                   <TableRow key={apt.id}>
                     <TableCell className="font-medium">
                       {new Date(apt.appointmentDate).toLocaleDateString("ar-SA")}
@@ -860,14 +1203,18 @@ export default function PregnancyDetail() {
                     <TableCell>{apt.hospitalNameAr ?? "—"}</TableCell>
                     <TableCell>
                       {apt.attended === true ? (
-                        <Badge className="bg-green-100 text-green-800">✅ {t("appt.attended")}</Badge>
+                        <Badge className="bg-green-100 text-green-800">
+                          ✅ {t("appt.attended")}
+                        </Badge>
                       ) : apt.attended === false ? (
                         <Badge className="bg-red-100 text-red-800">❌ {t("appt.absent")}</Badge>
                       ) : (
                         <Badge variant="outline">⏳ {t("appt.scheduled")}</Badge>
                       )}
                     </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">{apt.attendanceNote ?? "—"}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {apt.attendanceNote ?? "—"}
+                    </TableCell>
                     <TableCell>
                       <div className="flex gap-1 flex-wrap">
                         {apt.attended !== true && (
@@ -898,13 +1245,23 @@ export default function PregnancyDetail() {
                             variant="ghost"
                             className="h-7 px-2 text-xs text-muted-foreground"
                             title="إعادة تعيين"
-                            onClick={() => updateAppointmentMutation.mutate(
-                              { id: apt.id, data: { attended: null, attendanceNote: null } },
-                              {
-                              onSuccess: () => { toast({ title: t("appt.resetSuccess") }); refetch(); },
-                              onError: () => toast({ title: "خطأ", description: t("general.saveError"), variant: "destructive" }),
+                            onClick={() =>
+                              updateAppointmentMutation.mutate(
+                                { id: apt.id, data: { attended: null, attendanceNote: null } },
+                                {
+                                  onSuccess: () => {
+                                    toast({ title: t("appt.resetSuccess") });
+                                    refetch();
+                                  },
+                                  onError: () =>
+                                    toast({
+                                      title: "خطأ",
+                                      description: t("general.saveError"),
+                                      variant: "destructive",
+                                    }),
+                                },
+                              )
                             }
-                            )}
                           >
                             <RotateCcw className="w-3.5 h-3.5" />
                           </Button>
@@ -920,7 +1277,7 @@ export default function PregnancyDetail() {
       </Card>
 
       {/* ── Attendance Dialog ── */}
-      <Dialog open={attendDlg.open} onOpenChange={open => setAttendDlg(v => ({ ...v, open }))}>
+      <Dialog open={attendDlg.open} onOpenChange={(open) => setAttendDlg((v) => ({ ...v, open }))}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{t("appt.attendanceDialogTitle")}</DialogTitle>
@@ -928,7 +1285,7 @@ export default function PregnancyDetail() {
           <div className="space-y-4 py-2">
             <div className="flex gap-3">
               <button
-                onClick={() => setAttendDlg(v => ({ ...v, attended: true }))}
+                onClick={() => setAttendDlg((v) => ({ ...v, attended: true }))}
                 className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 p-3 text-sm font-medium transition-colors ${
                   attendDlg.attended
                     ? "border-green-600 bg-green-50 text-green-700"
@@ -939,7 +1296,7 @@ export default function PregnancyDetail() {
                 {t("appt.attended")}
               </button>
               <button
-                onClick={() => setAttendDlg(v => ({ ...v, attended: false }))}
+                onClick={() => setAttendDlg((v) => ({ ...v, attended: false }))}
                 className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 p-3 text-sm font-medium transition-colors ${
                   !attendDlg.attended
                     ? "border-red-500 bg-red-50 text-red-600"
@@ -956,15 +1313,12 @@ export default function PregnancyDetail() {
                 rows={3}
                 placeholder={t("appt.attendanceNotePlaceholder")}
                 value={attendDlg.note}
-                onChange={e => setAttendDlg(v => ({ ...v, note: e.target.value }))}
+                onChange={(e) => setAttendDlg((v) => ({ ...v, note: e.target.value }))}
               />
             </div>
           </div>
           <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setAttendDlg(v => ({ ...v, open: false }))}
-            >
+            <Button variant="outline" onClick={() => setAttendDlg((v) => ({ ...v, open: false }))}>
               {t("general.cancel")}
             </Button>
             <Button
@@ -1007,7 +1361,9 @@ function BadgeList({ items }: { items: string[] }) {
   return (
     <div className="flex flex-wrap gap-2">
       {items.map((item, i) => (
-        <Badge key={i} variant="outline" className="text-sm py-1">{item}</Badge>
+        <Badge key={i} variant="outline" className="text-sm py-1">
+          {item}
+        </Badge>
       ))}
     </div>
   );

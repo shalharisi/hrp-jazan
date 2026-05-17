@@ -13,9 +13,16 @@ export const patientsTable = pgTable("patients", {
   address: text("address"),
   healthCenterId: integer("health_center_id").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
 });
 
-export const insertPatientSchema = createInsertSchema(patientsTable).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertPatientSchema = createInsertSchema(patientsTable).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
 export type InsertPatient = z.infer<typeof insertPatientSchema>;
 export type Patient = typeof patientsTable.$inferSelect;

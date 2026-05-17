@@ -9,23 +9,17 @@
 
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const XLSX = require("xlsx") as typeof import("xlsx");
 
-import {
-  db,
-  patientsTable,
-  pregnanciesTable,
-  appointmentsTable,
-} from "@workspace/db";
-import { eq, inArray, notInArray } from "drizzle-orm";
+import { db, patientsTable, pregnanciesTable, appointmentsTable } from "@workspace/db";
+import { inArray } from "drizzle-orm";
 import path from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const EXCEL_PATH = path.resolve(
   __dirname,
-  "../../attached_assets/HRPJazan2026_(2)_1778936984329.xlsx"
+  "../../attached_assets/HRPJazan2026_(2)_1778936984329.xlsx",
 );
 
 async function main() {
@@ -51,10 +45,14 @@ async function main() {
 
   // ── 2. Find test patients (not in Excel) ──────────────────────────────
   const allPatients = await db
-    .select({ id: patientsTable.id, nationalId: patientsTable.nationalId, nameAr: patientsTable.nameAr })
+    .select({
+      id: patientsTable.id,
+      nationalId: patientsTable.nationalId,
+      nameAr: patientsTable.nameAr,
+    })
     .from(patientsTable);
 
-  const testPatients = allPatients.filter(p => !excelIds.has(p.nationalId));
+  const testPatients = allPatients.filter((p) => !excelIds.has(p.nationalId));
 
   if (testPatients.length === 0) {
     console.log("\n✅ No test patients found – database is already clean.");
@@ -62,11 +60,9 @@ async function main() {
   }
 
   console.log(`\n⚠️  Found ${testPatients.length} test patient(s) to delete:`);
-  testPatients.forEach(p =>
-    console.log(`  - [${p.nationalId}] ${p.nameAr || "(no name)"}`)
-  );
+  testPatients.forEach((p) => console.log(`  - [${p.nationalId}] ${p.nameAr || "(no name)"}`));
 
-  const testPatientIds = testPatients.map(p => p.id);
+  const testPatientIds = testPatients.map((p) => p.id);
 
   // ── 3. Find their pregnancies ──────────────────────────────────────────
   const testPregnancies = await db
@@ -74,7 +70,7 @@ async function main() {
     .from(pregnanciesTable)
     .where(inArray(pregnanciesTable.patientId, testPatientIds));
 
-  const testPregnancyIds = testPregnancies.map(p => p.id);
+  const testPregnancyIds = testPregnancies.map((p) => p.id);
   console.log(`  Pregnancies to delete: ${testPregnancyIds.length}`);
 
   // ── 4. Find their appointments ─────────────────────────────────────────
@@ -126,7 +122,7 @@ async function main() {
 
 main()
   .then(() => process.exit(0))
-  .catch(e => {
+  .catch((e) => {
     console.error("❌ Fatal error:", e);
     process.exit(1);
   });

@@ -48,11 +48,11 @@ export const translations = {
     "risk.medium": "متوسط",
     "risk.high": "عالي",
     "risk.critical": "حرج",
-    
+
     "compliance.compliant": "ملتزم",
     "compliance.non_compliant": "غير ملتزم",
     "compliance.pending": "بانتظار موعد",
-    
+
     "referral.follow_at_center": "متابعة في المركز",
     "referral.follow_at_hospital": "متابعة في المستشفى",
     "referral.transfer_kfch": "تحويل لـ KFCH",
@@ -64,13 +64,17 @@ export const translations = {
     "pregnancy.riskLevel": "درجة الخطورة",
     "pregnancy.referralRecommendation": "توصية الإحالة",
     "pregnancy.riskFactors": "عوامل الخطورة العامة",
-    "pregnancy.riskFactorsDesc": "هل لدى المريضة أي من عوامل الخطر التالية؟ (يمكن اختيار أكثر من خيار)",
+    "pregnancy.riskFactorsDesc":
+      "هل لدى المريضة أي من عوامل الخطر التالية؟ (يمكن اختيار أكثر من خيار)",
     "pregnancy.pregnancyRiskFactors": "عوامل خطر مرتبطة بالحمل أو الصحة الحالية",
-    "pregnancy.pregnancyRiskFactorsDesc": "هل لدى المريضة أي من عوامل الخطر التالية المرتبطة بالحمل أو الصحة الحالية؟",
+    "pregnancy.pregnancyRiskFactorsDesc":
+      "هل لدى المريضة أي من عوامل الخطر التالية المرتبطة بالحمل أو الصحة الحالية؟",
     "pregnancy.medicalConditions": "الأمراض المزمنة",
-    "pregnancy.medicalConditionsDesc": "ما هي الأمراض المزمنة التي تعاني منها المريضة؟ (اختر كل ما ينطبق)",
+    "pregnancy.medicalConditionsDesc":
+      "ما هي الأمراض المزمنة التي تعاني منها المريضة؟ (اختر كل ما ينطبق)",
     "pregnancy.medications": "الأدوية (موانع الاستخدام)",
-    "pregnancy.medicationsDesc": "هل المريضة على أي دواء مثل Warfarin، Isotretinoin، Methotrexate، Mycophenolate mofetil أو أي دواء آخر يُمنع استخدامه خلال الحمل؟",
+    "pregnancy.medicationsDesc":
+      "هل المريضة على أي دواء مثل Warfarin، Isotretinoin، Methotrexate، Mycophenolate mofetil أو أي دواء آخر يُمنع استخدامه خلال الحمل؟",
     "pregnancy.isVteHighRisk": "هل المريضة عالية الخطورة للجلطات الوريدية (VTE)؟",
     "pregnancy.enoxaparinPrescribed": "هل تم وصف Enoxaparin للوقاية من الجلطات؟",
     "pregnancy.referralExplained": "هل شرح الطبيب للمريضة آلية وأهمية الإحالة قبل مغادرة المركز؟",
@@ -193,7 +197,8 @@ export const translations = {
     "appointments.printFilterSector": "القطاع",
     "appointments.printAll": "الكل",
     "appointments.printDate": "تاريخ الطباعة",
-    "appointments.urgentBanner": "تنبيه عاجل: يوجد {count} موعد ماضٍ لم يُسجَّل فيه الحضور بعد — يستوجب متابعة فورية.",
+    "appointments.urgentBanner":
+      "تنبيه عاجل: يوجد {count} موعد ماضٍ لم يُسجَّل فيه الحضور بعد — يستوجب متابعة فورية.",
     "appointments.urgentBannerAction": "عرض المواعيد بحاجة إجراء",
     "appointments.urgentBannerExport": "تصدير القائمة",
     "appointments.urgentBannerExportToast": "تم تصدير {count} موعد",
@@ -206,7 +211,8 @@ export const translations = {
     "reference.settingsTitle": "إعدادات النظام",
     "reference.settingsDesc": "ضبط إعدادات تشغيل المنظومة",
     "reference.urgentThresholdLabel": "حد التنبيه العاجل للمواعيد",
-    "reference.urgentThresholdDesc": "عدد المواعيد الماضية غير المسجَّل فيها الحضور الذي يُشغِّل بانر التنبيه العاجل في صفحة المواعيد. القيمة الافتراضية: 5.",
+    "reference.urgentThresholdDesc":
+      "عدد المواعيد الماضية غير المسجَّل فيها الحضور الذي يُشغِّل بانر التنبيه العاجل في صفحة المواعيد. القيمة الافتراضية: 5.",
     "reference.urgentThresholdSaved": "تم حفظ الحد بنجاح",
 
     // User Guide downloads
@@ -277,7 +283,7 @@ export const translations = {
     "risk.medium": "Medium",
     "risk.high": "High",
     "risk.critical": "Critical",
-    
+
     "compliance.compliant": "Compliant",
     "compliance.non_compliant": "Non Compliant",
     "compliance.pending": "Pending Appt",
@@ -293,16 +299,21 @@ export const translations = {
     "pregnancy.riskLevel": "Risk Level",
     "pregnancy.referralRecommendation": "Referral Recommendation",
     "pregnancy.riskFactors": "General Risk Factors",
-    "pregnancy.riskFactorsDesc": "Does the patient have any of the following risk factors? (More than one option can be selected)",
+    "pregnancy.riskFactorsDesc":
+      "Does the patient have any of the following risk factors? (More than one option can be selected)",
     "pregnancy.pregnancyRiskFactors": "Pregnancy-related Health Risk Factors",
-    "pregnancy.pregnancyRiskFactorsDesc": "Does the patient have any of the following pregnancy-related or current health risk factors?",
+    "pregnancy.pregnancyRiskFactorsDesc":
+      "Does the patient have any of the following pregnancy-related or current health risk factors?",
     "pregnancy.medicalConditions": "General Medical Conditions",
-    "pregnancy.medicalConditionsDesc": "Which of the following general medical conditions does the patient have? (Select all that apply)",
+    "pregnancy.medicalConditionsDesc":
+      "Which of the following general medical conditions does the patient have? (Select all that apply)",
     "pregnancy.medications": "Medications",
-    "pregnancy.medicationsDesc": "Is the patient on medication like Warfarin, Isotretinoin, Methotrexate, Mycophenolate mofetil or any other significant medications contraindicated for pregnancy?",
+    "pregnancy.medicationsDesc":
+      "Is the patient on medication like Warfarin, Isotretinoin, Methotrexate, Mycophenolate mofetil or any other significant medications contraindicated for pregnancy?",
     "pregnancy.isVteHighRisk": "Is the patient high-risk for VTE?",
     "pregnancy.enoxaparinPrescribed": "Has Enoxaparin (thromboprophylaxis) been prescribed?",
-    "pregnancy.referralExplained": "Did the doctor explain the referral mechanism and importance to the patient?",
+    "pregnancy.referralExplained":
+      "Did the doctor explain the referral mechanism and importance to the patient?",
     "pregnancy.doctorName": "Doctor's Name",
     "pregnancy.notes": "Comments",
     "pregnancy.followUpNotes": "Follow-up Contact Responses / Notes",
@@ -422,7 +433,8 @@ export const translations = {
     "appointments.printFilterSector": "Sector",
     "appointments.printAll": "All",
     "appointments.printDate": "Print Date",
-    "appointments.urgentBanner": "Urgent: {count} past appointments have no attendance recorded — immediate follow-up required.",
+    "appointments.urgentBanner":
+      "Urgent: {count} past appointments have no attendance recorded — immediate follow-up required.",
     "appointments.urgentBannerAction": "View appointments needing action",
     "appointments.urgentBannerExport": "Export list",
     "appointments.urgentBannerExportToast": "Exported {count} appointments",
@@ -435,7 +447,8 @@ export const translations = {
     "reference.settingsTitle": "System Settings",
     "reference.settingsDesc": "Configure system operational settings",
     "reference.urgentThresholdLabel": "Urgent Banner Threshold",
-    "reference.urgentThresholdDesc": "Number of past unrecorded appointments that triggers the urgent banner on the Appointments page. Default: 5.",
+    "reference.urgentThresholdDesc":
+      "Number of past unrecorded appointments that triggers the urgent banner on the Appointments page. Default: 5.",
     "reference.urgentThresholdSaved": "Threshold saved successfully",
 
     // User Guide downloads
@@ -443,10 +456,13 @@ export const translations = {
     "guide.downloadDesc": "The guide is available in two formats",
     "guide.downloadPdf": "Download as PDF",
     "guide.downloadWord": "Download as Word",
-    "guide.filesNotReady": "Guide files are not yet available. Please run the guide generation script first.",
-    "guide.filesNotReadyAdmin": "Guide files have not been generated yet. To create them, run the following command from the project directory:",
+    "guide.filesNotReady":
+      "Guide files are not yet available. Please run the guide generation script first.",
+    "guide.filesNotReadyAdmin":
+      "Guide files have not been generated yet. To create them, run the following command from the project directory:",
     "guide.filesNotReadyAdminCmd": "pnpm --filter @workspace/scripts run generate-guide",
-    "guide.filesNotReadyUser": "The user guide will be available for download soon. Please contact your system administrator if you need it urgently.",
+    "guide.filesNotReadyUser":
+      "The user guide will be available for download soon. Please contact your system administrator if you need it urgently.",
     "guide.generateBtn": "Generate Guide Now",
     "guide.generating": "Generating guide...",
     "guide.generateSuccess": "Guide generated successfully. You can now download it.",
@@ -456,7 +472,7 @@ export const translations = {
     "guide.generatingHint": "This may take 10–30 seconds. Please wait...",
     "guide.elapsed": "Elapsed: {n} s",
     "guide.lastGenerated": "Last generated:",
-  }
+  },
 } as const;
 
 export type Language = "ar" | "en";

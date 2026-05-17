@@ -14,7 +14,7 @@ function resolveSecret(name: string): string {
   if (process.env["NODE_ENV"] === "production") {
     throw new Error(
       `Environment variable ${name} is required in production. ` +
-      `Set it as a Replit secret in the Secrets tab.`
+        `Set it as a Replit secret in the Secrets tab.`,
     );
   }
 
@@ -24,7 +24,7 @@ function resolveSecret(name: string): string {
   logger.warn(
     { envVar: name },
     `${name} is not set. Using a random ephemeral secret — sessions will be lost on restart. ` +
-    `Set ${name} as a Replit secret for persistent sessions.`
+      `Set ${name} as a Replit secret for persistent sessions.`,
   );
   return ephemeral;
 }
@@ -73,6 +73,7 @@ export function verifyRefreshToken(token: string): JwtPayload {
 // ---------------------------------------------------------------------------
 
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       user?: JwtPayload;
@@ -98,7 +99,9 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
     req.user = payload;
     next();
   } catch {
-    res.status(401).json({ error: "انتهت صلاحية الجلسة – يرجى تسجيل الدخول مجدداً", code: "TOKEN_EXPIRED" });
+    res
+      .status(401)
+      .json({ error: "انتهت صلاحية الجلسة – يرجى تسجيل الدخول مجدداً", code: "TOKEN_EXPIRED" });
   }
 }
 
@@ -127,7 +130,9 @@ export function requireWriteAccess(req: Request, res: Response, next: NextFuncti
   }
   const mutationMethods = ["POST", "PATCH", "PUT", "DELETE"];
   if (mutationMethods.includes(req.method.toUpperCase()) && req.user.role === "viewer") {
-    res.status(403).json({ error: "صلاحية القراءة فقط – لا يمكنك إجراء تعديلات", code: "FORBIDDEN" });
+    res
+      .status(403)
+      .json({ error: "صلاحية القراءة فقط – لا يمكنك إجراء تعديلات", code: "FORBIDDEN" });
     return;
   }
   next();
@@ -194,7 +199,7 @@ export function coordinatorSectorGuard(req: Request, res: Response, next: NextFu
 export function isCoordinatorSectorMatch(
   userRole: UserRole,
   userSectorId: string | null | undefined,
-  patientSectorId: number | string | null | undefined
+  patientSectorId: number | string | null | undefined,
 ): boolean {
   if (userRole !== "coordinator") return true; // non-coordinators pass
   if (!userSectorId) return false; // coordinator without sector — deny

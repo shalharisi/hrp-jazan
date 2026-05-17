@@ -29,26 +29,30 @@ router.get("/sectors", async (req, res): Promise<void> => {
     centerCountBySector.set(hc.sectorId, (centerCountBySector.get(hc.sectorId) ?? 0) + 1);
   }
 
-  res.json(sectors.map((s) => ({
-    id: s.id,
-    nameAr: s.nameAr,
-    nameEn: s.nameEn ?? null,
-    hospitalId: s.hospitalId,
-    hospitalNameAr: hospitalMap.get(s.hospitalId)?.nameAr ?? null,
-    healthCenterCount: centerCountBySector.get(s.id) ?? 0,
-  })));
+  res.json(
+    sectors.map((s) => ({
+      id: s.id,
+      nameAr: s.nameAr,
+      nameEn: s.nameEn ?? null,
+      hospitalId: s.hospitalId,
+      hospitalNameAr: hospitalMap.get(s.hospitalId)?.nameAr ?? null,
+      healthCenterCount: centerCountBySector.get(s.id) ?? 0,
+    })),
+  );
 });
 
 // ─── GET /hospitals ────────────────────────────────────────────────────────────
 router.get("/hospitals", async (req, res): Promise<void> => {
   const hospitals = await db.select().from(hospitalsTable).orderBy(hospitalsTable.id);
-  res.json(hospitals.map((h) => ({
-    id: h.id,
-    nameAr: h.nameAr,
-    nameEn: h.nameEn,
-    isKfch: h.isKfch,
-    totalCases: null,
-  })));
+  res.json(
+    hospitals.map((h) => ({
+      id: h.id,
+      nameAr: h.nameAr,
+      nameEn: h.nameEn,
+      isKfch: h.isKfch,
+      totalCases: null,
+    })),
+  );
 });
 
 // ─── POST /hospitals (admin only) ─────────────────────────────────────────────
@@ -65,10 +69,7 @@ router.post("/hospitals", requireRole("admin"), async (req, res): Promise<void> 
     return;
   }
 
-  const [hospital] = await db
-    .insert(hospitalsTable)
-    .values(parsed.data)
-    .returning();
+  const [hospital] = await db.insert(hospitalsTable).values(parsed.data).returning();
 
   logAudit({
     ...buildAuditParams(req),
@@ -96,14 +97,27 @@ const UpdateHospitalBody = z.object({
 
 router.patch("/hospitals/:id", requireRole("admin"), async (req, res): Promise<void> => {
   const id = parseInt(String(req.params["id"] ?? ""));
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
 
   const parsed = UpdateHospitalBody.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
 
   // Fetch current for audit oldValue
-  const [existing] = await db.select().from(hospitalsTable).where(eq(hospitalsTable.id, id)).limit(1);
-  if (!existing) { res.status(404).json({ error: "Not found" }); return; }
+  const [existing] = await db
+    .select()
+    .from(hospitalsTable)
+    .where(eq(hospitalsTable.id, id))
+    .limit(1);
+  if (!existing) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
 
   const [hospital] = await db
     .update(hospitalsTable)
@@ -111,7 +125,10 @@ router.patch("/hospitals/:id", requireRole("admin"), async (req, res): Promise<v
     .where(eq(hospitalsTable.id, id))
     .returning();
 
-  if (!hospital) { res.status(404).json({ error: "Not found" }); return; }
+  if (!hospital) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
 
   logAudit({
     ...buildAuditParams(req),
@@ -122,16 +139,32 @@ router.patch("/hospitals/:id", requireRole("admin"), async (req, res): Promise<v
     newValue: hospital,
   }).catch(() => {});
 
-  res.json({ id: hospital.id, nameAr: hospital.nameAr, nameEn: hospital.nameEn, isKfch: hospital.isKfch, totalCases: null });
+  res.json({
+    id: hospital.id,
+    nameAr: hospital.nameAr,
+    nameEn: hospital.nameEn,
+    isKfch: hospital.isKfch,
+    totalCases: null,
+  });
 });
 
 // ─── DELETE /hospitals/:id (admin only) ──────────────────────────────────────
 router.delete("/hospitals/:id", requireRole("admin"), async (req, res): Promise<void> => {
   const id = parseInt(String(req.params["id"] ?? ""));
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
 
-  const [hospital] = await db.select().from(hospitalsTable).where(eq(hospitalsTable.id, id)).limit(1);
-  if (!hospital) { res.status(404).json({ error: "Not found" }); return; }
+  const [hospital] = await db
+    .select()
+    .from(hospitalsTable)
+    .where(eq(hospitalsTable.id, id))
+    .limit(1);
+  if (!hospital) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
 
   await db.delete(hospitalsTable).where(eq(hospitalsTable.id, id));
 
@@ -158,7 +191,11 @@ router.get("/health-centers", async (req, res): Promise<void> => {
 
   let centers;
   if (sectorId) {
-    centers = await db.select().from(healthCentersTable).where(eq(healthCentersTable.sectorId, sectorId)).orderBy(healthCentersTable.nameAr);
+    centers = await db
+      .select()
+      .from(healthCentersTable)
+      .where(eq(healthCentersTable.sectorId, sectorId))
+      .orderBy(healthCentersTable.nameAr);
   } else {
     centers = await db.select().from(healthCentersTable).orderBy(healthCentersTable.nameAr);
   }
@@ -166,13 +203,15 @@ router.get("/health-centers", async (req, res): Promise<void> => {
   const sectors = await db.select().from(sectorsTable);
   const sectorMap = new Map(sectors.map((s) => [s.id, s]));
 
-  res.json(centers.map((c) => ({
-    id: c.id,
-    nameAr: c.nameAr,
-    nameEn: c.nameEn ?? null,
-    sectorId: c.sectorId,
-    sectorNameAr: sectorMap.get(c.sectorId)?.nameAr ?? null,
-  })));
+  res.json(
+    centers.map((c) => ({
+      id: c.id,
+      nameAr: c.nameAr,
+      nameEn: c.nameEn ?? null,
+      sectorId: c.sectorId,
+      sectorNameAr: sectorMap.get(c.sectorId)?.nameAr ?? null,
+    })),
+  );
 });
 
 // ─── POST /health-centers (admin only) ────────────────────────────────────────
@@ -206,7 +245,11 @@ router.post("/health-centers", requireRole("admin"), async (req, res): Promise<v
     newValue: center,
   }).catch(() => {});
 
-  const [sector] = await db.select().from(sectorsTable).where(eq(sectorsTable.id, center!.sectorId)).limit(1);
+  const [sector] = await db
+    .select()
+    .from(sectorsTable)
+    .where(eq(sectorsTable.id, center!.sectorId))
+    .limit(1);
 
   res.status(201).json({
     id: center!.id,
@@ -226,14 +269,27 @@ const UpdateHealthCenterBody = z.object({
 
 router.patch("/health-centers/:id", requireRole("admin"), async (req, res): Promise<void> => {
   const id = parseInt(String(req.params["id"] ?? ""));
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
 
   const parsed = UpdateHealthCenterBody.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
 
   // Fetch current for audit oldValue
-  const [existing] = await db.select().from(healthCentersTable).where(eq(healthCentersTable.id, id)).limit(1);
-  if (!existing) { res.status(404).json({ error: "Not found" }); return; }
+  const [existing] = await db
+    .select()
+    .from(healthCentersTable)
+    .where(eq(healthCentersTable.id, id))
+    .limit(1);
+  if (!existing) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
 
   const updateData: Record<string, unknown> = {};
   if (parsed.data.nameAr) updateData["nameAr"] = parsed.data.nameAr;
@@ -246,7 +302,10 @@ router.patch("/health-centers/:id", requireRole("admin"), async (req, res): Prom
     .where(eq(healthCentersTable.id, id))
     .returning();
 
-  if (!center) { res.status(404).json({ error: "Not found" }); return; }
+  if (!center) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
 
   logAudit({
     ...buildAuditParams(req),
@@ -257,7 +316,11 @@ router.patch("/health-centers/:id", requireRole("admin"), async (req, res): Prom
     newValue: center,
   }).catch(() => {});
 
-  const [sector] = await db.select().from(sectorsTable).where(eq(sectorsTable.id, center.sectorId)).limit(1);
+  const [sector] = await db
+    .select()
+    .from(sectorsTable)
+    .where(eq(sectorsTable.id, center.sectorId))
+    .limit(1);
 
   res.json({
     id: center.id,
@@ -271,10 +334,16 @@ router.patch("/health-centers/:id", requireRole("admin"), async (req, res): Prom
 // ─── DELETE /health-centers/:id (admin only) ─────────────────────────────────
 router.delete("/health-centers/:id", requireRole("admin"), async (req, res): Promise<void> => {
   const id = parseInt(String(req.params["id"] ?? ""));
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
 
   // Check no patients are registered at this health center
-  const [usage] = await db.select({ n: count() }).from(patientsTable).where(eq(patientsTable.healthCenterId, id));
+  const [usage] = await db
+    .select({ n: count() })
+    .from(patientsTable)
+    .where(eq(patientsTable.healthCenterId, id));
   if ((usage?.n ?? 0) > 0) {
     res.status(409).json({
       error: `لا يمكن حذف المركز لأن ${usage!.n} حالة مسجلة فيه. انقل الحالات أولاً.`,
@@ -283,8 +352,15 @@ router.delete("/health-centers/:id", requireRole("admin"), async (req, res): Pro
     return;
   }
 
-  const [existing] = await db.select().from(healthCentersTable).where(eq(healthCentersTable.id, id)).limit(1);
-  if (!existing) { res.status(404).json({ error: "Not found" }); return; }
+  const [existing] = await db
+    .select()
+    .from(healthCentersTable)
+    .where(eq(healthCentersTable.id, id))
+    .limit(1);
+  if (!existing) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
 
   await db.delete(healthCentersTable).where(eq(healthCentersTable.id, id));
 

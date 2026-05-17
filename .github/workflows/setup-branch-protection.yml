@@ -27,7 +27,8 @@ jobs:
 
             const requiredChecks = [
               "Check API codegen is up to date",
-              "TypeScript typecheck"
+              "TypeScript typecheck",
+              "Lint (ESLint + Prettier)"
             ];
 
             // Fetch current branch protection (may not exist yet)

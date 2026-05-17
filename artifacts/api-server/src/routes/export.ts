@@ -1,6 +1,12 @@
 import { Router, type IRouter } from "express";
-import { db, patientsTable, pregnanciesTable, healthCentersTable, sectorsTable, hospitalsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import {
+  db,
+  patientsTable,
+  pregnanciesTable,
+  healthCentersTable,
+  sectorsTable,
+  hospitalsTable,
+} from "@workspace/db";
 import { requireAuth, requireRole } from "../lib/auth";
 
 const router: IRouter = Router();
@@ -41,9 +47,22 @@ router.get(
     const sectorMap = new Map(sectors.map((s) => [s.id, s]));
 
     const headers = [
-      "م", "الاسم", "الهوية الوطنية", "تاريخ الميلاد", "الجوال",
-      "المركز الصحي", "القطاع", "تاريخ التسجيل",
-      "ID", "Name", "National ID", "DOB", "Phone", "Health Center", "Sector", "Registered At",
+      "م",
+      "الاسم",
+      "الهوية الوطنية",
+      "تاريخ الميلاد",
+      "الجوال",
+      "المركز الصحي",
+      "القطاع",
+      "تاريخ التسجيل",
+      "ID",
+      "Name",
+      "National ID",
+      "DOB",
+      "Phone",
+      "Health Center",
+      "Sector",
+      "Registered At",
     ];
 
     const dataRows: string[] = [];
@@ -54,24 +73,26 @@ router.get(
 
       if (sectorFilter && sector?.id !== sectorFilter) continue;
 
-      dataRows.push(toCsvRow([
-        p.id,
-        p.nameAr,
-        p.nationalId,
-        p.dateOfBirth ?? "",
-        p.phone,
-        center?.nameAr ?? "",
-        sector?.nameAr ?? "",
-        new Date(p.createdAt).toLocaleDateString("ar-SA"),
-        p.id,
-        p.nameEn ?? p.nameAr,
-        p.nationalId,
-        p.dateOfBirth ?? "",
-        p.phone,
-        center?.nameEn ?? center?.nameAr ?? "",
-        sector?.nameEn ?? sector?.nameAr ?? "",
-        new Date(p.createdAt).toISOString().split("T")[0],
-      ]));
+      dataRows.push(
+        toCsvRow([
+          p.id,
+          p.nameAr,
+          p.nationalId,
+          p.dateOfBirth ?? "",
+          p.phone,
+          center?.nameAr ?? "",
+          sector?.nameAr ?? "",
+          new Date(p.createdAt).toLocaleDateString("ar-SA"),
+          p.id,
+          p.nameEn ?? p.nameAr,
+          p.nationalId,
+          p.dateOfBirth ?? "",
+          p.phone,
+          center?.nameEn ?? center?.nameAr ?? "",
+          sector?.nameEn ?? sector?.nameAr ?? "",
+          new Date(p.createdAt).toISOString().split("T")[0],
+        ]),
+      );
     }
 
     const lines: string[] = [];
@@ -80,7 +101,7 @@ router.get(
       const exportDate = new Date().toLocaleDateString("ar-SA");
       lines.push(
         `إجمالي السجلات: ${dataRows.length} – القطاع: ${sectorName} – بتاريخ ${exportDate}` +
-        ` | Total records: ${dataRows.length} – Sector: ${sectorMap.get(sectorFilter)?.nameEn ?? sectorName} – as of ${new Date().toISOString().split("T")[0]}`
+          ` | Total records: ${dataRows.length} – Sector: ${sectorMap.get(sectorFilter)?.nameEn ?? sectorName} – as of ${new Date().toISOString().split("T")[0]}`,
       );
     }
     lines.push(headers.join(","));
@@ -88,9 +109,12 @@ router.get(
 
     const csv = "\uFEFF" + lines.join("\r\n"); // BOM for Excel Arabic
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
-    res.setHeader("Content-Disposition", `attachment; filename="patients_${new Date().toISOString().split("T")[0]}.csv"`);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="patients_${new Date().toISOString().split("T")[0]}.csv"`,
+    );
     res.send(csv);
-  }
+  },
 );
 
 // GET /api/export/pregnancies.csv — admin / coordinator / doctor
@@ -122,10 +146,15 @@ router.get(
     const hospitalMap = new Map(hospitals.map((h) => [h.id, h]));
 
     const riskAr: Record<string, string> = {
-      low: "منخفض", medium: "متوسط", high: "عالي", critical: "حرج",
+      low: "منخفض",
+      medium: "متوسط",
+      high: "عالي",
+      critical: "حرج",
     };
     const complianceAr: Record<string, string> = {
-      compliant: "ملتزم", non_compliant: "غير ملتزم", pending: "بانتظار موعد",
+      compliant: "ملتزم",
+      non_compliant: "غير ملتزم",
+      pending: "بانتظار موعد",
     };
     const referralAr: Record<string, string> = {
       follow_at_center: "متابعة في المركز",
@@ -134,16 +163,48 @@ router.get(
     };
 
     const headers = [
-      "م", "اسم الحامل", "الهوية", "تاريخ الزيارة", "عمر الحمل (أسبوع)", "درجة الخطورة",
-      "خطر التجلط", "إينوكسابارين", "توصية الإحالة", "الإحالة مُوضَّحة", "تاريخ الموعد",
-      "الالتزام", "أيام العمل", "المستشفى المُحوَّل إليه", "القطاع", "المركز الصحي",
-      "عوامل الخطر العامة", "عوامل خطر الحمل", "الأمراض المزمنة",
-      "الأدوية", "ملاحظات المتابعة",
-      "ID", "Patient", "Nat.ID", "Visit Date", "GA (wk)", "Risk Level",
-      "VTE", "Enoxaparin", "Referral", "Referral Explained", "Appt Date",
-      "Compliance", "Working Days", "Hospital", "Sector", "Health Center",
-      "Risk Factors (G1)", "Pregnancy Risk Factors (G2)", "Medical Conditions (G3)",
-      "Medications", "Follow-up Notes",
+      "م",
+      "اسم الحامل",
+      "الهوية",
+      "تاريخ الزيارة",
+      "عمر الحمل (أسبوع)",
+      "درجة الخطورة",
+      "خطر التجلط",
+      "إينوكسابارين",
+      "توصية الإحالة",
+      "الإحالة مُوضَّحة",
+      "تاريخ الموعد",
+      "الالتزام",
+      "أيام العمل",
+      "المستشفى المُحوَّل إليه",
+      "القطاع",
+      "المركز الصحي",
+      "عوامل الخطر العامة",
+      "عوامل خطر الحمل",
+      "الأمراض المزمنة",
+      "الأدوية",
+      "ملاحظات المتابعة",
+      "ID",
+      "Patient",
+      "Nat.ID",
+      "Visit Date",
+      "GA (wk)",
+      "Risk Level",
+      "VTE",
+      "Enoxaparin",
+      "Referral",
+      "Referral Explained",
+      "Appt Date",
+      "Compliance",
+      "Working Days",
+      "Hospital",
+      "Sector",
+      "Health Center",
+      "Risk Factors (G1)",
+      "Pregnancy Risk Factors (G2)",
+      "Medical Conditions (G3)",
+      "Medications",
+      "Follow-up Notes",
     ];
 
     const dataRows: string[] = [];
@@ -156,56 +217,66 @@ router.get(
       if (sectorFilter && sector?.id !== sectorFilter) continue;
       const hospital = pg.referredHospitalId ? hospitalMap.get(pg.referredHospitalId) : null;
 
-      const riskFactors = Array.isArray(pg.riskFactors) ? (pg.riskFactors as string[]).join(" | ") : "";
-      const pregnancyRiskFactors = Array.isArray(pg.pregnancyRiskFactors) ? (pg.pregnancyRiskFactors as string[]).join(" | ") : "";
-      const medicalConditions = Array.isArray(pg.medicalConditions) ? (pg.medicalConditions as string[]).join(" | ") : "";
-      const referralExplainedAr = pg.referralExplained === true ? "نعم" : pg.referralExplained === false ? "لا" : "";
-      const referralExplainedEn = pg.referralExplained === true ? "Yes" : pg.referralExplained === false ? "No" : "";
+      const riskFactors = Array.isArray(pg.riskFactors)
+        ? (pg.riskFactors as string[]).join(" | ")
+        : "";
+      const pregnancyRiskFactors = Array.isArray(pg.pregnancyRiskFactors)
+        ? (pg.pregnancyRiskFactors as string[]).join(" | ")
+        : "";
+      const medicalConditions = Array.isArray(pg.medicalConditions)
+        ? (pg.medicalConditions as string[]).join(" | ")
+        : "";
+      const referralExplainedAr =
+        pg.referralExplained === true ? "نعم" : pg.referralExplained === false ? "لا" : "";
+      const referralExplainedEn =
+        pg.referralExplained === true ? "Yes" : pg.referralExplained === false ? "No" : "";
 
-      dataRows.push(toCsvRow([
-        pg.id,
-        patient.nameAr,
-        patient.nationalId,
-        pg.visitDate,
-        pg.gestationalAge ?? "",
-        riskAr[pg.riskLevel] ?? pg.riskLevel,
-        pg.isVteHighRisk ? "نعم" : "لا",
-        pg.enoxaparinPrescribed ? "نعم" : "لا",
-        referralAr[pg.referralRecommendation] ?? pg.referralRecommendation,
-        referralExplainedAr,
-        pg.appointmentDate ?? "",
-        complianceAr[pg.compliance] ?? pg.compliance,
-        pg.workingDaysToAppointment ?? "",
-        hospital?.nameAr ?? "",
-        sector?.nameAr ?? "",
-        center?.nameAr ?? "",
-        riskFactors,
-        pregnancyRiskFactors,
-        medicalConditions,
-        pg.medications ?? "",
-        pg.followUpNotes ?? "",
-        pg.id,
-        patient.nameEn ?? patient.nameAr,
-        patient.nationalId,
-        pg.visitDate,
-        pg.gestationalAge ?? "",
-        pg.riskLevel,
-        pg.isVteHighRisk ? "Yes" : "No",
-        pg.enoxaparinPrescribed ? "Yes" : "No",
-        pg.referralRecommendation,
-        referralExplainedEn,
-        pg.appointmentDate ?? "",
-        pg.compliance,
-        pg.workingDaysToAppointment ?? "",
-        hospital?.nameEn ?? hospital?.nameAr ?? "",
-        sector?.nameEn ?? sector?.nameAr ?? "",
-        center?.nameEn ?? center?.nameAr ?? "",
-        riskFactors,
-        pregnancyRiskFactors,
-        medicalConditions,
-        pg.medications ?? "",
-        pg.followUpNotes ?? "",
-      ]));
+      dataRows.push(
+        toCsvRow([
+          pg.id,
+          patient.nameAr,
+          patient.nationalId,
+          pg.visitDate,
+          pg.gestationalAge ?? "",
+          riskAr[pg.riskLevel] ?? pg.riskLevel,
+          pg.isVteHighRisk ? "نعم" : "لا",
+          pg.enoxaparinPrescribed ? "نعم" : "لا",
+          referralAr[pg.referralRecommendation] ?? pg.referralRecommendation,
+          referralExplainedAr,
+          pg.appointmentDate ?? "",
+          complianceAr[pg.compliance] ?? pg.compliance,
+          pg.workingDaysToAppointment ?? "",
+          hospital?.nameAr ?? "",
+          sector?.nameAr ?? "",
+          center?.nameAr ?? "",
+          riskFactors,
+          pregnancyRiskFactors,
+          medicalConditions,
+          pg.medications ?? "",
+          pg.followUpNotes ?? "",
+          pg.id,
+          patient.nameEn ?? patient.nameAr,
+          patient.nationalId,
+          pg.visitDate,
+          pg.gestationalAge ?? "",
+          pg.riskLevel,
+          pg.isVteHighRisk ? "Yes" : "No",
+          pg.enoxaparinPrescribed ? "Yes" : "No",
+          pg.referralRecommendation,
+          referralExplainedEn,
+          pg.appointmentDate ?? "",
+          pg.compliance,
+          pg.workingDaysToAppointment ?? "",
+          hospital?.nameEn ?? hospital?.nameAr ?? "",
+          sector?.nameEn ?? sector?.nameAr ?? "",
+          center?.nameEn ?? center?.nameAr ?? "",
+          riskFactors,
+          pregnancyRiskFactors,
+          medicalConditions,
+          pg.medications ?? "",
+          pg.followUpNotes ?? "",
+        ]),
+      );
     }
 
     const lines: string[] = [];
@@ -214,7 +285,7 @@ router.get(
       const exportDate = new Date().toLocaleDateString("ar-SA");
       lines.push(
         `إجمالي السجلات: ${dataRows.length} – القطاع: ${sectorName} – بتاريخ ${exportDate}` +
-        ` | Total records: ${dataRows.length} – Sector: ${sectorMap.get(sectorFilter)?.nameEn ?? sectorName} – as of ${new Date().toISOString().split("T")[0]}`
+          ` | Total records: ${dataRows.length} – Sector: ${sectorMap.get(sectorFilter)?.nameEn ?? sectorName} – as of ${new Date().toISOString().split("T")[0]}`,
       );
     }
     lines.push(headers.join(","));
@@ -222,9 +293,12 @@ router.get(
 
     const csv = "\uFEFF" + lines.join("\r\n");
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
-    res.setHeader("Content-Disposition", `attachment; filename="pregnancies_${new Date().toISOString().split("T")[0]}.csv"`);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="pregnancies_${new Date().toISOString().split("T")[0]}.csv"`,
+    );
     res.send(csv);
-  }
+  },
 );
 
 export default router;

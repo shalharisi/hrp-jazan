@@ -32,9 +32,8 @@ export default function TabLayout() {
   const needsActionCount = useMemo(() => {
     if (!appointments) return 0;
     const today = localDateStr(new Date());
-    return appointments.filter(
-      (a) => a.appointmentDate.slice(0, 10) < today && a.attended === null
-    ).length;
+    return appointments.filter((a) => a.appointmentDate.slice(0, 10) < today && a.attended === null)
+      .length;
   }, [appointments]);
 
   if (isLoading) return null;
@@ -67,12 +66,7 @@ export default function TabLayout() {
               style={StyleSheet.absoluteFill}
             />
           ) : (
-            <View
-              style={[
-                StyleSheet.absoluteFill,
-                { backgroundColor: colors.background },
-              ]}
-            />
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]} />
           ),
       }}
     >

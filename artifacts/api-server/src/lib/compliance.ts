@@ -29,7 +29,10 @@ export function countWorkingDays(startDateStr: string, endDateStr: string): numb
   return count;
 }
 
-export function calculateCompliance(visitDate: string, appointmentDate: string | null | undefined): {
+export function calculateCompliance(
+  visitDate: string,
+  appointmentDate: string | null | undefined,
+): {
   compliance: "compliant" | "non_compliant" | "pending";
   workingDays: number | null;
 } {

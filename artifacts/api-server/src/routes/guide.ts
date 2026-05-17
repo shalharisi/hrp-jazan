@@ -30,8 +30,14 @@ router.get("/guide/download", (req, res): void => {
     return;
   }
 
-  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
-  res.setHeader("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(GUIDE_FILENAME)}`);
+  res.setHeader(
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  );
+  res.setHeader(
+    "Content-Disposition",
+    `attachment; filename*=UTF-8''${encodeURIComponent(GUIDE_FILENAME)}`,
+  );
 
   const stream = fs.createReadStream(GUIDE_PATH);
   stream.on("error", () => {

@@ -2,7 +2,13 @@ import { Router, type IRouter } from "express";
 import bcrypt from "bcryptjs";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { generateAccessToken, generateRefreshToken, verifyRefreshToken, requireAuth, type JwtPayload } from "../lib/auth";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyRefreshToken,
+  requireAuth,
+  type JwtPayload,
+} from "../lib/auth";
 import { logAudit } from "../lib/audit";
 import { z } from "zod";
 
@@ -37,7 +43,11 @@ router.post("/auth/login", async (req, res): Promise<void> => {
 
   const { username, password } = parsed.data;
 
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.username, username)).limit(1);
+  const [user] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.username, username))
+    .limit(1);
 
   if (!user || !user.isActive) {
     res.status(401).json({ error: "اسم المستخدم أو كلمة المرور غير صحيحة" });
@@ -50,7 +60,8 @@ router.post("/auth/login", async (req, res): Promise<void> => {
       username,
       action: "LOGIN_FAILED",
       resourceType: "auth",
-      ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0] ?? req.socket?.remoteAddress,
+      ipAddress:
+        (req.headers["x-forwarded-for"] as string)?.split(",")[0] ?? req.socket?.remoteAddress,
       userAgent: req.headers["user-agent"],
     });
     res.status(401).json({ error: "اسم المستخدم أو كلمة المرور غير صحيحة" });
@@ -69,7 +80,8 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     username: user.username,
     action: "LOGIN",
     resourceType: "auth",
-    ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0] ?? req.socket?.remoteAddress,
+    ipAddress:
+      (req.headers["x-forwarded-for"] as string)?.split(",")[0] ?? req.socket?.remoteAddress,
     userAgent: req.headers["user-agent"],
   });
 
@@ -105,7 +117,8 @@ router.post("/auth/logout", async (req, res): Promise<void> => {
       username: bearerUser.username,
       action: "LOGOUT",
       resourceType: "auth",
-      ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0] ?? req.socket?.remoteAddress,
+      ipAddress:
+        (req.headers["x-forwarded-for"] as string)?.split(",")[0] ?? req.socket?.remoteAddress,
     });
   }
 
@@ -124,7 +137,11 @@ router.post("/auth/refresh", async (req, res): Promise<void> => {
   try {
     const payload = verifyRefreshToken(token);
     // Re-fetch user from DB to get latest role + sectorId
-    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, payload.userId)).limit(1);
+    const [user] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.id, payload.userId))
+      .limit(1);
 
     if (!user || !user.isActive) {
       res.status(401).json({ error: "الحساب غير نشط", code: "ACCOUNT_INACTIVE" });
@@ -142,7 +159,11 @@ router.post("/auth/refresh", async (req, res): Promise<void> => {
 
 // GET /api/auth/me
 router.get("/auth/me", requireAuth, async (req, res): Promise<void> => {
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.user!.userId)).limit(1);
+  const [user] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.id, req.user!.userId))
+    .limit(1);
   if (!user) {
     res.status(404).json({ error: "المستخدم غير موجود" });
     return;
@@ -161,7 +182,10 @@ router.get("/auth/me", requireAuth, async (req, res): Promise<void> => {
 
 // POST /api/auth/consent
 router.post("/auth/consent", requireAuth, async (req, res): Promise<void> => {
-  await db.update(usersTable).set({ consentGivenAt: new Date() }).where(eq(usersTable.id, req.user!.userId));
+  await db
+    .update(usersTable)
+    .set({ consentGivenAt: new Date() })
+    .where(eq(usersTable.id, req.user!.userId));
   res.json({ success: true, consentGivenAt: new Date().toISOString() });
 });
 

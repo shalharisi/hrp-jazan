@@ -4,7 +4,9 @@ export const usersTable = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
-  role: text("role", { enum: ["admin", "coordinator", "doctor", "viewer"] }).notNull().default("viewer"),
+  role: text("role", { enum: ["admin", "coordinator", "doctor", "viewer"] })
+    .notNull()
+    .default("viewer"),
   nameAr: text("name_ar").notNull(),
   nameEn: text("name_en"),
   sectorId: text("sector_id"),
@@ -12,7 +14,10 @@ export const usersTable = pgTable("users", {
   lastLogin: timestamp("last_login", { withTimezone: true }),
   consentGivenAt: timestamp("consent_given_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
 });
 
 export type User = typeof usersTable.$inferSelect;

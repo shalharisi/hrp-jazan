@@ -46,16 +46,9 @@ export default function AlertsScreen() {
   ];
 
   return (
-    <View
-      style={[
-        styles.container,
-        { paddingTop: insets.top + topWebPadding + 16 },
-      ]}
-    >
+    <View style={[styles.container, { paddingTop: insets.top + topWebPadding + 16 }]}>
       <View style={[styles.headerRow, isRTL && styles.rowReverse]}>
-        <Text style={[styles.screenTitle, isRTL && styles.rtlText]}>
-          {t("alerts.title")}
-        </Text>
+        <Text style={[styles.screenTitle, isRTL && styles.rtlText]}>{t("alerts.title")}</Text>
         {data && data.criticalCount > 0 && (
           <View style={styles.criticalBadge}>
             <Text style={styles.criticalBadgeText}>
@@ -69,18 +62,10 @@ export default function AlertsScreen() {
         {filterTabs.map((tab) => (
           <Pressable
             key={tab.key}
-            style={[
-              styles.filterTab,
-              filter === tab.key && styles.filterTabActive,
-            ]}
+            style={[styles.filterTab, filter === tab.key && styles.filterTabActive]}
             onPress={() => setFilter(tab.key)}
           >
-            <Text
-              style={[
-                styles.filterTabText,
-                filter === tab.key && styles.filterTabTextActive,
-              ]}
-            >
+            <Text style={[styles.filterTabText, filter === tab.key && styles.filterTabTextActive]}>
               {tab.label}
             </Text>
           </Pressable>
@@ -116,8 +101,8 @@ export default function AlertsScreen() {
                   item.pregnancyId
                     ? router.push(`/pregnancy/${item.pregnancyId}`)
                     : item.patientId
-                    ? router.push(`/patient/${item.patientId}`)
-                    : null
+                      ? router.push(`/patient/${item.patientId}`)
+                      : null
                 }
                 testID={`alert-${item.pregnancyId}`}
               >
@@ -136,9 +121,7 @@ export default function AlertsScreen() {
                   />
                 </View>
                 <View style={styles.alertBody}>
-                  <Text
-                    style={[styles.alertPatient, isRTL && styles.rtlText]}
-                  >
+                  <Text style={[styles.alertPatient, isRTL && styles.rtlText]}>
                     {item.patientNameAr}
                   </Text>
                   <Text style={[styles.alertType, isRTL && styles.rtlText]}>
@@ -152,9 +135,7 @@ export default function AlertsScreen() {
                   <View
                     style={[
                       styles.severityBadge,
-                      isCritical
-                        ? styles.severityCritical
-                        : styles.severityWarning,
+                      isCritical ? styles.severityCritical : styles.severityWarning,
                     ]}
                   >
                     <Text style={styles.severityText}>
@@ -172,21 +153,14 @@ export default function AlertsScreen() {
           }}
           ListEmptyComponent={
             <View style={styles.center}>
-              <Ionicons
-                name="checkmark-circle-outline"
-                size={56}
-                color={colors.primary}
-              />
-              <Text style={[styles.emptyText, isRTL && styles.rtlText]}>
-                {t("alerts.empty")}
-              </Text>
+              <Ionicons name="checkmark-circle-outline" size={56} color={colors.primary} />
+              <Text style={[styles.emptyText, isRTL && styles.rtlText]}>{t("alerts.empty")}</Text>
             </View>
           }
           contentContainerStyle={[
             styles.listContent,
             {
-              paddingBottom:
-                insets.bottom + (Platform.OS === "web" ? 84 : 100),
+              paddingBottom: insets.bottom + (Platform.OS === "web" ? 84 : 100),
             },
           ]}
           showsVerticalScrollIndicator={false}

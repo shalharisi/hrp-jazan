@@ -7,7 +7,10 @@ const router: IRouter = Router();
 // ── Coordinator sector isolation helper ──────────────────────────────────────
 // Returns the numeric sectorId for coordinators, null for all other roles.
 // Sends a 403 response and returns undefined if coordinator has no sector.
-function resolveSectorId(req: Parameters<typeof router.get>[1] extends (...args: infer A) => unknown ? A[0] : never, res: Parameters<typeof router.get>[1] extends (...args: infer A) => unknown ? A[1] : never): number | null | "rejected" {
+function resolveSectorId(
+  req: Parameters<typeof router.get>[1] extends (...args: infer A) => unknown ? A[0] : never,
+  res: Parameters<typeof router.get>[1] extends (...args: infer A) => unknown ? A[1] : never,
+): number | null | "rejected" {
   if (req.user?.role !== "coordinator") return null;
   if (!req.user.sectorId) {
     res.status(403).json({ error: "حسابك لم يُعيَّن له قطاع بعد", code: "NO_SECTOR_ASSIGNED" });
@@ -27,15 +30,18 @@ router.get("/dashboard/summary", async (req, res): Promise<void> => {
   if (sectorId === "rejected") return;
   const sj = sectorJoinSql(sectorId);
 
-  const [totalPatients, totalPregnancies, riskCounts, vteCounts, complianceCounts, apptCounts] = await Promise.all([
-    db.execute(sql`SELECT COUNT(*)::int as count FROM patients pa ${sj}`),
-    db.execute(sql`SELECT COUNT(*)::int as count FROM pregnancies pr JOIN patients pa ON pr.patient_id = pa.id ${sj}`),
-    db.execute(sql`
+  const [totalPatients, totalPregnancies, riskCounts, vteCounts, complianceCounts, apptCounts] =
+    await Promise.all([
+      db.execute(sql`SELECT COUNT(*)::int as count FROM patients pa ${sj}`),
+      db.execute(
+        sql`SELECT COUNT(*)::int as count FROM pregnancies pr JOIN patients pa ON pr.patient_id = pa.id ${sj}`,
+      ),
+      db.execute(sql`
       SELECT risk_level, COUNT(*)::int as count FROM pregnancies pr
       JOIN patients pa ON pr.patient_id = pa.id ${sj}
       GROUP BY risk_level
     `),
-    db.execute(sql`
+      db.execute(sql`
       SELECT
         COUNT(*)::int as total_vte,
         SUM(CASE WHEN enoxaparin_prescribed = false THEN 1 ELSE 0 END)::int as vte_without_enox
@@ -43,12 +49,12 @@ router.get("/dashboard/summary", async (req, res): Promise<void> => {
       JOIN patients pa ON pr.patient_id = pa.id ${sj}
       WHERE pr.is_vte_high_risk = true
     `),
-    db.execute(sql`
+      db.execute(sql`
       SELECT compliance, COUNT(*)::int as count FROM pregnancies pr
       JOIN patients pa ON pr.patient_id = pa.id ${sj}
       GROUP BY compliance
     `),
-    db.execute(sql`
+      db.execute(sql`
       SELECT
         COUNT(*)::int as total,
         SUM(CASE WHEN a.attended = true THEN 1 ELSE 0 END)::int as attended,
@@ -57,7 +63,7 @@ router.get("/dashboard/summary", async (req, res): Promise<void> => {
       JOIN pregnancies pr ON a.pregnancy_id = pr.id
       JOIN patients pa ON pr.patient_id = pa.id ${sj}
     `),
-  ]);
+    ]);
 
   const riskMap = new Map<string, number>();
   for (const row of riskCounts.rows as { risk_level: string; count: number }[]) {
@@ -68,8 +74,15 @@ router.get("/dashboard/summary", async (req, res): Promise<void> => {
     compMap.set(row.compliance, row.count);
   }
 
-  const vteRow = (vteCounts.rows as { total_vte: number; vte_without_enox: number }[])[0] ?? { total_vte: 0, vte_without_enox: 0 };
-  const apptRow = (apptCounts.rows as { total: number; attended: number; missed: number }[])[0] ?? { total: 0, attended: 0, missed: 0 };
+  const vteRow = (vteCounts.rows as { total_vte: number; vte_without_enox: number }[])[0] ?? {
+    total_vte: 0,
+    vte_without_enox: 0,
+  };
+  const apptRow = (apptCounts.rows as { total: number; attended: number; missed: number }[])[0] ?? {
+    total: 0,
+    attended: 0,
+    missed: 0,
+  };
 
   const compliant = compMap.get("compliant") ?? 0;
   const nonCompliant = compMap.get("non_compliant") ?? 0;
@@ -82,10 +95,11 @@ router.get("/dashboard/summary", async (req, res): Promise<void> => {
     WHERE p.risk_level = 'critical'
     AND NOT EXISTS (SELECT 1 FROM appointments a WHERE a.pregnancy_id = p.id)
   `);
-  const criticalNoAppt = ((criticalWithoutAppt.rows as { count: number }[])[0]?.count) ?? 0;
+  const criticalNoAppt = (criticalWithoutAppt.rows as { count: number }[])[0]?.count ?? 0;
 
   const attendanceRate = apptRow.total > 0 ? (apptRow.attended / apptRow.total) * 100 : 0;
-  const complianceRate = totalWithAppt + pending > 0 ? (compliant / (totalWithAppt + pending)) * 100 : 0;
+  const complianceRate =
+    totalWithAppt + pending > 0 ? (compliant / (totalWithAppt + pending)) * 100 : 0;
 
   res.json({
     totalPatients: (totalPatients.rows as { count: number }[])[0]?.count ?? 0,
@@ -106,7 +120,9 @@ router.get("/dashboard/by-sector", async (req, res): Promise<void> => {
   if (sectorId === "rejected") return;
 
   // Coordinator sees only their sector; others see all
-  const sectors = await db.select().from(sectorsTable)
+  const sectors = await db
+    .select()
+    .from(sectorsTable)
     .where(sectorId !== null ? eq(sectorsTable.id, sectorId) : undefined)
     .orderBy(sectorsTable.id);
 
@@ -124,8 +140,15 @@ router.get("/dashboard/by-sector", async (req, res): Promise<void> => {
         JOIN health_centers hc ON pa.health_center_id = hc.id
         WHERE hc.sector_id = ${sector.id}
       `);
-      const row = (stats.rows as { total_cases: number; critical_cases: number; high_risk_cases: number; compliant: number; total: number }[])[0]
-        ?? { total_cases: 0, critical_cases: 0, high_risk_cases: 0, compliant: 0, total: 0 };
+      const row = (
+        stats.rows as {
+          total_cases: number;
+          critical_cases: number;
+          high_risk_cases: number;
+          compliant: number;
+          total: number;
+        }[]
+      )[0] ?? { total_cases: 0, critical_cases: 0, high_risk_cases: 0, compliant: 0, total: 0 };
       const complianceRate = row.total > 0 ? (row.compliant / row.total) * 100 : 0;
       return {
         sectorId: sector.id,
@@ -136,7 +159,7 @@ router.get("/dashboard/by-sector", async (req, res): Promise<void> => {
         highRiskCases: row.high_risk_cases,
         complianceRate: Math.round(complianceRate * 10) / 10,
       };
-    })
+    }),
   );
 
   res.json(result);
@@ -160,18 +183,24 @@ router.get("/dashboard/by-hospital", async (req, res): Promise<void> => {
     hospitalRows = rows.rows as HospRow[];
   } else {
     const all = await db.select().from(hospitalsTable).orderBy(hospitalsTable.id);
-    hospitalRows = all.map(h => ({ id: h.id, nameAr: h.nameAr, nameEn: h.nameEn, isKfch: h.isKfch }));
+    hospitalRows = all.map((h) => ({
+      id: h.id,
+      nameAr: h.nameAr,
+      nameEn: h.nameEn,
+      isKfch: h.isKfch,
+    }));
   }
 
   const result = await Promise.all(
     hospitalRows.map(async (hospital) => {
-      const sectorPatientFilter = sectorId !== null
-        ? sql`AND pr.patient_id IN (
+      const sectorPatientFilter =
+        sectorId !== null
+          ? sql`AND pr.patient_id IN (
             SELECT pa.id FROM patients pa
             JOIN health_centers hc ON pa.health_center_id = hc.id
             WHERE hc.sector_id = ${sectorId}
           )`
-        : sql``;
+          : sql``;
 
       const [stats, apptStats] = await Promise.all([
         db.execute(sql`
@@ -193,7 +222,9 @@ router.get("/dashboard/by-hospital", async (req, res): Promise<void> => {
       ]);
 
       const row = (stats.rows as { total_referrals: number }[])[0] ?? { total_referrals: 0 };
-      const apptRow = (apptStats.rows as { total: number; attended: number; missed: number }[])[0] ?? { total: 0, attended: 0, missed: 0 };
+      const apptRow = (
+        apptStats.rows as { total: number; attended: number; missed: number }[]
+      )[0] ?? { total: 0, attended: 0, missed: 0 };
       const attendanceRate = apptRow.total > 0 ? (apptRow.attended / apptRow.total) * 100 : 0;
 
       return {
@@ -206,7 +237,7 @@ router.get("/dashboard/by-hospital", async (req, res): Promise<void> => {
         missedAppointments: apptRow.missed,
         attendanceRate: Math.round(attendanceRate * 10) / 10,
       };
-    })
+    }),
   );
 
   res.json(result);
@@ -221,7 +252,7 @@ router.get("/dashboard/by-risk-level", async (req, res): Promise<void> => {
     SELECT COUNT(*)::int as count FROM pregnancies pr
     JOIN patients pa ON pr.patient_id = pa.id ${sj}
   `);
-  const total = ((totalResult.rows as { count: number }[])[0]?.count) ?? 1;
+  const total = (totalResult.rows as { count: number }[])[0]?.count ?? 1;
 
   const riskStats = await db.execute(sql`
     SELECT risk_level, COUNT(*)::int as count FROM pregnancies pr
@@ -237,7 +268,7 @@ router.get("/dashboard/by-risk-level", async (req, res): Promise<void> => {
       riskLevel: row.risk_level,
       count: row.count,
       percentage: Math.round((row.count / (total || 1)) * 1000) / 10,
-    }))
+    })),
   );
 });
 
@@ -273,7 +304,10 @@ router.get("/dashboard/compliance", async (req, res): Promise<void> => {
   const totalWithAppt = compliant + nonCompliant;
   const complianceRate = totalWithAppt > 0 ? (compliant / totalWithAppt) * 100 : 0;
 
-  const apptRow = (apptStats.rows as { total: number; attended: number }[])[0] ?? { total: 0, attended: 0 };
+  const apptRow = (apptStats.rows as { total: number; attended: number }[])[0] ?? {
+    total: 0,
+    attended: 0,
+  };
   const attendanceRate = apptRow.total > 0 ? (apptRow.attended / apptRow.total) * 100 : 0;
 
   res.json({

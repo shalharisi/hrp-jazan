@@ -31,12 +31,6 @@ type DateFilter = "today" | "week" | "all" | "custom";
 type AttendanceFilter = "all" | "pending" | "attended" | "missed" | "needs_action";
 type RiskFilter = "all" | "critical" | "high" | "medium" | "low";
 
-function isValidIsoDate(str: string): boolean {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(str)) return false;
-  const d = new Date(str + "T00:00:00");
-  return !isNaN(d.getTime());
-}
-
 function localDateStr(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -47,7 +41,6 @@ function localDateStr(d: Date): string {
 function isoToday(): string {
   return localDateStr(new Date());
 }
-
 
 function isoWeekRange(): { start: string; end: string } {
   const d = new Date();
@@ -72,8 +65,7 @@ export default function AppointmentsScreen() {
   const params = useLocalSearchParams<{ filter?: string }>();
 
   const [dateFilter, setDateFilter] = useState<DateFilter>("today");
-  const [attendanceFilter, setAttendanceFilter] =
-    useState<AttendanceFilter>("all");
+  const [attendanceFilter, setAttendanceFilter] = useState<AttendanceFilter>("all");
   const [riskFilter, setRiskFilter] = useState<RiskFilter>("all");
 
   const [customStart, setCustomStart] = useState("");
@@ -125,7 +117,7 @@ export default function AppointmentsScreen() {
 
   const needsActionCount = useMemo(
     () => all.filter((a) => a.appointmentDate.slice(0, 10) < today && a.attended === null).length,
-    [all, today]
+    [all, today],
   );
 
   const filtered = useMemo(() => {
@@ -133,8 +125,7 @@ export default function AppointmentsScreen() {
       .filter((a: (typeof all)[0]) => {
         const apptDate = a.appointmentDate.slice(0, 10);
         if (dateFilter === "today" && apptDate !== today) return false;
-        if (dateFilter === "week" && (apptDate < week.start || apptDate > week.end))
-          return false;
+        if (dateFilter === "week" && (apptDate < week.start || apptDate > week.end)) return false;
         if (dateFilter === "custom") {
           if (customStart && apptDate < customStart) return false;
           if (customEnd && apptDate > customEnd) return false;
@@ -154,7 +145,17 @@ export default function AppointmentsScreen() {
         if (riskA !== riskB) return riskA - riskB;
         return a.appointmentDate.localeCompare(b.appointmentDate);
       });
-  }, [all, dateFilter, attendanceFilter, riskFilter, today, week.start, week.end, customStart, customEnd]);
+  }, [
+    all,
+    dateFilter,
+    attendanceFilter,
+    riskFilter,
+    today,
+    week.start,
+    week.end,
+    customStart,
+    customEnd,
+  ]);
 
   const styles = makeStyles(colors, isRTL);
 
@@ -188,14 +189,19 @@ export default function AppointmentsScreen() {
     return t("appointments.filterCustom");
   }
 
-  const isCustomDraftValid =
-    localDateStr(draftStartDate) <= localDateStr(draftEndDate);
+  const isCustomDraftValid = localDateStr(draftStartDate) <= localDateStr(draftEndDate);
 
   const dateFilterTabs: { key: DateFilter; label: string }[] = [
     { key: "today", label: t("appointments.filterToday") },
     { key: "week", label: t("appointments.filterWeek") },
     { key: "all", label: t("appointments.filterAll") },
-    { key: "custom", label: dateFilter === "custom" && customStart && customEnd ? customRangeLabel() : t("appointments.filterCustom") },
+    {
+      key: "custom",
+      label:
+        dateFilter === "custom" && customStart && customEnd
+          ? customRangeLabel()
+          : t("appointments.filterCustom"),
+    },
   ];
 
   const attendanceFilterTabs: { key: AttendanceFilter; label: string }[] = [
@@ -227,7 +233,7 @@ export default function AppointmentsScreen() {
           setUpdatingId(null);
           Alert.alert(t("appt.updateError"));
         },
-      }
+      },
     );
   }
 
@@ -244,10 +250,8 @@ export default function AppointmentsScreen() {
   }
 
   function getAttendanceBadge(attended: boolean | null) {
-    if (attended === true)
-      return { label: t("appt.attended"), bg: "#dcfce7", color: "#15803d" };
-    if (attended === false)
-      return { label: t("appt.missed"), bg: "#fee2e2", color: "#b91c1c" };
+    if (attended === true) return { label: t("appt.attended"), bg: "#dcfce7", color: "#15803d" };
+    if (attended === false) return { label: t("appt.missed"), bg: "#fee2e2", color: "#b91c1c" };
     return { label: t("appt.pending"), bg: "#fef9c3", color: "#92400e" };
   }
 
@@ -316,7 +320,7 @@ export default function AppointmentsScreen() {
         onError: () => {
           Alert.alert(t("appt.editError"));
         },
-      }
+      },
     );
   }
 
@@ -340,37 +344,25 @@ export default function AppointmentsScreen() {
                 setDeletingId(null);
                 Alert.alert(t("appt.cancelError"));
               },
-            }
+            },
           );
         },
       },
     ]);
   }
   return (
-    <View
-      style={[
-        styles.container,
-        { paddingTop: insets.top + topWebPadding + 16 },
-      ]}
-    >
+    <View style={[styles.container, { paddingTop: insets.top + topWebPadding + 16 }]}>
       <View style={[styles.headerRow, isRTL && styles.rowReverse]}>
-        <Text style={[styles.screenTitle, isRTL && styles.rtlText]}>
-          {t("appointments.title")}
-        </Text>
+        <Text style={[styles.screenTitle, isRTL && styles.rtlText]}>{t("appointments.title")}</Text>
         <View style={[styles.headerRight, isRTL && styles.rowReverse]}>
           {!isLoading && (
             <Text style={styles.countBadge}>
               {filtered.length} {t("appointments.totalCount")}
             </Text>
           )}
-          <Pressable
-            style={styles.newApptBtn}
-            onPress={() => setShowNewModal(true)}
-          >
+          <Pressable style={styles.newApptBtn} onPress={() => setShowNewModal(true)}>
             <Ionicons name="add" size={20} color="#fff" />
-            <Text style={styles.newApptBtnText}>
-              {t("appointments.newAppointment")}
-            </Text>
+            <Text style={styles.newApptBtnText}>{t("appointments.newAppointment")}</Text>
           </Pressable>
         </View>
       </View>
@@ -395,11 +387,7 @@ export default function AppointmentsScreen() {
               </Text>
             </View>
           </View>
-          <Ionicons
-            name={isRTL ? "chevron-back" : "chevron-forward"}
-            size={16}
-            color="#c2410c"
-          />
+          <Ionicons name={isRTL ? "chevron-back" : "chevron-forward"} size={16} color="#c2410c" />
         </Pressable>
       )}
 
@@ -456,7 +444,9 @@ export default function AppointmentsScreen() {
               styles.filterTabSmall,
               attendanceFilter === tab.key && styles.filterTabSmallActive,
               tab.key === "needs_action" && styles.filterTabNeedsAction,
-              tab.key === "needs_action" && attendanceFilter === "needs_action" && styles.filterTabNeedsActionActive,
+              tab.key === "needs_action" &&
+                attendanceFilter === "needs_action" &&
+                styles.filterTabNeedsActionActive,
             ]}
             onPress={() => {
               setAttendanceFilter(tab.key);
@@ -473,7 +463,9 @@ export default function AppointmentsScreen() {
                 styles.filterTabSmallText,
                 attendanceFilter === tab.key && styles.filterTabSmallTextActive,
                 tab.key === "needs_action" && styles.filterTabNeedsActionText,
-                tab.key === "needs_action" && attendanceFilter === "needs_action" && styles.filterTabNeedsActionTextActive,
+                tab.key === "needs_action" &&
+                  attendanceFilter === "needs_action" &&
+                  styles.filterTabNeedsActionTextActive,
               ]}
             >
               {tab.label}
@@ -489,9 +481,7 @@ export default function AppointmentsScreen() {
             style={[
               styles.filterTabSmall,
               riskFilter === tab.key && styles.filterTabSmallActive,
-              riskFilter === tab.key &&
-                tab.key !== "all" &&
-                getRiskActiveStyle(tab.key),
+              riskFilter === tab.key && tab.key !== "all" && getRiskActiveStyle(tab.key),
             ]}
             onPress={() => setRiskFilter(tab.key)}
           >
@@ -499,9 +489,7 @@ export default function AppointmentsScreen() {
               style={[
                 styles.filterTabSmallText,
                 riskFilter === tab.key && styles.filterTabSmallTextActive,
-                riskFilter === tab.key &&
-                  tab.key !== "all" &&
-                  getRiskActiveTextStyle(tab.key),
+                riskFilter === tab.key && tab.key !== "all" && getRiskActiveTextStyle(tab.key),
               ]}
             >
               {tab.label}
@@ -516,11 +504,7 @@ export default function AppointmentsScreen() {
         </View>
       ) : isError ? (
         <View style={styles.center}>
-          <Ionicons
-            name="cloud-offline"
-            size={40}
-            color={colors.mutedForeground}
-          />
+          <Ionicons name="cloud-offline" size={40} color={colors.mutedForeground} />
           <Text style={styles.emptyText}>{t("general.error")}</Text>
           <Pressable style={styles.retryBtn} onPress={() => refetch()}>
             <Text style={styles.retryText}>{t("general.retry")}</Text>
@@ -544,13 +528,16 @@ export default function AppointmentsScreen() {
                   isNeedsAction && styles.cardNeedsAction,
                   pressed && styles.pressed,
                 ]}
-                onPress={() =>
-                  router.push(`/pregnancy/${item.pregnancyId}`)
-                }
+                onPress={() => router.push(`/pregnancy/${item.pregnancyId}`)}
                 testID={`appt-${item.id}`}
               >
                 {isNeedsAction && (
-                  <View style={[styles.needsActionCardBadge, isRTL ? styles.needsActionCardBadgeRTL : null]}>
+                  <View
+                    style={[
+                      styles.needsActionCardBadge,
+                      isRTL ? styles.needsActionCardBadgeRTL : null,
+                    ]}
+                  >
                     <Ionicons name="alert-circle" size={12} color="#c2410c" />
                     <Text style={styles.needsActionCardBadgeText}>
                       {t("appointments.needsAction")}
@@ -565,32 +552,26 @@ export default function AppointmentsScreen() {
                       size={16}
                       color={isNeedsAction ? "#c2410c" : colors.primary}
                     />
-                    <Text style={[styles.dateText, isRTL && styles.rtlText, isNeedsAction && styles.dateTextNeedsAction]}>
+                    <Text
+                      style={[
+                        styles.dateText,
+                        isRTL && styles.rtlText,
+                        isNeedsAction && styles.dateTextNeedsAction,
+                      ]}
+                    >
                       {apptDate}
                     </Text>
                   </View>
                   <View style={[styles.badgeRow, isRTL && styles.rowReverse]}>
                     {riskBadge && (
-                      <View
-                        style={[
-                          styles.statusBadge,
-                          { backgroundColor: riskBadge.bg },
-                        ]}
-                      >
+                      <View style={[styles.statusBadge, { backgroundColor: riskBadge.bg }]}>
                         <Text style={[styles.statusText, { color: riskBadge.color }]}>
                           {riskBadge.label}
                         </Text>
                       </View>
                     )}
-                    <View
-                      style={[
-                        styles.statusBadge,
-                        { backgroundColor: badge.bg },
-                      ]}
-                    >
-                      <Text style={[styles.statusText, { color: badge.color }]}>
-                        {badge.label}
-                      </Text>
+                    <View style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
+                      <Text style={[styles.statusText, { color: badge.color }]}>{badge.label}</Text>
                     </View>
                   </View>
                 </View>
@@ -608,26 +589,14 @@ export default function AppointmentsScreen() {
 
                 <View style={[styles.metaRow, isRTL && styles.rowReverse]}>
                   {item.hospitalNameAr && (
-                    <View
-                      style={[styles.metaItem, isRTL && styles.rowReverse]}
-                    >
-                      <Ionicons
-                        name="business-outline"
-                        size={13}
-                        color={colors.mutedForeground}
-                      />
+                    <View style={[styles.metaItem, isRTL && styles.rowReverse]}>
+                      <Ionicons name="business-outline" size={13} color={colors.mutedForeground} />
                       <Text style={styles.metaText}>{item.hospitalNameAr}</Text>
                     </View>
                   )}
                   {item.sectorNameAr && (
-                    <View
-                      style={[styles.metaItem, isRTL && styles.rowReverse]}
-                    >
-                      <Ionicons
-                        name="location-outline"
-                        size={13}
-                        color={colors.mutedForeground}
-                      />
+                    <View style={[styles.metaItem, isRTL && styles.rowReverse]}>
+                      <Ionicons name="location-outline" size={13} color={colors.mutedForeground} />
                       <Text style={styles.metaText}>{item.sectorNameAr}</Text>
                     </View>
                   )}
@@ -646,9 +615,7 @@ export default function AppointmentsScreen() {
                       {isUpdating ? (
                         <ActivityIndicator size="small" color="#fff" />
                       ) : (
-                        <Text style={styles.actionBtnText}>
-                          {t("appt.markAttended")}
-                        </Text>
+                        <Text style={styles.actionBtnText}>{t("appt.markAttended")}</Text>
                       )}
                     </Pressable>
                   )}
@@ -706,11 +673,7 @@ export default function AppointmentsScreen() {
           }}
           ListEmptyComponent={
             <View style={styles.center}>
-              <Ionicons
-                name="calendar-outline"
-                size={56}
-                color={colors.primary}
-              />
+              <Ionicons name="calendar-outline" size={56} color={colors.primary} />
               <Text style={[styles.emptyText, isRTL && styles.rtlText]}>
                 {t("appointments.empty")}
               </Text>
@@ -719,8 +682,7 @@ export default function AppointmentsScreen() {
           contentContainerStyle={[
             styles.listContent,
             {
-              paddingBottom:
-                insets.bottom + (Platform.OS === "web" ? 84 : 100),
+              paddingBottom: insets.bottom + (Platform.OS === "web" ? 84 : 100),
             },
           ]}
           showsVerticalScrollIndicator={false}
@@ -750,11 +712,7 @@ export default function AppointmentsScreen() {
               <Text style={[styles.modalTitle, isRTL && styles.rtlText]}>
                 {t("appt.editTitle")}
               </Text>
-              <Pressable
-                style={styles.closeBtn}
-                onPress={handleCloseEdit}
-                hitSlop={8}
-              >
+              <Pressable style={styles.closeBtn} onPress={handleCloseEdit} hitSlop={8}>
                 <Ionicons name="close" size={22} color={colors.foreground} />
               </Pressable>
             </View>
@@ -782,7 +740,7 @@ export default function AppointmentsScreen() {
                   ? allHospitals.filter(
                       (h) =>
                         (h.nameAr ?? "").toLowerCase().includes(q) ||
-                        (h.nameEn ?? "").toLowerCase().includes(q)
+                        (h.nameEn ?? "").toLowerCase().includes(q),
                     )
                   : allHospitals;
                 if (filtered.length === 0) {
@@ -839,8 +797,7 @@ export default function AppointmentsScreen() {
               <Pressable
                 style={[
                   styles.submitBtn,
-                  (!editHospitalId || updateAppt.isPending) &&
-                    styles.submitBtnDisabled,
+                  (!editHospitalId || updateAppt.isPending) && styles.submitBtnDisabled,
                   { marginTop: 20 },
                 ]}
                 onPress={handleSaveEdit}
@@ -927,9 +884,7 @@ export default function AppointmentsScreen() {
               </View>
 
               {!isCustomDraftValid && (
-                <Text style={styles.customRangeError}>
-                  {t("appointments.customRangeError")}
-                </Text>
+                <Text style={styles.customRangeError}>{t("appointments.customRangeError")}</Text>
               )}
 
               <Pressable
@@ -941,9 +896,7 @@ export default function AppointmentsScreen() {
                 onPress={applyCustomRange}
                 disabled={!isCustomDraftValid}
               >
-                <Text style={styles.submitBtnText}>
-                  {t("appointments.applyRange")}
-                </Text>
+                <Text style={styles.submitBtnText}>{t("appointments.applyRange")}</Text>
               </Pressable>
             </View>
           </View>

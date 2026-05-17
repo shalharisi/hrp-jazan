@@ -4,10 +4,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useLocation } from "wouter";
-import { 
-  useCreatePatient, 
-  useListSectors, 
-  useListHealthCenters 
+import {
+  useCreatePatient,
+  useListSectors,
+  useListHealthCenters,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,7 +19,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 
@@ -39,7 +45,7 @@ export default function PatientNew() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { data: sectors } = useListSectors();
-  
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -57,22 +63,24 @@ export default function PatientNew() {
   const sectorId = form.watch("sectorId");
   const { data: healthCenters } = useListHealthCenters(
     { sectorId: sectorId || undefined },
-    { query: { queryKey: ["health-centers", sectorId], enabled: !!sectorId } }
+    { query: { queryKey: ["health-centers", sectorId], enabled: !!sectorId } },
   );
 
   const createPatient = useCreatePatient();
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     createPatient.mutate(
-      { data: {
-        nationalId: values.nationalId,
-        nameAr: values.nameAr,
-        phone: values.phone,
-        doctorPhone: values.doctorPhone || null,
-        dateOfBirth: values.dateOfBirth || null,
-        address: values.address || null,
-        healthCenterId: values.healthCenterId,
-      }},
+      {
+        data: {
+          nationalId: values.nationalId,
+          nameAr: values.nameAr,
+          phone: values.phone,
+          doctorPhone: values.doctorPhone || null,
+          dateOfBirth: values.dateOfBirth || null,
+          address: values.address || null,
+          healthCenterId: values.healthCenterId,
+        },
+      },
       {
         onSuccess: (patient) => {
           toast({ title: t("general.saved"), description: t("general.saveSuccess") });
@@ -80,8 +88,8 @@ export default function PatientNew() {
         },
         onError: () => {
           toast({ title: "خطأ", description: t("general.saveError"), variant: "destructive" });
-        }
-      }
+        },
+      },
     );
   }
 
@@ -180,15 +188,20 @@ export default function PatientNew() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t("patients.sector")}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value ? String(field.value) : undefined}>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value ? String(field.value) : undefined}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="اختر القطاع" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {sectors?.map(s => (
-                            <SelectItem key={s.id} value={String(s.id)}>{s.nameAr}</SelectItem>
+                          {sectors?.map((s) => (
+                            <SelectItem key={s.id} value={String(s.id)}>
+                              {s.nameAr}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -202,15 +215,21 @@ export default function PatientNew() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t("patients.healthCenter")}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value ? String(field.value) : undefined} disabled={!sectorId}>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value ? String(field.value) : undefined}
+                        disabled={!sectorId}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="اختر المركز الصحي" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {healthCenters?.map(hc => (
-                            <SelectItem key={hc.id} value={String(hc.id)}>{hc.nameAr}</SelectItem>
+                          {healthCenters?.map((hc) => (
+                            <SelectItem key={hc.id} value={String(hc.id)}>
+                              {hc.nameAr}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>

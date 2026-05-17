@@ -48,11 +48,7 @@ export default function PregnancyDetailScreen() {
   if (!data) {
     return (
       <View style={styles.center}>
-        <Ionicons
-          name="document-text-outline"
-          size={48}
-          color={colors.mutedForeground}
-        />
+        <Ionicons name="document-text-outline" size={48} color={colors.mutedForeground} />
         <Text style={styles.emptyText}>{t("general.noData")}</Text>
         <Pressable style={styles.backBtn} onPress={() => router.back()}>
           <Text style={styles.backBtnText}>{t("general.back")}</Text>
@@ -81,13 +77,8 @@ export default function PregnancyDetailScreen() {
             color={colors.primary}
           />
         </Pressable>
-        <Text style={[styles.screenTitle, isRTL && styles.rtlText]}>
-          {t("pregnancy.title")}
-        </Text>
-        <Pressable
-          style={styles.bookBtn}
-          onPress={() => setShowBookModal(true)}
-        >
+        <Text style={[styles.screenTitle, isRTL && styles.rtlText]}>{t("pregnancy.title")}</Text>
+        <Pressable style={styles.bookBtn} onPress={() => setShowBookModal(true)}>
           <Ionicons name="calendar" size={16} color="#fff" />
           <Text style={styles.bookBtnText}>{t("appointments.newAppointment")}</Text>
         </Pressable>
@@ -100,9 +91,7 @@ export default function PregnancyDetailScreen() {
             onPress={() => router.push(`/patient/${patient.id}`)}
             style={[styles.patientLink, isRTL && styles.rowReverse]}
           >
-            <Text style={[styles.patientLinkText, isRTL && styles.rtlText]}>
-              {patient.nameAr}
-            </Text>
+            <Text style={[styles.patientLinkText, isRTL && styles.rtlText]}>{patient.nameAr}</Text>
             <Ionicons
               name={isRTL ? "chevron-back" : "chevron-forward"}
               size={14}
@@ -122,9 +111,7 @@ export default function PregnancyDetailScreen() {
             </View>
             <View style={styles.complianceBadge}>
               <Text style={styles.complianceBadgeText}>
-                {t(
-                  `compliance.${pregnancy.compliance}` as "compliance.compliant"
-                )}
+                {t(`compliance.${pregnancy.compliance}` as "compliance.compliant")}
               </Text>
             </View>
           </View>
@@ -136,9 +123,7 @@ export default function PregnancyDetailScreen() {
           icon="calendar-outline"
           label={t("cases.visitDate")}
           value={
-            pregnancy.visitDate
-              ? new Date(pregnancy.visitDate).toLocaleDateString("ar-SA")
-              : "—"
+            pregnancy.visitDate ? new Date(pregnancy.visitDate).toLocaleDateString("ar-SA") : "—"
           }
           isRTL={isRTL}
           colors={colors}
@@ -155,9 +140,7 @@ export default function PregnancyDetailScreen() {
         <DetailRow
           icon="git-branch-outline"
           label={t("cases.referral")}
-          value={t(
-            `referral.${pregnancy.referralRecommendation}` as "referral.follow_at_center"
-          )}
+          value={t(`referral.${pregnancy.referralRecommendation}` as "referral.follow_at_center")}
           isRTL={isRTL}
           colors={colors}
         />
@@ -183,12 +166,7 @@ export default function PregnancyDetailScreen() {
 
       <View style={styles.flagsRow}>
         <View
-          style={[
-            styles.flagCard,
-            pregnancy.isVteHighRisk
-              ? styles.flagDanger
-              : styles.flagSafe,
-          ]}
+          style={[styles.flagCard, pregnancy.isVteHighRisk ? styles.flagDanger : styles.flagSafe]}
         >
           <Ionicons
             name="medkit"
@@ -196,10 +174,7 @@ export default function PregnancyDetailScreen() {
             color={pregnancy.isVteHighRisk ? "#ef4444" : "#22c55e"}
           />
           <Text
-            style={[
-              styles.flagText,
-              { color: pregnancy.isVteHighRisk ? "#ef4444" : "#22c55e" },
-            ]}
+            style={[styles.flagText, { color: pregnancy.isVteHighRisk ? "#ef4444" : "#22c55e" }]}
           >
             VTE
           </Text>
@@ -213,8 +188,8 @@ export default function PregnancyDetailScreen() {
             pregnancy.enoxaparinPrescribed
               ? styles.flagSafe
               : pregnancy.isVteHighRisk
-              ? styles.flagDanger
-              : styles.flagNeutral,
+                ? styles.flagDanger
+                : styles.flagNeutral,
           ]}
         >
           <Ionicons
@@ -224,8 +199,8 @@ export default function PregnancyDetailScreen() {
               pregnancy.enoxaparinPrescribed
                 ? "#22c55e"
                 : pregnancy.isVteHighRisk
-                ? "#ef4444"
-                : colors.mutedForeground
+                  ? "#ef4444"
+                  : colors.mutedForeground
             }
           />
           <Text
@@ -235,17 +210,15 @@ export default function PregnancyDetailScreen() {
                 color: pregnancy.enoxaparinPrescribed
                   ? "#22c55e"
                   : pregnancy.isVteHighRisk
-                  ? "#ef4444"
-                  : colors.mutedForeground,
+                    ? "#ef4444"
+                    : colors.mutedForeground,
               },
             ]}
           >
             {t("pregnancy.enoxaparin")}
           </Text>
           <Text style={styles.flagValue}>
-            {pregnancy.enoxaparinPrescribed
-              ? t("pregnancy.yes")
-              : t("pregnancy.no")}
+            {pregnancy.enoxaparinPrescribed ? t("pregnancy.yes") : t("pregnancy.no")}
           </Text>
         </View>
       </View>
@@ -267,12 +240,8 @@ export default function PregnancyDetailScreen() {
 
       {pregnancy.notes && (
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, isRTL && styles.rtlText]}>
-            {t("pregnancy.notes")}
-          </Text>
-          <Text style={[styles.notesText, isRTL && styles.rtlText]}>
-            {pregnancy.notes}
-          </Text>
+          <Text style={[styles.sectionTitle, isRTL && styles.rtlText]}>{t("pregnancy.notes")}</Text>
+          <Text style={[styles.notesText, isRTL && styles.rtlText]}>{pregnancy.notes}</Text>
         </View>
       )}
 
@@ -282,11 +251,7 @@ export default function PregnancyDetailScreen() {
 
       {appointments.length === 0 ? (
         <View style={styles.emptySection}>
-          <Ionicons
-            name="calendar-outline"
-            size={32}
-            color={colors.mutedForeground}
-          />
+          <Ionicons name="calendar-outline" size={32} color={colors.mutedForeground} />
           <Text style={[styles.emptyText, isRTL && styles.rtlText]}>
             {t("pregnancy.noAppointments")}
           </Text>
@@ -296,11 +261,7 @@ export default function PregnancyDetailScreen() {
           <View key={appt.id} style={styles.apptCard}>
             <View style={[styles.apptHeader, isRTL && styles.rowReverse]}>
               <View style={[styles.apptDateRow, isRTL && styles.rowReverse]}>
-                <Ionicons
-                  name="calendar"
-                  size={16}
-                  color={colors.primary}
-                />
+                <Ionicons name="calendar" size={16} color={colors.primary} />
                 <Text style={styles.apptDate}>
                   {appt.appointmentDate
                     ? new Date(appt.appointmentDate).toLocaleDateString("ar-SA")
@@ -313,26 +274,22 @@ export default function PregnancyDetailScreen() {
                   appt.attended === true
                     ? styles.attendedBadge
                     : appt.attended === false
-                    ? styles.missedBadge
-                    : styles.pendingBadge,
+                      ? styles.missedBadge
+                      : styles.pendingBadge,
                 ]}
               >
                 <Text style={styles.attendanceBadgeText}>
                   {appt.attended === true
                     ? t("appt.attended")
                     : appt.attended === false
-                    ? t("appt.missed")
-                    : t("appt.pending")}
+                      ? t("appt.missed")
+                      : t("appt.pending")}
                 </Text>
               </View>
             </View>
             {appt.hospitalNameAr && (
               <View style={[styles.apptMeta, isRTL && styles.rowReverse]}>
-                <Ionicons
-                  name="business-outline"
-                  size={13}
-                  color={colors.mutedForeground}
-                />
+                <Ionicons name="business-outline" size={13} color={colors.mutedForeground} />
                 <Text style={styles.apptMetaText}>{appt.hospitalNameAr}</Text>
               </View>
             )}
@@ -368,12 +325,7 @@ function DetailRow({
   colors: ReturnType<typeof useColors>;
 }) {
   return (
-    <View
-      style={[
-        detailRowStyles.row,
-        { flexDirection: isRTL ? "row-reverse" : "row" },
-      ]}
-    >
+    <View style={[detailRowStyles.row, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
       <Ionicons
         name={icon as "calendar-outline"}
         size={16}
@@ -413,7 +365,7 @@ const detailRowStyles = StyleSheet.create({
   value: { fontSize: 14, fontFamily: "Tajawal_500Medium", flex: 1 },
 });
 
-function makeStyles(colors: ReturnType<typeof useColors>, isRTL: boolean) {
+function makeStyles(colors: ReturnType<typeof useColors>, _isRTL: boolean) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     content: { paddingHorizontal: 16 },

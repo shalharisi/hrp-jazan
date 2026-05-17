@@ -58,16 +58,9 @@ export default function CasesScreen() {
   ];
 
   return (
-    <View
-      style={[
-        styles.container,
-        { paddingTop: insets.top + topWebPadding + 16 },
-      ]}
-    >
+    <View style={[styles.container, { paddingTop: insets.top + topWebPadding + 16 }]}>
       <View style={[styles.headerRow, isRTL && styles.rowReverse]}>
-        <Text style={[styles.screenTitle, isRTL && styles.rtlText]}>
-          {t("cases.title")}
-        </Text>
+        <Text style={[styles.screenTitle, isRTL && styles.rtlText]}>{t("cases.title")}</Text>
         {data && (
           <View style={styles.countBadge}>
             <Text style={styles.countText}>{data.total}</Text>
@@ -82,11 +75,11 @@ export default function CasesScreen() {
         style={styles.filterScroll}
       >
         <Pressable
-          style={[
-            styles.filterChip,
-            !riskFilter && !complianceFilter && styles.filterChipActive,
-          ]}
-          onPress={() => { setRiskFilter(undefined); setComplianceFilter(undefined); }}
+          style={[styles.filterChip, !riskFilter && !complianceFilter && styles.filterChipActive]}
+          onPress={() => {
+            setRiskFilter(undefined);
+            setComplianceFilter(undefined);
+          }}
         >
           <Text
             style={[
@@ -108,15 +101,10 @@ export default function CasesScreen() {
                 borderColor: RISK_COLORS[rf.key],
               },
             ]}
-            onPress={() =>
-              setRiskFilter((prev) => (prev === rf.key ? undefined : rf.key))
-            }
+            onPress={() => setRiskFilter((prev) => (prev === rf.key ? undefined : rf.key))}
           >
             <Text
-              style={[
-                styles.filterChipText,
-                riskFilter === rf.key && styles.filterChipTextActive,
-              ]}
+              style={[styles.filterChipText, riskFilter === rf.key && styles.filterChipTextActive]}
             >
               {rf.label}
             </Text>
@@ -125,15 +113,8 @@ export default function CasesScreen() {
         {complianceFilters.map((cf) => (
           <Pressable
             key={cf.key}
-            style={[
-              styles.filterChip,
-              complianceFilter === cf.key && styles.filterChipActive,
-            ]}
-            onPress={() =>
-              setComplianceFilter((prev) =>
-                prev === cf.key ? undefined : cf.key
-              )
-            }
+            style={[styles.filterChip, complianceFilter === cf.key && styles.filterChipActive]}
+            onPress={() => setComplianceFilter((prev) => (prev === cf.key ? undefined : cf.key))}
           >
             <Text style={styles.filterChipText}>{cf.label}</Text>
           </Pressable>
@@ -157,25 +138,17 @@ export default function CasesScreen() {
           data={cases}
           keyExtractor={(item) => String(item.id)}
           renderItem={({ item }) => {
-            const riskColor =
-              RISK_COLORS[(item.riskLevel as RiskLevel) ?? "low"];
+            const riskColor = RISK_COLORS[(item.riskLevel as RiskLevel) ?? "low"];
             return (
               <Pressable
-                style={({ pressed }) => [
-                  styles.caseCard,
-                  pressed && styles.pressed,
-                ]}
+                style={({ pressed }) => [styles.caseCard, pressed && styles.pressed]}
                 onPress={() => router.push(`/pregnancy/${item.id}`)}
                 testID={`case-${item.id}`}
               >
-                <View
-                  style={[styles.riskStripe, { backgroundColor: riskColor }]}
-                />
+                <View style={[styles.riskStripe, { backgroundColor: riskColor }]} />
                 <View style={styles.caseContent}>
                   <View style={[styles.caseHeader, isRTL && styles.rowReverse]}>
-                    <Text
-                      style={[styles.patientName, isRTL && styles.rtlText]}
-                    >
+                    <Text style={[styles.patientName, isRTL && styles.rtlText]}>
                       {item.patientNameAr ?? `#${item.id}`}
                     </Text>
                     <View
@@ -191,11 +164,7 @@ export default function CasesScreen() {
                   </View>
                   <View style={[styles.caseMeta, isRTL && styles.rowReverse]}>
                     <View style={[styles.metaItem, isRTL && styles.rowReverse]}>
-                      <Ionicons
-                        name="calendar-outline"
-                        size={12}
-                        color={colors.mutedForeground}
-                      />
+                      <Ionicons name="calendar-outline" size={12} color={colors.mutedForeground} />
                       <Text style={styles.metaText}>
                         {item.visitDate
                           ? new Date(item.visitDate).toLocaleDateString("ar-SA")
@@ -204,20 +173,14 @@ export default function CasesScreen() {
                     </View>
                     {item.gestationalAge && (
                       <View style={[styles.metaItem, isRTL && styles.rowReverse]}>
-                        <Ionicons
-                          name="time-outline"
-                          size={12}
-                          color={colors.mutedForeground}
-                        />
+                        <Ionicons name="time-outline" size={12} color={colors.mutedForeground} />
                         <Text style={styles.metaText}>
                           {item.gestationalAge} {t("cases.weeks")}
                         </Text>
                       </View>
                     )}
                     <Text style={styles.complianceText}>
-                      {t(
-                        `compliance.${item.compliance}` as "compliance.compliant"
-                      )}
+                      {t(`compliance.${item.compliance}` as "compliance.compliant")}
                     </Text>
                   </View>
                 </View>
@@ -231,21 +194,14 @@ export default function CasesScreen() {
           }}
           ListEmptyComponent={
             <View style={styles.center}>
-              <Ionicons
-                name="document-text-outline"
-                size={48}
-                color={colors.mutedForeground}
-              />
-              <Text style={[styles.emptyText, isRTL && styles.rtlText]}>
-                {t("cases.empty")}
-              </Text>
+              <Ionicons name="document-text-outline" size={48} color={colors.mutedForeground} />
+              <Text style={[styles.emptyText, isRTL && styles.rtlText]}>{t("cases.empty")}</Text>
             </View>
           }
           contentContainerStyle={[
             styles.listContent,
             {
-              paddingBottom:
-                insets.bottom + (Platform.OS === "web" ? 84 : 100),
+              paddingBottom: insets.bottom + (Platform.OS === "web" ? 84 : 100),
             },
           ]}
           showsVerticalScrollIndicator={false}

@@ -31,7 +31,8 @@ router.get("/audit-logs", requireAuth, requireRole("admin"), async (req, res): P
 
   const [totalResult, logs] = await Promise.all([
     db.select({ count: count() }).from(auditLogsTable).where(whereClause),
-    db.select()
+    db
+      .select()
       .from(auditLogsTable)
       .where(whereClause)
       .orderBy(desc(auditLogsTable.createdAt))
@@ -42,7 +43,7 @@ router.get("/audit-logs", requireAuth, requireRole("admin"), async (req, res): P
   const total = totalResult[0]?.count ?? 0;
 
   res.json({
-    items: logs.map(l => ({
+    items: logs.map((l) => ({
       ...l,
       createdAt: l.createdAt.toISOString(),
     })),

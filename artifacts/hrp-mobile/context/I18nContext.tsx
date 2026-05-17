@@ -35,10 +35,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const t = useCallback(
-    (key: TranslationKey) => translate(key, lang),
-    [lang]
-  );
+  const t = useCallback((key: TranslationKey) => translate(key, lang), [lang]);
 
   return (
     <I18nContext.Provider value={{ lang, isRTL: lang === "ar", setLang, t }}>

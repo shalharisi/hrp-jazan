@@ -10,15 +10,25 @@
 
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const XLSX = require("xlsx") as typeof import("xlsx");
-import { db, patientsTable, pregnanciesTable, appointmentsTable, healthCentersTable, sectorsTable, hospitalsTable } from "@workspace/db";
-import { eq, inArray } from "drizzle-orm";
+import {
+  db,
+  patientsTable,
+  pregnanciesTable,
+  appointmentsTable,
+  healthCentersTable,
+  sectorsTable,
+  hospitalsTable,
+} from "@workspace/db";
+import { eq } from "drizzle-orm";
 import path from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const EXCEL_PATH = path.resolve(__dirname, "../../attached_assets/HRPJazan2026_(2)_1778936984329.xlsx");
+const EXCEL_PATH = path.resolve(
+  __dirname,
+  "../../attached_assets/HRPJazan2026_(2)_1778936984329.xlsx",
+);
 
 // ---------------------------------------------------------------------------
 // Excel serial date → ISO date string (YYYY-MM-DD)
@@ -55,7 +65,8 @@ function normalizeSector(raw: string): string {
   if (s.includes("جنوبي") || s.includes("southern")) return "القطاع الجنوبي";
   if (s.includes("جبلي") || s.includes("jabaly") || s.includes("aljabaly")) return "القطاع الجبلي";
   if (s.includes("اوسط") || s.includes("أوسط") || s.includes("middle")) return "القطاع الأوسط";
-  if (s.includes("بني مالك") || s.includes("bani malik") || s.includes("bany malik")) return "قطاع بني مالك";
+  if (s.includes("بني مالك") || s.includes("bani malik") || s.includes("bany malik"))
+    return "قطاع بني مالك";
   if (s.includes("فرسان") || s.includes("farasan")) return "قطاع فرسان";
   return raw.trim();
 }
@@ -68,7 +79,7 @@ function normalizeHCName(name: string): string {
     .replace(/^مركز\s+/u, "")
     .replace(/^مستشفى?\s+/u, "")
     .replace(/\s+/g, "")
-    .replace(/[ا-ي]/g, c => c.normalize("NFD"))
+    .replace(/[ا-ي]/g, (c) => c.normalize("NFD"))
     .toLowerCase()
     .trim();
 }
@@ -93,8 +104,8 @@ function parseList(raw: string): string[] {
   if (!raw) return [];
   return raw
     .split(";")
-    .map(s => s.trim())
-    .filter(s => s.length > 0);
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
 }
 
 // ---------------------------------------------------------------------------
@@ -106,8 +117,16 @@ function normalizeHospital(raw: string): string {
   if (s.includes("جازان") || s.includes("جزان")) return "مستشفى جازان العام";
   if (s.includes("بيش")) return "مستشفى بيش العام";
   if (s.includes("صامطة")) return "مستشفى صامطة العام";
-  if (s.includes("أبوعريش") || s.includes("ابوعريش") || s.includes("أبوعريش") || s.includes("عريش")) return "مستشفى أبو عريش العام";
-  if (s.includes("ملكفهد") || s.includes("فهدالمركزي") || s.includes("KFCH") || s.includes("kfch") || s.includes("المركزي")) return "مستشفى الملك فهد المركزي";
+  if (s.includes("أبوعريش") || s.includes("ابوعريش") || s.includes("أبوعريش") || s.includes("عريش"))
+    return "مستشفى أبو عريش العام";
+  if (
+    s.includes("ملكفهد") ||
+    s.includes("فهدالمركزي") ||
+    s.includes("KFCH") ||
+    s.includes("kfch") ||
+    s.includes("المركزي")
+  )
+    return "مستشفى الملك فهد المركزي";
   return raw.trim();
 }
 
@@ -118,7 +137,14 @@ function parseAttended(raw: string): boolean | null {
   if (!raw) return null;
   const s = raw.trim();
   if (s === "تم الحظور" || s === "تم الحضور" || s === "حضرت" || s === "تم الابلاغ") return true;
-  if (s.startsWith("لم") || s.startsWith("لا") || s.startsWith("المريضه الغت") || s.includes("لاترغب") || s.includes("تراجع")) return false;
+  if (
+    s.startsWith("لم") ||
+    s.startsWith("لا") ||
+    s.startsWith("المريضه الغت") ||
+    s.includes("لاترغب") ||
+    s.includes("تراجع")
+  )
+    return false;
   return null;
 }
 
@@ -140,28 +166,36 @@ async function main() {
   const dbSectors = await db.select().from(sectorsTable).orderBy(sectorsTable.id);
   const dbHCs = await db.select().from(healthCentersTable).orderBy(healthCentersTable.id);
   const dbHospitals = await db.select().from(hospitalsTable).orderBy(hospitalsTable.id);
-  const dbPatients = await db.select({ id: patientsTable.id, nationalId: patientsTable.nationalId }).from(patientsTable);
+  const dbPatients = await db
+    .select({ id: patientsTable.id, nationalId: patientsTable.nationalId })
+    .from(patientsTable);
 
-  console.log(`  Sectors: ${dbSectors.length}, Health Centers: ${dbHCs.length}, Hospitals: ${dbHospitals.length}, Existing patients: ${dbPatients.length}`);
+  console.log(
+    `  Sectors: ${dbSectors.length}, Health Centers: ${dbHCs.length}, Hospitals: ${dbHospitals.length}, Existing patients: ${dbPatients.length}`,
+  );
 
   // Build lookup maps
-  const sectorByNorm = new Map<string, typeof dbSectors[0]>();
+  const sectorByNorm = new Map<string, (typeof dbSectors)[0]>();
   for (const s of dbSectors) sectorByNorm.set(normalizeSector(s.nameAr), s);
 
-  const existingNIDs = new Set(dbPatients.map(p => p.nationalId));
-  const patientIdByNID = new Map(dbPatients.map(p => [p.nationalId, p.id]));
+  const existingNIDs = new Set(dbPatients.map((p) => p.nationalId));
+  const patientIdByNID = new Map(dbPatients.map((p) => [p.nationalId, p.id]));
 
-  const hospitalByNorm = new Map<string, typeof dbHospitals[0]>();
+  const hospitalByNorm = new Map<string, (typeof dbHospitals)[0]>();
   for (const h of dbHospitals) {
     hospitalByNorm.set(normalizeHospital(h.nameAr), h);
     hospitalByNorm.set(h.nameAr, h);
   }
 
   // Stats
-  let skippedNoId = 0, skippedBadId = 0, insertedPatients = 0, skippedDupPatients = 0;
-  let insertedPregnancies = 0, insertedAppointments = 0;
-  let unmatchedHCs: string[] = [];
-  let unmatchedSectors: string[] = [];
+  let skippedNoId = 0,
+    skippedBadId = 0,
+    insertedPatients = 0,
+    skippedDupPatients = 0;
+  let insertedPregnancies = 0,
+    insertedAppointments = 0;
+  const unmatchedHCs: string[] = [];
+  const unmatchedSectors: string[] = [];
 
   // Column indices (0-based, header is row 0)
   const C = {
@@ -195,9 +229,17 @@ async function main() {
     const r = row as string[];
 
     // Extract nationalId
-    const rawNID = String(r[C.nationalId] ?? "").trim().replace(/\D/g, "");
-    if (!rawNID) { skippedNoId++; continue; }
-    if (rawNID.length < 8 || rawNID.length > 12) { skippedBadId++; continue; }
+    const rawNID = String(r[C.nationalId] ?? "")
+      .trim()
+      .replace(/\D/g, "");
+    if (!rawNID) {
+      skippedNoId++;
+      continue;
+    }
+    if (rawNID.length < 8 || rawNID.length > 12) {
+      skippedBadId++;
+      continue;
+    }
     const nationalId = rawNID.padStart(10, "0");
 
     // Match health center → sector
@@ -206,7 +248,7 @@ async function main() {
 
     let healthCenterId: number | null = null;
     if (rawHCName) {
-      const hcNames = dbHCs.map(h => h.nameAr);
+      const hcNames = dbHCs.map((h) => h.nameAr);
       const idx = fuzzyMatch(rawHCName, hcNames);
       if (idx >= 0) {
         healthCenterId = dbHCs[idx]!.id;
@@ -221,7 +263,7 @@ async function main() {
       const sector = sectorByNorm.get(normalizedSector);
       if (sector) {
         // Pick first HC in this sector as fallback
-        const hcInSector = dbHCs.find(h => h.sectorId === sector.id);
+        const hcInSector = dbHCs.find((h) => h.sectorId === sector.id);
         if (hcInSector) healthCenterId = hcInSector.id;
       } else {
         if (!unmatchedSectors.includes(rawSectorName)) unmatchedSectors.push(rawSectorName);
@@ -230,21 +272,32 @@ async function main() {
 
     // If still no health center, skip this row
     if (!healthCenterId) {
-      console.warn(`  ⚠️  Row NID=${nationalId}: no health center match for "${rawHCName}" / "${rawSectorName}" — skipping`);
+      console.warn(
+        `  ⚠️  Row NID=${nationalId}: no health center match for "${rawHCName}" / "${rawSectorName}" — skipping`,
+      );
       skippedNoId++;
       continue;
     }
 
     // Parse patient fields
     const nameAr = String(r[C.nameAr] ?? "").trim() || "غير معروف";
-    const phone = String(r[C.phone] ?? "").trim().replace(/\D/g, "") || "0000000000";
-    const doctorPhone = String(r[C.doctorPhone] ?? "").trim().replace(/\D/g, "") || null;
+    const phone =
+      String(r[C.phone] ?? "")
+        .trim()
+        .replace(/\D/g, "") || "0000000000";
+    const doctorPhone =
+      String(r[C.doctorPhone] ?? "")
+        .trim()
+        .replace(/\D/g, "") || null;
     const address = String(r[C.address] ?? "").trim() || null;
 
     // Parse dates
     const rawVisit = r[C.visitDate];
     const visitDate = typeof rawVisit === "number" ? excelDateToISO(rawVisit) : null;
-    if (!visitDate) { skippedNoId++; continue; } // skip if no visit date
+    if (!visitDate) {
+      skippedNoId++;
+      continue;
+    } // skip if no visit date
 
     const rawLmp = r[C.lmpDate];
     const lmpDate = typeof rawLmp === "number" ? excelDateToISO(rawLmp) : null;
@@ -252,10 +305,19 @@ async function main() {
     const ga = parseGA(String(r[C.ga] ?? ""));
 
     // Parse pregnancy fields
-    const isVte = String(r[C.isVte] ?? "").trim().toLowerCase() === "yes";
-    const enoxaparin = String(r[C.enoxaparin] ?? "").trim().toLowerCase() === "yes";
-    const refExplainedRaw = String(r[C.refExplained] ?? "").trim().toLowerCase();
-    const referralExplained = refExplainedRaw === "yes" ? true : refExplainedRaw === "no" ? false : null;
+    const isVte =
+      String(r[C.isVte] ?? "")
+        .trim()
+        .toLowerCase() === "yes";
+    const enoxaparin =
+      String(r[C.enoxaparin] ?? "")
+        .trim()
+        .toLowerCase() === "yes";
+    const refExplainedRaw = String(r[C.refExplained] ?? "")
+      .trim()
+      .toLowerCase();
+    const referralExplained =
+      refExplainedRaw === "yes" ? true : refExplainedRaw === "no" ? false : null;
     const doctorName = String(r[C.doctorName] ?? "").trim() || null;
     const notes = String(r[C.notes] ?? "").trim() || null;
     const medications = String(r[C.medications] ?? "").trim() || null;
@@ -274,9 +336,10 @@ async function main() {
       const hosp = hospitalByNorm.get(normH) || hospitalByNorm.get(rawHospital);
       if (hosp) {
         referredHospitalId = hosp.id;
-        referralRecommendation = normH.includes("الملك فهد") || normH.includes("المركزي") || normH.includes("KFCH")
-          ? "transfer_kfch"
-          : "follow_at_hospital";
+        referralRecommendation =
+          normH.includes("الملك فهد") || normH.includes("المركزي") || normH.includes("KFCH")
+            ? "transfer_kfch"
+            : "follow_at_hospital";
       }
     }
 
@@ -285,13 +348,14 @@ async function main() {
     const appointmentDate = typeof rawAppt === "number" ? excelDateToISO(rawAppt) : null;
     const attendedRaw = String(r[C.attended] ?? "").trim();
     const attended = parseAttended(attendedRaw);
-    const attendanceNote = attendedRaw && attended === null ? attendedRaw : (attended === false ? attendedRaw : null);
+    const attendanceNote =
+      attendedRaw && attended === null ? attendedRaw : attended === false ? attendedRaw : null;
 
     // Risk level (default "high" since all are high-risk pregnancies; critical if VTE + major condition)
-    const hasCriticalCondition = medicalConditions.some(c =>
-      c.includes("قلب") || c.includes("كلى") || c.includes("سرطان")
+    const hasCriticalCondition = medicalConditions.some(
+      (c) => c.includes("قلب") || c.includes("كلى") || c.includes("سرطان"),
     );
-    const riskLevel = (isVte && hasCriticalCondition) ? "critical" : "high";
+    const riskLevel = isVte && hasCriticalCondition ? "critical" : "high";
 
     // --- INSERT PATIENT (skip if exists) ---
     let patientId: number;
@@ -300,21 +364,28 @@ async function main() {
       skippedDupPatients++;
     } else {
       try {
-        const [inserted] = await db.insert(patientsTable).values({
-          nationalId,
-          nameAr,
-          phone,
-          doctorPhone,
-          address,
-          healthCenterId,
-        }).returning({ id: patientsTable.id });
+        const [inserted] = await db
+          .insert(patientsTable)
+          .values({
+            nationalId,
+            nameAr,
+            phone,
+            doctorPhone,
+            address,
+            healthCenterId,
+          })
+          .returning({ id: patientsTable.id });
         patientId = inserted!.id;
         existingNIDs.add(nationalId);
         patientIdByNID.set(nationalId, patientId);
         insertedPatients++;
       } catch (e) {
         // Race condition or constraint — try to fetch
-        const [existing] = await db.select({ id: patientsTable.id }).from(patientsTable).where(eq(patientsTable.nationalId, nationalId)).limit(1);
+        const [existing] = await db
+          .select({ id: patientsTable.id })
+          .from(patientsTable)
+          .where(eq(patientsTable.nationalId, nationalId))
+          .limit(1);
         if (existing) {
           patientId = existing.id;
           existingNIDs.add(nationalId);
@@ -329,27 +400,30 @@ async function main() {
 
     // --- INSERT PREGNANCY ---
     try {
-      const [preg] = await db.insert(pregnanciesTable).values({
-        patientId,
-        visitDate,
-        lmpDate,
-        gestationalAge: ga,
-        riskLevel,
-        riskFactors,
-        pregnancyRiskFactors,
-        medicalConditions,
-        medications,
-        isVteHighRisk: isVte,
-        enoxaparinPrescribed: enoxaparin,
-        referralExplained,
-        doctorName,
-        referralRecommendation,
-        referredHospitalId,
-        appointmentDate,
-        compliance: "pending",
-        notes,
-        followUpNotes,
-      }).returning({ id: pregnanciesTable.id });
+      const [preg] = await db
+        .insert(pregnanciesTable)
+        .values({
+          patientId,
+          visitDate,
+          lmpDate,
+          gestationalAge: ga,
+          riskLevel,
+          riskFactors,
+          pregnancyRiskFactors,
+          medicalConditions,
+          medications,
+          isVteHighRisk: isVte,
+          enoxaparinPrescribed: enoxaparin,
+          referralExplained,
+          doctorName,
+          referralRecommendation,
+          referredHospitalId,
+          appointmentDate,
+          compliance: "pending",
+          notes,
+          followUpNotes,
+        })
+        .returning({ id: pregnanciesTable.id });
       insertedPregnancies++;
 
       // --- INSERT APPOINTMENT if date + hospital ---
@@ -379,15 +453,18 @@ async function main() {
   console.log(`   Rows skipped (bad ID):    ${skippedBadId}`);
   if (unmatchedHCs.length) {
     console.log(`\n⚠️  Unmatched health centers (${unmatchedHCs.length}):`);
-    unmatchedHCs.forEach(n => console.log(`   - "${n}"`));
+    unmatchedHCs.forEach((n) => console.log(`   - "${n}"`));
   }
   if (unmatchedSectors.length) {
     console.log(`\n⚠️  Unmatched sectors (${unmatchedSectors.length}):`);
-    unmatchedSectors.forEach(n => console.log(`   - "${n}"`));
+    unmatchedSectors.forEach((n) => console.log(`   - "${n}"`));
   }
   console.log("=".repeat(50));
 }
 
 main()
   .then(() => process.exit(0))
-  .catch(e => { console.error("❌ Fatal error:", e); process.exit(1); });
+  .catch((e) => {
+    console.error("❌ Fatal error:", e);
+    process.exit(1);
+  });

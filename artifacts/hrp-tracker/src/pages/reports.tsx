@@ -41,7 +41,9 @@ export default function ReportsPage() {
   const [loadingPregnancies, setLoadingPregnancies] = useState(false);
 
   const today = new Date().toLocaleDateString(ar ? "ar-SA" : "en-US", {
-    year: "numeric", month: "long", day: "numeric",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 
   async function handleExport(type: "patients" | "pregnancies") {
@@ -63,7 +65,8 @@ export default function ReportsPage() {
     }
   }
 
-  const canExport = user?.role === "admin" || user?.role === "coordinator" || user?.role === "doctor";
+  const canExport =
+    user?.role === "admin" || user?.role === "coordinator" || user?.role === "doctor";
 
   return (
     <div className="space-y-6 p-6 max-w-3xl mx-auto">
@@ -102,9 +105,7 @@ export default function ReportsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <p className="text-xs text-muted-foreground">
-                {t("reports.exportDescription")}
-              </p>
+              <p className="text-xs text-muted-foreground">{t("reports.exportDescription")}</p>
               <Button
                 className="w-full gap-2"
                 style={{ background: "#006633", color: "#fff" }}
@@ -140,9 +141,7 @@ export default function ReportsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <p className="text-xs text-muted-foreground">
-                {t("reports.exportDescription")}
-              </p>
+              <p className="text-xs text-muted-foreground">{t("reports.exportDescription")}</p>
               <Button
                 className="w-full gap-2"
                 style={{ background: "#006633", color: "#fff" }}

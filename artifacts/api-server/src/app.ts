@@ -11,8 +11,7 @@ const app: Express = express();
 // CORS — only allow explicit trusted origins with credentials
 // ---------------------------------------------------------------------------
 const REPLIT_DOMAINS_ENV = process.env["REPLIT_DOMAINS"] ?? "";
-const trustedOrigins = REPLIT_DOMAINS_ENV
-  .split(",")
+const trustedOrigins = REPLIT_DOMAINS_ENV.split(",")
   .map((d) => d.trim())
   .filter(Boolean)
   .flatMap((d) => [`https://${d}`, `http://${d}`]);

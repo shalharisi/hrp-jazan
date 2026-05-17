@@ -28,22 +28,27 @@ const UpdateUserBody = z.object({
 
 // GET /api/users — admin only
 router.get("/users", requireAuth, requireRole("admin"), async (_req, res): Promise<void> => {
-  const users = await db.select({
-    id: usersTable.id,
-    username: usersTable.username,
-    role: usersTable.role,
-    nameAr: usersTable.nameAr,
-    nameEn: usersTable.nameEn,
-    isActive: usersTable.isActive,
-    lastLogin: usersTable.lastLogin,
-    createdAt: usersTable.createdAt,
-  }).from(usersTable).orderBy(usersTable.createdAt);
+  const users = await db
+    .select({
+      id: usersTable.id,
+      username: usersTable.username,
+      role: usersTable.role,
+      nameAr: usersTable.nameAr,
+      nameEn: usersTable.nameEn,
+      isActive: usersTable.isActive,
+      lastLogin: usersTable.lastLogin,
+      createdAt: usersTable.createdAt,
+    })
+    .from(usersTable)
+    .orderBy(usersTable.createdAt);
 
-  res.json(users.map(u => ({
-    ...u,
-    lastLogin: u.lastLogin?.toISOString() ?? null,
-    createdAt: u.createdAt.toISOString(),
-  })));
+  res.json(
+    users.map((u) => ({
+      ...u,
+      lastLogin: u.lastLogin?.toISOString() ?? null,
+      createdAt: u.createdAt.toISOString(),
+    })),
+  );
 });
 
 // POST /api/users — admin only
@@ -56,14 +61,17 @@ router.post("/users", requireAuth, requireRole("admin"), async (req, res): Promi
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 12);
 
-  const [user] = await db.insert(usersTable).values({
-    username: parsed.data.username,
-    passwordHash,
-    role: parsed.data.role,
-    nameAr: parsed.data.nameAr,
-    nameEn: parsed.data.nameEn ?? null,
-    sectorId: parsed.data.sectorId ?? null,
-  }).returning();
+  const [user] = await db
+    .insert(usersTable)
+    .values({
+      username: parsed.data.username,
+      passwordHash,
+      role: parsed.data.role,
+      nameAr: parsed.data.nameAr,
+      nameEn: parsed.data.nameEn ?? null,
+      sectorId: parsed.data.sectorId ?? null,
+    })
+    .returning();
 
   await logAudit({
     userId: req.user?.userId,
@@ -88,10 +96,16 @@ router.post("/users", requireAuth, requireRole("admin"), async (req, res): Promi
 // PATCH /api/users/:id — admin only
 router.patch("/users/:id", requireAuth, requireRole("admin"), async (req, res): Promise<void> => {
   const id = parseInt(String(req.params["id"] ?? ""));
-  if (isNaN(id)) { res.status(400).json({ error: "معرف غير صحيح" }); return; }
+  if (isNaN(id)) {
+    res.status(400).json({ error: "معرف غير صحيح" });
+    return;
+  }
 
   const parsed = UpdateUserBody.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
 
   const updateData: Record<string, unknown> = {};
   if (parsed.data.role != null) updateData["role"] = parsed.data.role;
@@ -103,8 +117,15 @@ router.patch("/users/:id", requireAuth, requireRole("admin"), async (req, res): 
     updateData["passwordHash"] = await bcrypt.hash(parsed.data.password, 12);
   }
 
-  const [user] = await db.update(usersTable).set(updateData).where(eq(usersTable.id, id)).returning();
-  if (!user) { res.status(404).json({ error: "المستخدم غير موجود" }); return; }
+  const [user] = await db
+    .update(usersTable)
+    .set(updateData)
+    .where(eq(usersTable.id, id))
+    .returning();
+  if (!user) {
+    res.status(404).json({ error: "المستخدم غير موجود" });
+    return;
+  }
 
   await logAudit({
     userId: req.user?.userId,

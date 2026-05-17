@@ -31,8 +31,10 @@ export default function PatientDetailScreen() {
   const topWebPadding = Platform.OS === "web" ? 67 : 0;
 
   const { data: patient, isLoading: loadingPatient } = useGetPatient(patientId);
-  const { data: pregnanciesData, isLoading: loadingPregnancies } =
-    useListPregnancies({ patientId, limit: 20 });
+  const { data: pregnanciesData, isLoading: loadingPregnancies } = useListPregnancies({
+    patientId,
+    limit: 20,
+  });
 
   const styles = makeStyles(colors, isRTL);
   const pregnancies = pregnanciesData?.items ?? [];
@@ -74,9 +76,7 @@ export default function PatientDetailScreen() {
             color={colors.primary}
           />
         </Pressable>
-        <Text style={[styles.screenTitle, isRTL && styles.rtlText]}>
-          {t("patient.title")}
-        </Text>
+        <Text style={[styles.screenTitle, isRTL && styles.rtlText]}>{t("patient.title")}</Text>
       </View>
 
       <View style={styles.patientCard}>
@@ -85,9 +85,7 @@ export default function PatientDetailScreen() {
             <Text style={styles.bigAvatarText}>{patient.nameAr.charAt(0)}</Text>
           </View>
           <View style={styles.patientInfo}>
-            <Text style={[styles.patientName, isRTL && styles.rtlText]}>
-              {patient.nameAr}
-            </Text>
+            <Text style={[styles.patientName, isRTL && styles.rtlText]}>{patient.nameAr}</Text>
             {patient.nameEn && (
               <Text style={[styles.patientNameEn, { textAlign: isRTL ? "right" : "left" }]}>
                 {patient.nameEn}
@@ -149,11 +147,7 @@ export default function PatientDetailScreen() {
         <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />
       ) : pregnancies.length === 0 ? (
         <View style={styles.emptySection}>
-          <Ionicons
-            name="document-text-outline"
-            size={32}
-            color={colors.mutedForeground}
-          />
+          <Ionicons name="document-text-outline" size={32} color={colors.mutedForeground} />
           <Text style={[styles.emptyText, isRTL && styles.rtlText]}>
             {t("patient.noPregnancies")}
           </Text>
@@ -164,21 +158,14 @@ export default function PatientDetailScreen() {
           return (
             <Pressable
               key={p.id}
-              style={({ pressed }) => [
-                styles.pregnancyCard,
-                pressed && styles.pressed,
-              ]}
+              style={({ pressed }) => [styles.pregnancyCard, pressed && styles.pressed]}
               onPress={() => router.push(`/pregnancy/${p.id}`)}
             >
-              <View
-                style={[styles.pregnancyStripe, { backgroundColor: riskColor }]}
-              />
+              <View style={[styles.pregnancyStripe, { backgroundColor: riskColor }]} />
               <View style={styles.pregnancyContent}>
                 <View style={[styles.pregHeader, isRTL && styles.rowReverse]}>
                   <Text style={[styles.pregDate, isRTL && styles.rtlText]}>
-                    {p.visitDate
-                      ? new Date(p.visitDate).toLocaleDateString("ar-SA")
-                      : "—"}
+                    {p.visitDate ? new Date(p.visitDate).toLocaleDateString("ar-SA") : "—"}
                   </Text>
                   <View
                     style={[
@@ -186,9 +173,7 @@ export default function PatientDetailScreen() {
                       { backgroundColor: `${riskColor}20`, borderColor: riskColor },
                     ]}
                   >
-                    <Text
-                      style={[styles.riskBadgeText, { color: riskColor }]}
-                    >
+                    <Text style={[styles.riskBadgeText, { color: riskColor }]}>
                       {t(`risk.${p.riskLevel}` as "risk.low")}
                     </Text>
                   </View>
@@ -198,9 +183,7 @@ export default function PatientDetailScreen() {
                 </Text>
                 {p.referralRecommendation && (
                   <Text style={[styles.referralText, isRTL && styles.rtlText]}>
-                    {t(
-                      `referral.${p.referralRecommendation}` as "referral.follow_at_center"
-                    )}
+                    {t(`referral.${p.referralRecommendation}` as "referral.follow_at_center")}
                   </Text>
                 )}
               </View>
@@ -231,12 +214,7 @@ function InfoRow({
   colors: ReturnType<typeof useColors>;
 }) {
   return (
-    <View
-      style={[
-        infoStyles.row,
-        { flexDirection: isRTL ? "row-reverse" : "row" },
-      ]}
-    >
+    <View style={[infoStyles.row, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
       <Ionicons
         name={icon as "card-outline"}
         size={16}
@@ -282,7 +260,7 @@ const infoStyles = StyleSheet.create({
   },
 });
 
-function makeStyles(colors: ReturnType<typeof useColors>, isRTL: boolean) {
+function makeStyles(colors: ReturnType<typeof useColors>, _isRTL: boolean) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     content: { paddingHorizontal: 16 },

@@ -37,7 +37,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { CalendarCheck2, CalendarX2, Clock, ExternalLink, CalendarDays, Download, AlertCircle, Printer, X } from "lucide-react";
+import {
+  CalendarCheck2,
+  CalendarX2,
+  Clock,
+  ExternalLink,
+  CalendarDays,
+  Download,
+  AlertCircle,
+  Printer,
+  X,
+} from "lucide-react";
 import { RiskBadge } from "@/components/ui/status-badges";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -57,7 +67,7 @@ function localDateStr(d: Date): string {
 function getDateRange(
   filter: DateFilter,
   customStart?: string,
-  customEnd?: string
+  customEnd?: string,
 ): { start: string; end: string } | null {
   const now = new Date();
   const todayStr = localDateStr(now);
@@ -100,9 +110,7 @@ function StatusBadge({ attended }: { attended: boolean | null | undefined }) {
   }
   if (attended === false) {
     return (
-      <Badge className="bg-red-100 text-red-800 border-red-200 gap-1">
-        ❌ {t("appt.absent")}
-      </Badge>
+      <Badge className="bg-red-100 text-red-800 border-red-200 gap-1">❌ {t("appt.absent")}</Badge>
     );
   }
   return (
@@ -133,7 +141,7 @@ function buildExportFilename(
   sectorName: string | null,
   riskFilter: RiskFilter,
   customStart?: string,
-  customEnd?: string
+  customEnd?: string,
 ): string {
   const today = localDateStr(new Date());
   const parts: string[] = ["appointments"];
@@ -152,7 +160,15 @@ function buildExportFilename(
 function exportAppointmentsToCsv(
   rows: Appointment[],
   lang: string,
-  headers: { patient: string; nationalId: string; sector: string; hospital: string; date: string; status: string; note: string },
+  headers: {
+    patient: string;
+    nationalId: string;
+    sector: string;
+    hospital: string;
+    date: string;
+    status: string;
+    note: string;
+  },
   dateFilter: DateFilter,
   statusFilter: StatusFilter,
   sectorName: string | null,
@@ -168,7 +184,7 @@ function exportAppointmentsToCsv(
     sectorValue: string;
     riskFieldLabel: string;
     riskValue: string;
-  }
+  },
 ) {
   const cols = [
     headers.patient,
@@ -219,7 +235,7 @@ function exportAppointmentsToCsv(
         escape(row.appointmentDate),
         escape(attendedLabel(row.attended, lang)),
         escape(row.attendanceNote),
-      ].join(",")
+      ].join(","),
     );
   }
 
@@ -229,7 +245,14 @@ function exportAppointmentsToCsv(
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = buildExportFilename(dateFilter, statusFilter, sectorName, riskFilter, customStart, customEnd);
+  link.download = buildExportFilename(
+    dateFilter,
+    statusFilter,
+    sectorName,
+    riskFilter,
+    customStart,
+    customEnd,
+  );
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -438,7 +461,7 @@ export default function AppointmentsPage() {
         onError: () => {
           toast({ title: t("general.saveError"), variant: "destructive" });
         },
-      }
+      },
     );
   };
 
@@ -496,11 +519,12 @@ export default function AppointmentsPage() {
   });
 
   const urgentThreshold = getUrgentThreshold();
-  const showUrgentBanner = !isLoading && statsNeedsAction > urgentThreshold && statsNeedsAction > dismissedCount;
+  const showUrgentBanner =
+    !isLoading && statsNeedsAction > urgentThreshold && statsNeedsAction > dismissedCount;
 
   const urgentBannerText = t("appointments.urgentBanner").replace(
     "{count}",
-    String(statsNeedsAction)
+    String(statsNeedsAction),
   );
 
   return (
@@ -509,12 +533,24 @@ export default function AppointmentsPage() {
       <div className="print-only border-b pb-3 mb-4">
         <h1 className="text-xl font-bold">{t("appointments.printTitle")}</h1>
         <div className="flex flex-wrap gap-x-6 gap-y-1 mt-2 text-sm text-gray-600">
-          <span>{t("appointments.printFilterDate")}: <strong>{dateFilterLabel}</strong></span>
-          <span>{t("appointments.printFilterStatus")}: <strong>{statusFilterLabel}</strong></span>
-          <span>{t("appointments.printFilterSector")}: <strong>{sectorFilterLabel}</strong></span>
-          <span>{t("appointments.printFilterRisk")}: <strong>{riskFilterLabel}</strong></span>
-          <span>{t("appointments.printDate")}: <strong>{printDate}</strong></span>
-          <span>{t("appointments.totalCount")}: <strong>{filtered.length}</strong></span>
+          <span>
+            {t("appointments.printFilterDate")}: <strong>{dateFilterLabel}</strong>
+          </span>
+          <span>
+            {t("appointments.printFilterStatus")}: <strong>{statusFilterLabel}</strong>
+          </span>
+          <span>
+            {t("appointments.printFilterSector")}: <strong>{sectorFilterLabel}</strong>
+          </span>
+          <span>
+            {t("appointments.printFilterRisk")}: <strong>{riskFilterLabel}</strong>
+          </span>
+          <span>
+            {t("appointments.printDate")}: <strong>{printDate}</strong>
+          </span>
+          <span>
+            {t("appointments.totalCount")}: <strong>{filtered.length}</strong>
+          </span>
         </div>
       </div>
 
@@ -529,7 +565,10 @@ export default function AppointmentsPage() {
           role="alert"
           className="flex items-start gap-3 rounded-lg border border-orange-300 bg-orange-50 px-4 py-3 text-orange-900"
         >
-          <AlertCircle className="mt-0.5 w-5 h-5 flex-shrink-0 text-orange-600" aria-hidden="true" />
+          <AlertCircle
+            className="mt-0.5 w-5 h-5 flex-shrink-0 text-orange-600"
+            aria-hidden="true"
+          />
           <p className="flex-1 text-sm font-medium leading-snug">{urgentBannerText}</p>
           <div className="flex items-center gap-2 flex-shrink-0">
             <Button
@@ -584,12 +623,12 @@ export default function AppointmentsPage() {
                     sectorValue: sectorFilterLabel,
                     riskFieldLabel: t("appointments.printFilterRisk"),
                     riskValue: t("appointments.printAll"),
-                  }
+                  },
                 );
                 toast({
                   title: t("appointments.urgentBannerExportToast").replace(
                     "{count}",
-                    String(bannerExportRows.length)
+                    String(bannerExportRows.length),
                   ),
                   duration: 3000,
                 });
@@ -673,7 +712,9 @@ export default function AppointmentsPage() {
                 <AlertCircle className="w-5 h-5 text-orange-600" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground font-medium">{t("appointments.needsAction")}</p>
+                <p className="text-xs text-muted-foreground font-medium">
+                  {t("appointments.needsAction")}
+                </p>
                 <p className="text-xl font-bold text-orange-700">{statsNeedsAction}</p>
               </div>
             </CardContent>
@@ -711,7 +752,9 @@ export default function AppointmentsPage() {
           {dateFilter === "custom" && (
             <>
               <div className="flex flex-col gap-1">
-                <Label className="text-xs text-muted-foreground">{t("appointments.dateFrom")}</Label>
+                <Label className="text-xs text-muted-foreground">
+                  {t("appointments.dateFrom")}
+                </Label>
                 <Input
                   type="date"
                   className="h-9 w-36"
@@ -733,7 +776,9 @@ export default function AppointmentsPage() {
           )}
 
           <div className="flex flex-col gap-1">
-            <Label className="text-xs text-muted-foreground">{t("appointments.filterStatus")}</Label>
+            <Label className="text-xs text-muted-foreground">
+              {t("appointments.filterStatus")}
+            </Label>
             <Select
               value={statusFilter}
               onValueChange={(v) => {
@@ -747,7 +792,9 @@ export default function AppointmentsPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("appointments.statusAll")}</SelectItem>
-                <SelectItem value="needs_action">⚠️ {t("appointments.statusNeedsAction")}</SelectItem>
+                <SelectItem value="needs_action">
+                  ⚠️ {t("appointments.statusNeedsAction")}
+                </SelectItem>
                 <SelectItem value="scheduled">{t("appt.scheduled")}</SelectItem>
                 <SelectItem value="attended">{t("appt.attended")}</SelectItem>
                 <SelectItem value="absent">{t("appt.absent")}</SelectItem>
@@ -780,12 +827,12 @@ export default function AppointmentsPage() {
                   level === "all"
                     ? t("appointments.printAll")
                     : level === "critical"
-                    ? t("risk.critical")
-                    : level === "high"
-                    ? t("risk.high")
-                    : level === "medium"
-                    ? t("risk.medium")
-                    : t("risk.low");
+                      ? t("risk.critical")
+                      : level === "high"
+                        ? t("risk.high")
+                        : level === "medium"
+                          ? t("risk.medium")
+                          : t("risk.low");
                 const colorMap: Record<Exclude<RiskFilter, "all">, string> = {
                   critical: "border-red-500 bg-red-50 text-red-800 hover:bg-red-100",
                   high: "border-orange-500 bg-orange-50 text-orange-800 hover:bg-orange-100",
@@ -853,7 +900,7 @@ export default function AppointmentsPage() {
                   sectorValue: sectorFilterLabel,
                   riskFieldLabel: t("appointments.printFilterRisk"),
                   riskValue: riskFilterLabel,
-                }
+                },
               );
             }}
           >
@@ -905,8 +952,12 @@ export default function AppointmentsPage() {
                     <TableHead>{t("appointments.colDate")}</TableHead>
                     <TableHead>{t("appointments.colStatus")}</TableHead>
                     <TableHead>{t("appointments.colRisk")}</TableHead>
-                    <TableHead className="print-only">{t("appointments.colAttendanceNote")}</TableHead>
-                    <TableHead className="text-center no-print">{t("appointments.colActions")}</TableHead>
+                    <TableHead className="print-only">
+                      {t("appointments.colAttendanceNote")}
+                    </TableHead>
+                    <TableHead className="text-center no-print">
+                      {t("appointments.colActions")}
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -918,18 +969,12 @@ export default function AppointmentsPage() {
                         key={appt.id}
                         className={needsAction ? "bg-red-50 border-s-4 border-s-red-500" : ""}
                       >
-                        <TableCell className="font-medium">
-                          {appt.patientNameAr ?? "—"}
-                        </TableCell>
+                        <TableCell className="font-medium">{appt.patientNameAr ?? "—"}</TableCell>
                         <TableCell className="text-muted-foreground text-sm font-mono">
                           {appt.patientNationalId ?? "—"}
                         </TableCell>
-                        <TableCell className="text-sm">
-                          {appt.sectorNameAr ?? "—"}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {appt.hospitalNameAr ?? "—"}
-                        </TableCell>
+                        <TableCell className="text-sm">{appt.sectorNameAr ?? "—"}</TableCell>
+                        <TableCell className="text-sm">{appt.hospitalNameAr ?? "—"}</TableCell>
                         <TableCell className="text-sm whitespace-nowrap">
                           {formatDate(appt.appointmentDate, lang)}
                         </TableCell>
@@ -965,11 +1010,7 @@ export default function AppointmentsPage() {
                               </Button>
                             )}
                             <Link href={`/pregnancies/${appt.pregnancyId}`}>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-7 text-xs gap-1"
-                              >
+                              <Button size="sm" variant="ghost" className="h-7 text-xs gap-1">
                                 <ExternalLink className="w-3 h-3" />
                                 {t("appointments.viewCase")}
                               </Button>
@@ -997,7 +1038,8 @@ export default function AppointmentsPage() {
               <div className="text-sm space-y-1">
                 <p className="font-medium">{dialogState.appointment.patientNameAr}</p>
                 <p className="text-muted-foreground">
-                  {formatDate(dialogState.appointment.appointmentDate, lang)} — {dialogState.appointment.hospitalNameAr}
+                  {formatDate(dialogState.appointment.appointmentDate, lang)} —{" "}
+                  {dialogState.appointment.hospitalNameAr}
                 </p>
                 <Badge
                   className={
@@ -1006,7 +1048,9 @@ export default function AppointmentsPage() {
                       : "bg-red-100 text-red-800 border-red-200"
                   }
                 >
-                  {dialogState.marking === "attended" ? `✅ ${t("appt.attended")}` : `❌ ${t("appt.absent")}`}
+                  {dialogState.marking === "attended"
+                    ? `✅ ${t("appt.attended")}`
+                    : `❌ ${t("appt.absent")}`}
                 </Badge>
               </div>
             )}

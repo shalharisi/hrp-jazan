@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Users, Activity, AlertTriangle, Clock, AlertCircle, X } from "lucide-react";
-import { 
-  useGetDashboardSummary, 
+import {
+  useGetDashboardSummary,
   useGetDashboardByRiskLevel,
   useGetDashboardCompliance,
   useListAppointments,
@@ -21,7 +21,7 @@ import {
   ResponsiveContainer,
   PieChart,
   Pie,
-  Cell
+  Cell,
 } from "recharts";
 
 function localDateStr(d: Date): string {
@@ -53,22 +53,24 @@ export default function Dashboard() {
 
   const urgentBannerText = t("appointments.urgentBanner").replace(
     "{count}",
-    String(statsNeedsAction)
+    String(statsNeedsAction),
   );
 
   if (loadingSummary) {
-    return <div className="space-y-4">
-      <Skeleton className="h-[120px] w-full" />
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Skeleton className="h-[120px]" />
-        <Skeleton className="h-[120px]" />
-        <Skeleton className="h-[120px]" />
-        <Skeleton className="h-[120px]" />
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-[120px] w-full" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Skeleton className="h-[120px]" />
+          <Skeleton className="h-[120px]" />
+          <Skeleton className="h-[120px]" />
+          <Skeleton className="h-[120px]" />
+        </div>
       </div>
-    </div>;
+    );
   }
 
-  const COLORS = ['#10b981', '#eab308', '#f97316', '#ef4444'];
+  const COLORS = ["#10b981", "#eab308", "#f97316", "#ef4444"];
 
   return (
     <div className="space-y-6">
@@ -79,7 +81,10 @@ export default function Dashboard() {
           role="alert"
           className="flex items-start gap-3 rounded-lg border border-orange-300 bg-orange-50 px-4 py-3 text-orange-900"
         >
-          <AlertCircle className="mt-0.5 w-5 h-5 flex-shrink-0 text-orange-600" aria-hidden="true" />
+          <AlertCircle
+            className="mt-0.5 w-5 h-5 flex-shrink-0 text-orange-600"
+            aria-hidden="true"
+          />
           <p className="flex-1 text-sm font-medium leading-snug">{urgentBannerText}</p>
           <div className="flex items-center gap-2 flex-shrink-0">
             <Button
@@ -104,7 +109,7 @@ export default function Dashboard() {
           </div>
         </div>
       )}
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -115,7 +120,7 @@ export default function Dashboard() {
             <div className="text-2xl font-bold">{summary?.totalPatients || 0}</div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{t("dashboard.totalPregnancies")}</CardTitle>
@@ -141,7 +146,9 @@ export default function Dashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t("dashboard.bookingCompliance")}</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {t("dashboard.bookingCompliance")}
+            </CardTitle>
             <Clock className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
@@ -180,7 +187,7 @@ export default function Dashboard() {
             </ResponsiveContainer>
           </CardContent>
         </Card>
-        
+
         <Card className="col-span-1">
           <CardHeader>
             <CardTitle>Compliance Status</CardTitle>

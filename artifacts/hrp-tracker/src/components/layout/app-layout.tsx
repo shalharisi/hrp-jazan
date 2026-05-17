@@ -50,10 +50,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: "/alerts", icon: Bell, label: t("nav.alerts") },
     { href: "/reports", icon: FileDown, label: t("nav.reports") },
     { href: "/guide", icon: BookOpen, label: t("nav.guide") },
-    ...(isAdmin ? [
-      { href: "/users", icon: UserCog, label: t("nav.users") },
-      { href: "/admin/reference", icon: Database, label: t("nav.reference") },
-    ] : []),
+    ...(isAdmin
+      ? [
+          { href: "/users", icon: UserCog, label: t("nav.users") },
+          { href: "/admin/reference", icon: Database, label: t("nav.reference") },
+        ]
+      : []),
   ];
 
   const roleLabel: Record<string, { ar: string; en: string }> = {
@@ -85,9 +87,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             />
             <h1 className="mt-2 text-xs font-bold text-center text-white/90 leading-relaxed">
               {lang === "ar" ? (
-                <>منظومة الحمل عالي الخطورة<br />تجمع جازان الصحي</>
+                <>
+                  منظومة الحمل عالي الخطورة
+                  <br />
+                  تجمع جازان الصحي
+                </>
               ) : (
-                <>High-Risk Pregnancy<br />Jazan Health Cluster</>
+                <>
+                  High-Risk Pregnancy
+                  <br />
+                  Jazan Health Cluster
+                </>
               )}
             </h1>
           </SidebarHeader>
@@ -144,11 +154,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   </div>
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
-              <DropdownMenuContent
-                side="top"
-                align="start"
-                className="w-52"
-              >
+              <DropdownMenuContent side="top" align="start" className="w-52">
                 <Link href="/privacy">
                   <DropdownMenuItem>
                     <Shield className="w-4 h-4 mx-2" aria-hidden="true" />
@@ -156,10 +162,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   </DropdownMenuItem>
                 </Link>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={logout}
-                  className="text-red-600 focus:text-red-600"
-                >
+                <DropdownMenuItem onClick={logout} className="text-red-600 focus:text-red-600">
                   <LogOut className="w-4 h-4 mx-2" aria-hidden="true" />
                   {lang === "ar" ? "تسجيل الخروج" : "Sign Out"}
                 </DropdownMenuItem>
@@ -210,12 +213,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             className="border-t border-border bg-card px-6 py-3 flex items-center justify-between text-xs text-muted-foreground"
             role="contentinfo"
           >
-            <span>
-              © 2026{" "}
-              {lang === "ar"
-                ? "تجمع جازان الصحي"
-                : "Jazan Health Cluster"}
-            </span>
+            <span>© 2026 {lang === "ar" ? "تجمع جازان الصحي" : "Jazan Health Cluster"}</span>
             <div className="flex items-center gap-3">
               <Link
                 href="/privacy"

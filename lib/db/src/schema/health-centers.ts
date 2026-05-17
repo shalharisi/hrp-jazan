@@ -10,6 +10,9 @@ export const healthCentersTable = pgTable("health_centers", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const insertHealthCenterSchema = createInsertSchema(healthCentersTable).omit({ id: true, createdAt: true });
+export const insertHealthCenterSchema = createInsertSchema(healthCentersTable).omit({
+  id: true,
+  createdAt: true,
+});
 export type InsertHealthCenter = z.infer<typeof insertHealthCenterSchema>;
 export type HealthCenter = typeof healthCentersTable.$inferSelect;

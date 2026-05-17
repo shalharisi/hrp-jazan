@@ -32,16 +32,9 @@ export default function PatientsScreen() {
   const patients = data?.items ?? [];
 
   return (
-    <View
-      style={[
-        styles.container,
-        { paddingTop: insets.top + topWebPadding + 16 },
-      ]}
-    >
+    <View style={[styles.container, { paddingTop: insets.top + topWebPadding + 16 }]}>
       <View style={styles.headerRow}>
-        <Text style={[styles.screenTitle, isRTL && styles.rtlText]}>
-          {t("patients.title")}
-        </Text>
+        <Text style={[styles.screenTitle, isRTL && styles.rtlText]}>{t("patients.title")}</Text>
         {data && (
           <View style={styles.countBadge}>
             <Text style={styles.countText}>{data.total}</Text>
@@ -96,29 +89,17 @@ export default function PatientsScreen() {
             >
               <View style={[styles.cardRow, isRTL && styles.rowReverse]}>
                 <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>
-                    {item.nameAr.charAt(0)}
-                  </Text>
+                  <Text style={styles.avatarText}>{item.nameAr.charAt(0)}</Text>
                 </View>
                 <View style={styles.cardContent}>
-                  <Text style={[styles.patientName, isRTL && styles.rtlText]}>
-                    {item.nameAr}
-                  </Text>
+                  <Text style={[styles.patientName, isRTL && styles.rtlText]}>{item.nameAr}</Text>
                   <View style={[styles.metaRow, isRTL && styles.rowReverse]}>
-                    <Ionicons
-                      name="card-outline"
-                      size={12}
-                      color={colors.mutedForeground}
-                    />
+                    <Ionicons name="card-outline" size={12} color={colors.mutedForeground} />
                     <Text style={styles.metaText}>{item.nationalId}</Text>
                   </View>
                   {item.sectorNameAr && (
                     <View style={[styles.metaRow, isRTL && styles.rowReverse]}>
-                      <Ionicons
-                        name="location-outline"
-                        size={12}
-                        color={colors.mutedForeground}
-                      />
+                      <Ionicons name="location-outline" size={12} color={colors.mutedForeground} />
                       <Text style={styles.metaText}>{item.sectorNameAr}</Text>
                     </View>
                   )}
@@ -143,9 +124,7 @@ export default function PatientsScreen() {
           ListEmptyComponent={
             <View style={styles.center}>
               <Ionicons name="people-outline" size={48} color={colors.mutedForeground} />
-              <Text style={[styles.emptyText, isRTL && styles.rtlText]}>
-                {t("patients.empty")}
-              </Text>
+              <Text style={[styles.emptyText, isRTL && styles.rtlText]}>{t("patients.empty")}</Text>
             </View>
           }
           contentContainerStyle={[

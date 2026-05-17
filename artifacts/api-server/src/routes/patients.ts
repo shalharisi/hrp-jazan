@@ -1,5 +1,11 @@
 import { Router, type IRouter } from "express";
-import { db, patientsTable, healthCentersTable, sectorsTable, pregnanciesTable } from "@workspace/db";
+import {
+  db,
+  patientsTable,
+  healthCentersTable,
+  sectorsTable,
+  pregnanciesTable,
+} from "@workspace/db";
 import { eq, like, and, or, sql, count } from "drizzle-orm";
 import {
   ListPatientsQueryParams,
@@ -19,7 +25,10 @@ router.get("/patients", async (req, res): Promise<void> => {
   // Coordinator sector enforcement
   if (req.user?.role === "coordinator") {
     if (!req.user.sectorId) {
-      res.status(403).json({ error: "حسابك لم يُعيَّن له قطاع بعد — يرجى التواصل مع مسؤول النظام", code: "NO_SECTOR_ASSIGNED" });
+      res.status(403).json({
+        error: "حسابك لم يُعيَّن له قطاع بعد — يرجى التواصل مع مسؤول النظام",
+        code: "NO_SECTOR_ASSIGNED",
+      });
       return;
     }
     req.query["sectorId"] = String(req.user.sectorId);
@@ -40,8 +49,8 @@ router.get("/patients", async (req, res): Promise<void> => {
       or(
         like(patientsTable.nameAr, `%${search}%`),
         like(patientsTable.nationalId, `%${search}%`),
-        like(patientsTable.nameEn, `%${search}%`)
-      )
+        like(patientsTable.nameEn, `%${search}%`),
+      ),
     );
   }
 
@@ -59,44 +68,81 @@ router.get("/patients", async (req, res): Promise<void> => {
       res.json({ items: [], total: 0 });
       return;
     }
-    conditions.push(sql`${patientsTable.healthCenterId} = ANY(ARRAY[${sql.join(centerIds.map(id => sql`${id}`), sql`, `)}]::integer[])`);
+    conditions.push(
+      sql`${patientsTable.healthCenterId} = ANY(ARRAY[${sql.join(
+        centerIds.map((id) => sql`${id}`),
+        sql`, `,
+      )}]::integer[])`,
+    );
   }
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
   const [totalResult, patients] = await Promise.all([
     db.select({ count: count() }).from(patientsTable).where(whereClause),
-    db.select().from(patientsTable).where(whereClause).limit(limit).offset(offset).orderBy(patientsTable.createdAt),
+    db
+      .select()
+      .from(patientsTable)
+      .where(whereClause)
+      .limit(limit)
+      .offset(offset)
+      .orderBy(patientsTable.createdAt),
   ]);
 
   const total = totalResult[0]?.count ?? 0;
 
   const centerIds = [...new Set(patients.map((p) => p.healthCenterId))];
-  const centers = centerIds.length > 0
-    ? await db.select().from(healthCentersTable).where(sql`${healthCentersTable.id} = ANY(ARRAY[${sql.join(centerIds.map(id => sql`${id}`), sql`, `)}]::integer[])`)
-    : [];
+  const centers =
+    centerIds.length > 0
+      ? await db
+          .select()
+          .from(healthCentersTable)
+          .where(
+            sql`${healthCentersTable.id} = ANY(ARRAY[${sql.join(
+              centerIds.map((id) => sql`${id}`),
+              sql`, `,
+            )}]::integer[])`,
+          )
+      : [];
   const centerMap = new Map(centers.map((c) => [c.id, c]));
 
   const sectorIdsList = [...new Set(centers.map((c) => c.sectorId))];
-  const sectors = sectorIdsList.length > 0
-    ? await db.select().from(sectorsTable).where(sql`${sectorsTable.id} = ANY(ARRAY[${sql.join(sectorIdsList.map(id => sql`${id}`), sql`, `)}]::integer[])`)
-    : [];
+  const sectors =
+    sectorIdsList.length > 0
+      ? await db
+          .select()
+          .from(sectorsTable)
+          .where(
+            sql`${sectorsTable.id} = ANY(ARRAY[${sql.join(
+              sectorIdsList.map((id) => sql`${id}`),
+              sql`, `,
+            )}]::integer[])`,
+          )
+      : [];
   const sectorMap = new Map(sectors.map((s) => [s.id, s]));
 
-  const pregnancyCounts = patients.length > 0
-    ? await db
-        .select({ patientId: pregnanciesTable.patientId, count: count() })
-        .from(pregnanciesTable)
-        .where(sql`${pregnanciesTable.patientId} = ANY(ARRAY[${sql.join(patients.map(p => sql`${p.id}`), sql`, `)}]::integer[])`)
-        .groupBy(pregnanciesTable.patientId)
-    : [];
+  const pregnancyCounts =
+    patients.length > 0
+      ? await db
+          .select({ patientId: pregnanciesTable.patientId, count: count() })
+          .from(pregnanciesTable)
+          .where(
+            sql`${pregnanciesTable.patientId} = ANY(ARRAY[${sql.join(
+              patients.map((p) => sql`${p.id}`),
+              sql`, `,
+            )}]::integer[])`,
+          )
+          .groupBy(pregnanciesTable.patientId)
+      : [];
   const pregCountMap = new Map(pregnancyCounts.map((pc) => [pc.patientId, pc.count]));
 
   const items = patients.map((p) => {
     const center = centerMap.get(p.healthCenterId);
     const sector = center ? sectorMap.get(center.sectorId) : undefined;
     const dob = p.dateOfBirth ? new Date(p.dateOfBirth) : null;
-    const age = dob ? Math.floor((Date.now() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : null;
+    const age = dob
+      ? Math.floor((Date.now() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+      : null;
 
     return {
       id: p.id,
@@ -134,7 +180,11 @@ router.post("/patients", requireWriteAccess, async (req, res): Promise<void> => 
       res.status(403).json({ error: "حسابك لم يُعيَّن له قطاع بعد", code: "NO_SECTOR_ASSIGNED" });
       return;
     }
-    const [hc] = await db.select().from(healthCentersTable).where(eq(healthCentersTable.id, parsed.data.healthCenterId)).limit(1);
+    const [hc] = await db
+      .select()
+      .from(healthCentersTable)
+      .where(eq(healthCentersTable.id, parsed.data.healthCenterId))
+      .limit(1);
     if (!hc || String(hc.sectorId) !== String(req.user.sectorId)) {
       res.status(403).json({ error: "لا يمكنك تسجيل حالة في قطاع آخر", code: "SECTOR_FORBIDDEN" });
       return;
@@ -175,8 +225,14 @@ router.post("/patients", requireWriteAccess, async (req, res): Promise<void> => 
     newValue: patient,
   }).catch(() => {});
 
-  const center = await db.select().from(healthCentersTable).where(eq(healthCentersTable.id, patient.healthCenterId)).limit(1);
-  const sector = center[0] ? await db.select().from(sectorsTable).where(eq(sectorsTable.id, center[0].sectorId)).limit(1) : [];
+  const center = await db
+    .select()
+    .from(healthCentersTable)
+    .where(eq(healthCentersTable.id, patient.healthCenterId))
+    .limit(1);
+  const sector = center[0]
+    ? await db.select().from(sectorsTable).where(eq(sectorsTable.id, center[0].sectorId)).limit(1)
+    : [];
 
   res.status(201).json({
     id: patient.id,
@@ -216,12 +272,20 @@ router.get("/patients/by-nid/:nationalId", async (req, res): Promise<void> => {
     return;
   }
 
-  const center = await db.select().from(healthCentersTable).where(eq(healthCentersTable.id, patient.healthCenterId)).limit(1);
-  const sector = center[0] ? await db.select().from(sectorsTable).where(eq(sectorsTable.id, center[0].sectorId)).limit(1) : [];
+  const center = await db
+    .select()
+    .from(healthCentersTable)
+    .where(eq(healthCentersTable.id, patient.healthCenterId))
+    .limit(1);
+  const sector = center[0]
+    ? await db.select().from(sectorsTable).where(eq(sectorsTable.id, center[0].sectorId)).limit(1)
+    : [];
 
   // ── Coordinator sector enforcement ──
   if (!isCoordinatorSectorMatch(req.user!.role, req.user!.sectorId, center[0]?.sectorId)) {
-    res.status(403).json({ error: "لا يمكنك الوصول إلى بيانات قطاع آخر", code: "SECTOR_FORBIDDEN" });
+    res
+      .status(403)
+      .json({ error: "لا يمكنك الوصول إلى بيانات قطاع آخر", code: "SECTOR_FORBIDDEN" });
     return;
   }
 
@@ -232,7 +296,9 @@ router.get("/patients/by-nid/:nationalId", async (req, res): Promise<void> => {
     .orderBy(pregnanciesTable.visitDate);
 
   const dob = patient.dateOfBirth ? new Date(patient.dateOfBirth) : null;
-  const age = dob ? Math.floor((Date.now() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : null;
+  const age = dob
+    ? Math.floor((Date.now() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+    : null;
 
   res.json({
     patient: {
@@ -275,18 +341,31 @@ router.get("/patients/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const [center] = await db.select().from(healthCentersTable).where(eq(healthCentersTable.id, patient.healthCenterId)).limit(1);
-  const [sector] = center ? await db.select().from(sectorsTable).where(eq(sectorsTable.id, center.sectorId)).limit(1) : [undefined];
+  const [center] = await db
+    .select()
+    .from(healthCentersTable)
+    .where(eq(healthCentersTable.id, patient.healthCenterId))
+    .limit(1);
+  const [sector] = center
+    ? await db.select().from(sectorsTable).where(eq(sectorsTable.id, center.sectorId)).limit(1)
+    : [undefined];
 
   if (!isCoordinatorSectorMatch(req.user!.role, req.user!.sectorId, center?.sectorId)) {
-    res.status(403).json({ error: "لا يمكنك الوصول إلى بيانات قطاع آخر", code: "SECTOR_FORBIDDEN" });
+    res
+      .status(403)
+      .json({ error: "لا يمكنك الوصول إلى بيانات قطاع آخر", code: "SECTOR_FORBIDDEN" });
     return;
   }
 
-  const pregCount = await db.select({ count: count() }).from(pregnanciesTable).where(eq(pregnanciesTable.patientId, patient.id));
+  const pregCount = await db
+    .select({ count: count() })
+    .from(pregnanciesTable)
+    .where(eq(pregnanciesTable.patientId, patient.id));
 
   const dob = patient.dateOfBirth ? new Date(patient.dateOfBirth) : null;
-  const age = dob ? Math.floor((Date.now() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : null;
+  const age = dob
+    ? Math.floor((Date.now() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+    : null;
 
   res.json({
     id: patient.id,
@@ -321,13 +400,21 @@ router.patch("/patients/:id", requireWriteAccess, async (req, res): Promise<void
     return;
   }
 
-  const [existing] = await db.select().from(patientsTable).where(eq(patientsTable.id, params.data.id)).limit(1);
+  const [existing] = await db
+    .select()
+    .from(patientsTable)
+    .where(eq(patientsTable.id, params.data.id))
+    .limit(1);
   if (!existing) {
     res.status(404).json({ error: "Patient not found" });
     return;
   }
 
-  const [existingCenter] = await db.select().from(healthCentersTable).where(eq(healthCentersTable.id, existing.healthCenterId)).limit(1);
+  const [existingCenter] = await db
+    .select()
+    .from(healthCentersTable)
+    .where(eq(healthCentersTable.id, existing.healthCenterId))
+    .limit(1);
   if (!isCoordinatorSectorMatch(req.user!.role, req.user!.sectorId, existingCenter?.sectorId)) {
     res.status(403).json({ error: "لا يمكنك تعديل بيانات قطاع آخر", code: "SECTOR_FORBIDDEN" });
     return;
@@ -362,8 +449,14 @@ router.patch("/patients/:id", requireWriteAccess, async (req, res): Promise<void
     newValue: patient,
   }).catch(() => {});
 
-  const [center] = await db.select().from(healthCentersTable).where(eq(healthCentersTable.id, patient.healthCenterId)).limit(1);
-  const [sector] = center ? await db.select().from(sectorsTable).where(eq(sectorsTable.id, center.sectorId)).limit(1) : [undefined];
+  const [center] = await db
+    .select()
+    .from(healthCentersTable)
+    .where(eq(healthCentersTable.id, patient.healthCenterId))
+    .limit(1);
+  const [sector] = center
+    ? await db.select().from(sectorsTable).where(eq(sectorsTable.id, center.sectorId)).limit(1)
+    : [undefined];
 
   res.json({
     id: patient.id,
@@ -384,7 +477,10 @@ router.patch("/patients/:id", requireWriteAccess, async (req, res): Promise<void
   });
 });
 
-function serializePregnancy(p: typeof pregnanciesTable.$inferSelect, patient: typeof patientsTable.$inferSelect) {
+function serializePregnancy(
+  p: typeof pregnanciesTable.$inferSelect,
+  patient: typeof patientsTable.$inferSelect,
+) {
   return {
     id: p.id,
     patientId: p.patientId,

@@ -41,9 +41,16 @@ export const pregnanciesTable = pgTable("pregnancies", {
 
   coordinatorClassification: text("coordinator_classification"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
 });
 
-export const insertPregnancySchema = createInsertSchema(pregnanciesTable).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertPregnancySchema = createInsertSchema(pregnanciesTable).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
 export type InsertPregnancy = z.infer<typeof insertPregnancySchema>;
 export type Pregnancy = typeof pregnanciesTable.$inferSelect;

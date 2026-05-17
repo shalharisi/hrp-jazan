@@ -49,7 +49,7 @@ export default function LoginScreen() {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
           setErrorMsg(t("auth.error"));
         },
-      }
+      },
     );
   };
 
@@ -79,14 +79,10 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.card}>
-            <Text style={[styles.cardTitle, isRTL && styles.rtlText]}>
-              {t("auth.login")}
-            </Text>
+            <Text style={[styles.cardTitle, isRTL && styles.rtlText]}>{t("auth.login")}</Text>
 
             <View style={styles.field}>
-              <Text style={[styles.label, isRTL && styles.rtlText]}>
-                {t("auth.username")}
-              </Text>
+              <Text style={[styles.label, isRTL && styles.rtlText]}>{t("auth.username")}</Text>
               <View style={[styles.inputWrap, isRTL && styles.rowReverse]}>
                 <Ionicons
                   name="person-outline"
@@ -108,9 +104,7 @@ export default function LoginScreen() {
             </View>
 
             <View style={styles.field}>
-              <Text style={[styles.label, isRTL && styles.rtlText]}>
-                {t("auth.password")}
-              </Text>
+              <Text style={[styles.label, isRTL && styles.rtlText]}>{t("auth.password")}</Text>
               <View style={[styles.inputWrap, isRTL && styles.rowReverse]}>
                 <Ionicons
                   name="lock-closed-outline"
@@ -127,10 +121,7 @@ export default function LoginScreen() {
                   placeholderTextColor={colors.mutedForeground}
                   testID="password-input"
                 />
-                <Pressable
-                  onPress={() => setShowPassword((v) => !v)}
-                  style={styles.eyeBtn}
-                >
+                <Pressable onPress={() => setShowPassword((v) => !v)} style={styles.eyeBtn}>
                   <Ionicons
                     name={showPassword ? "eye-off-outline" : "eye-outline"}
                     size={18}
@@ -173,7 +164,7 @@ export default function LoginScreen() {
 function makeStyles(
   colors: ReturnType<typeof useColors>,
   isRTL: boolean,
-  insets: { top: number; bottom: number }
+  insets: { top: number; bottom: number },
 ) {
   return StyleSheet.create({
     gradient: { flex: 1 },

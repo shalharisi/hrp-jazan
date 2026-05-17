@@ -1,5 +1,13 @@
 import { Router, type IRouter } from "express";
-import { db, appointmentsTable, hospitalsTable, pregnanciesTable, patientsTable, healthCentersTable, sectorsTable } from "@workspace/db";
+import {
+  db,
+  appointmentsTable,
+  hospitalsTable,
+  pregnanciesTable,
+  patientsTable,
+  healthCentersTable,
+  sectorsTable,
+} from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import {
   ListAppointmentsQueryParams,
@@ -39,11 +47,23 @@ function serializeAppointment(
 
 // ── Helper: resolve sector for a pregnancy (via patient → healthCenter) ───────
 async function getPregnancySectorId(pregnancyId: number): Promise<number | null> {
-  const [preg] = await db.select({ patientId: pregnanciesTable.patientId }).from(pregnanciesTable).where(eq(pregnanciesTable.id, pregnancyId)).limit(1);
+  const [preg] = await db
+    .select({ patientId: pregnanciesTable.patientId })
+    .from(pregnanciesTable)
+    .where(eq(pregnanciesTable.id, pregnancyId))
+    .limit(1);
   if (!preg) return null;
-  const [patient] = await db.select({ healthCenterId: patientsTable.healthCenterId }).from(patientsTable).where(eq(patientsTable.id, preg.patientId)).limit(1);
+  const [patient] = await db
+    .select({ healthCenterId: patientsTable.healthCenterId })
+    .from(patientsTable)
+    .where(eq(patientsTable.id, preg.patientId))
+    .limit(1);
   if (!patient) return null;
-  const [hc] = await db.select({ sectorId: healthCentersTable.sectorId }).from(healthCentersTable).where(eq(healthCentersTable.id, patient.healthCenterId)).limit(1);
+  const [hc] = await db
+    .select({ sectorId: healthCentersTable.sectorId })
+    .from(healthCentersTable)
+    .where(eq(healthCentersTable.id, patient.healthCenterId))
+    .limit(1);
   return hc?.sectorId ?? null;
 }
 
@@ -60,7 +80,8 @@ router.get("/appointments", async (req, res): Promise<void> => {
 
   if (pregnancyId) conditions.push(eq(appointmentsTable.pregnancyId, pregnancyId));
   if (hospitalId) conditions.push(eq(appointmentsTable.hospitalId, hospitalId));
-  if (attended !== undefined && attended !== null) conditions.push(eq(appointmentsTable.attended, attended));
+  if (attended !== undefined && attended !== null)
+    conditions.push(eq(appointmentsTable.attended, attended));
 
   // ── Coordinator sector isolation on reads ──
   // Only return appointments whose pregnancy belongs to a patient in the coordinator's sector.
@@ -76,22 +97,44 @@ router.get("/appointments", async (req, res): Promise<void> => {
         JOIN patients pa ON pr.patient_id = pa.id
         JOIN health_centers hc ON pa.health_center_id = hc.id
         WHERE hc.sector_id = ${sectorId}
-      )`
+      )`,
     );
   }
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-  const appointments = await db.select().from(appointmentsTable).where(whereClause).orderBy(appointmentsTable.appointmentDate);
+  const appointments = await db
+    .select()
+    .from(appointmentsTable)
+    .where(whereClause)
+    .orderBy(appointmentsTable.appointmentDate);
 
   const hospitalIds = [...new Set(appointments.map((a) => a.hospitalId))];
-  const hospitals = hospitalIds.length > 0
-    ? await db.select().from(hospitalsTable).where(sql`${hospitalsTable.id} = ANY(ARRAY[${sql.join(hospitalIds.map(id => sql`${id}`), sql`, `)}]::integer[])`)
-    : [];
+  const hospitals =
+    hospitalIds.length > 0
+      ? await db
+          .select()
+          .from(hospitalsTable)
+          .where(
+            sql`${hospitalsTable.id} = ANY(ARRAY[${sql.join(
+              hospitalIds.map((id) => sql`${id}`),
+              sql`, `,
+            )}]::integer[])`,
+          )
+      : [];
   const hospitalMap = new Map(hospitals.map((h) => [h.id, h]));
 
   // Enrich with patient, sector, and riskLevel info
   const pregnancyIds = [...new Set(appointments.map((a) => a.pregnancyId))];
-  let patientMap = new Map<number, { nameAr: string; nationalId: string; sectorId: number | null; sectorNameAr: string | null; riskLevel: string | null }>();
+  const patientMap = new Map<
+    number,
+    {
+      nameAr: string;
+      nationalId: string;
+      sectorId: number | null;
+      sectorNameAr: string | null;
+      riskLevel: string | null;
+    }
+  >();
   if (pregnancyIds.length > 0) {
     const rows = await db
       .select({
@@ -106,7 +149,12 @@ router.get("/appointments", async (req, res): Promise<void> => {
       .innerJoin(patientsTable, eq(pregnanciesTable.patientId, patientsTable.id))
       .leftJoin(healthCentersTable, eq(patientsTable.healthCenterId, healthCentersTable.id))
       .leftJoin(sectorsTable, eq(healthCentersTable.sectorId, sectorsTable.id))
-      .where(sql`${pregnanciesTable.id} = ANY(ARRAY[${sql.join(pregnancyIds.map(id => sql`${id}`), sql`, `)}]::integer[])`);
+      .where(
+        sql`${pregnanciesTable.id} = ANY(ARRAY[${sql.join(
+          pregnancyIds.map((id) => sql`${id}`),
+          sql`, `,
+        )}]::integer[])`,
+      );
     for (const row of rows) {
       patientMap.set(row.pregnancyId, {
         nameAr: row.patientNameAr,
@@ -118,16 +166,18 @@ router.get("/appointments", async (req, res): Promise<void> => {
     }
   }
 
-  res.json(appointments.map((a) => {
-    const info = patientMap.get(a.pregnancyId);
-    return serializeAppointment(
-      a,
-      hospitalMap.get(a.hospitalId),
-      info ? { nameAr: info.nameAr, nationalId: info.nationalId } : undefined,
-      info?.sectorId ? { id: info.sectorId, nameAr: info.sectorNameAr ?? "" } : undefined,
-      info?.riskLevel ?? null,
-    );
-  }));
+  res.json(
+    appointments.map((a) => {
+      const info = patientMap.get(a.pregnancyId);
+      return serializeAppointment(
+        a,
+        hospitalMap.get(a.hospitalId),
+        info ? { nameAr: info.nameAr, nationalId: info.nationalId } : undefined,
+        info?.sectorId ? { id: info.sectorId, nameAr: info.sectorNameAr ?? "" } : undefined,
+        info?.riskLevel ?? null,
+      );
+    }),
+  );
 });
 
 // POST /appointments — requires write access (not viewer)
@@ -146,7 +196,9 @@ router.post("/appointments", requireWriteAccess, async (req, res): Promise<void>
     }
     const pregnancySectorId = await getPregnancySectorId(parsed.data.pregnancyId);
     if (pregnancySectorId === null || String(pregnancySectorId) !== String(req.user.sectorId)) {
-      res.status(403).json({ error: "لا يمكنك إضافة موعد لحالة من قطاع آخر", code: "SECTOR_FORBIDDEN" });
+      res
+        .status(403)
+        .json({ error: "لا يمكنك إضافة موعد لحالة من قطاع آخر", code: "SECTOR_FORBIDDEN" });
       return;
     }
   }
@@ -162,12 +214,23 @@ router.post("/appointments", requireWriteAccess, async (req, res): Promise<void>
     .returning();
 
   // Update pregnancy appointment date and recalculate compliance
-  const [pregnancy] = await db.select().from(pregnanciesTable).where(eq(pregnanciesTable.id, parsed.data.pregnancyId)).limit(1);
+  const [pregnancy] = await db
+    .select()
+    .from(pregnanciesTable)
+    .where(eq(pregnanciesTable.id, parsed.data.pregnancyId))
+    .limit(1);
   if (pregnancy) {
-    const { compliance, workingDays } = calculateCompliance(pregnancy.visitDate, parsed.data.appointmentDate);
+    const { compliance, workingDays } = calculateCompliance(
+      pregnancy.visitDate,
+      parsed.data.appointmentDate,
+    );
     await db
       .update(pregnanciesTable)
-      .set({ appointmentDate: parsed.data.appointmentDate, compliance, workingDaysToAppointment: workingDays })
+      .set({
+        appointmentDate: parsed.data.appointmentDate,
+        compliance,
+        workingDaysToAppointment: workingDays,
+      })
       .where(eq(pregnanciesTable.id, parsed.data.pregnancyId));
   }
 
@@ -180,7 +243,11 @@ router.post("/appointments", requireWriteAccess, async (req, res): Promise<void>
     newValue: appointment,
   }).catch(() => {});
 
-  const [hospital] = await db.select().from(hospitalsTable).where(eq(hospitalsTable.id, appointment.hospitalId)).limit(1);
+  const [hospital] = await db
+    .select()
+    .from(hospitalsTable)
+    .where(eq(hospitalsTable.id, appointment.hospitalId))
+    .limit(1);
   res.status(201).json(serializeAppointment(appointment, hospital));
 });
 
@@ -199,7 +266,11 @@ router.patch("/appointments/:id", requireWriteAccess, async (req, res): Promise<
   }
 
   // Fetch current record for oldValue audit and sector check
-  const [existing] = await db.select().from(appointmentsTable).where(eq(appointmentsTable.id, params.data.id)).limit(1);
+  const [existing] = await db
+    .select()
+    .from(appointmentsTable)
+    .where(eq(appointmentsTable.id, params.data.id))
+    .limit(1);
   if (!existing) {
     res.status(404).json({ error: "Appointment not found" });
     return;
@@ -222,7 +293,8 @@ router.patch("/appointments/:id", requireWriteAccess, async (req, res): Promise<
   if (parsed.data.appointmentDate != null) updateData.appointmentDate = parsed.data.appointmentDate;
   if (parsed.data.hospitalId != null) updateData.hospitalId = parsed.data.hospitalId;
   if (parsed.data.attended !== undefined) updateData.attended = parsed.data.attended;
-  if (parsed.data.attendanceNote !== undefined) updateData.attendanceNote = parsed.data.attendanceNote;
+  if (parsed.data.attendanceNote !== undefined)
+    updateData.attendanceNote = parsed.data.attendanceNote;
 
   const [appointment] = await db
     .update(appointmentsTable)
@@ -237,12 +309,23 @@ router.patch("/appointments/:id", requireWriteAccess, async (req, res): Promise<
 
   // If appointment date changed, recalculate compliance on pregnancy
   if (parsed.data.appointmentDate) {
-    const [preg] = await db.select().from(pregnanciesTable).where(eq(pregnanciesTable.id, appointment.pregnancyId)).limit(1);
+    const [preg] = await db
+      .select()
+      .from(pregnanciesTable)
+      .where(eq(pregnanciesTable.id, appointment.pregnancyId))
+      .limit(1);
     if (preg) {
-      const { compliance, workingDays } = calculateCompliance(preg.visitDate, parsed.data.appointmentDate);
+      const { compliance, workingDays } = calculateCompliance(
+        preg.visitDate,
+        parsed.data.appointmentDate,
+      );
       await db
         .update(pregnanciesTable)
-        .set({ appointmentDate: parsed.data.appointmentDate, compliance, workingDaysToAppointment: workingDays })
+        .set({
+          appointmentDate: parsed.data.appointmentDate,
+          compliance,
+          workingDaysToAppointment: workingDays,
+        })
         .where(eq(pregnanciesTable.id, appointment.pregnancyId));
     }
   }
@@ -257,7 +340,11 @@ router.patch("/appointments/:id", requireWriteAccess, async (req, res): Promise<
     newValue: appointment,
   }).catch(() => {});
 
-  const [hospital] = await db.select().from(hospitalsTable).where(eq(hospitalsTable.id, appointment.hospitalId)).limit(1);
+  const [hospital] = await db
+    .select()
+    .from(hospitalsTable)
+    .where(eq(hospitalsTable.id, appointment.hospitalId))
+    .limit(1);
   res.json(serializeAppointment(appointment, hospital));
 });
 
@@ -269,7 +356,11 @@ router.delete("/appointments/:id", requireWriteAccess, async (req, res): Promise
     return;
   }
 
-  const [existing] = await db.select().from(appointmentsTable).where(eq(appointmentsTable.id, params.data.id)).limit(1);
+  const [existing] = await db
+    .select()
+    .from(appointmentsTable)
+    .where(eq(appointmentsTable.id, params.data.id))
+    .limit(1);
   if (!existing) {
     res.status(404).json({ error: "Appointment not found" });
     return;
@@ -313,10 +404,17 @@ router.delete("/appointments/:id", requireWriteAccess, async (req, res): Promise
     } else {
       // Use the latest remaining appointment to recalculate compliance
       const latest = remaining[remaining.length - 1];
-      const { compliance, workingDays } = calculateCompliance(pregnancy.visitDate, latest.appointmentDate);
+      const { compliance, workingDays } = calculateCompliance(
+        pregnancy.visitDate,
+        latest.appointmentDate,
+      );
       await db
         .update(pregnanciesTable)
-        .set({ appointmentDate: latest.appointmentDate, compliance, workingDaysToAppointment: workingDays })
+        .set({
+          appointmentDate: latest.appointmentDate,
+          compliance,
+          workingDaysToAppointment: workingDays,
+        })
         .where(eq(pregnanciesTable.id, existing.pregnancyId));
     }
   }

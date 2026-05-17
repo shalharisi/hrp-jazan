@@ -257,7 +257,8 @@ export const translations = {
     "appt.edit": "Edit",
     "appt.editTitle": "Edit Appointment",
     "appt.cancel": "Cancel Appointment",
-    "appt.cancelConfirm": "Are you sure you want to cancel this appointment? This cannot be undone.",
+    "appt.cancelConfirm":
+      "Are you sure you want to cancel this appointment? This cannot be undone.",
     "appt.cancelSuccess": "Appointment cancelled",
     "appt.cancelError": "Failed to cancel appointment",
     "appt.editSuccess": "Appointment updated",

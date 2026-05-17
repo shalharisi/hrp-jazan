@@ -12,7 +12,7 @@ const I18nContext = createContext<I18nContextType | undefined>(undefined);
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState<Language>(() => {
     const saved = localStorage.getItem("app-lang");
-    return (saved === "ar" || saved === "en") ? saved : "ar";
+    return saved === "ar" || saved === "en" ? saved : "ar";
   });
 
   useEffect(() => {
@@ -28,9 +28,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   const translate = (key: TranslationKey) => t(key, lang);
 
   return (
-    <I18nContext.Provider value={{ lang, setLang, t: translate }}>
-      {children}
-    </I18nContext.Provider>
+    <I18nContext.Provider value={{ lang, setLang, t: translate }}>{children}</I18nContext.Provider>
   );
 }
 

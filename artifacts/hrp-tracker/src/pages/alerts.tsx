@@ -13,11 +13,16 @@ export default function AlertsList() {
 
   const getIcon = (type: string) => {
     switch (type) {
-      case 'vte_without_enoxaparin': return <Activity className="w-5 h-5 text-red-500" />;
-      case 'critical_without_appointment': return <AlertTriangle className="w-5 h-5 text-orange-500" />;
-      case 'missed_appointment': return <CalendarX className="w-5 h-5 text-red-500" />;
-      case 'overdue_critical': return <Clock className="w-5 h-5 text-red-500" />;
-      default: return <AlertTriangle className="w-5 h-5" />;
+      case "vte_without_enoxaparin":
+        return <Activity className="w-5 h-5 text-red-500" />;
+      case "critical_without_appointment":
+        return <AlertTriangle className="w-5 h-5 text-orange-500" />;
+      case "missed_appointment":
+        return <CalendarX className="w-5 h-5 text-red-500" />;
+      case "overdue_critical":
+        return <Clock className="w-5 h-5 text-red-500" />;
+      default:
+        return <AlertTriangle className="w-5 h-5" />;
     }
   };
 
@@ -35,7 +40,11 @@ export default function AlertsList() {
       <div className="grid grid-cols-1 gap-4">
         {isLoading ? (
           Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i}><CardContent className="p-4"><Skeleton className="h-16 w-full" /></CardContent></Card>
+            <Card key={i}>
+              <CardContent className="p-4">
+                <Skeleton className="h-16 w-full" />
+              </CardContent>
+            </Card>
           ))
         ) : data?.alerts.length === 0 ? (
           <Card>
@@ -48,11 +57,12 @@ export default function AlertsList() {
           </Card>
         ) : (
           data?.alerts.map((alert, i) => (
-            <Card key={i} className={`border-l-4 ${alert.severity === 'critical' ? 'border-l-red-500' : 'border-l-orange-500'}`}>
+            <Card
+              key={i}
+              className={`border-l-4 ${alert.severity === "critical" ? "border-l-red-500" : "border-l-orange-500"}`}
+            >
               <CardContent className="p-4 flex items-start gap-4">
-                <div className="mt-1 bg-muted p-2 rounded-full">
-                  {getIcon(alert.type)}
-                </div>
+                <div className="mt-1 bg-muted p-2 rounded-full">{getIcon(alert.type)}</div>
                 <div className="flex-1">
                   <div className="flex justify-between items-start">
                     <h3 className="font-semibold text-lg">
@@ -60,12 +70,16 @@ export default function AlertsList() {
                         {alert.patientNameAr}
                       </Link>
                     </h3>
-                    <Badge variant={alert.severity === 'critical' ? 'destructive' : 'secondary'}>
+                    <Badge variant={alert.severity === "critical" ? "destructive" : "secondary"}>
                       {alert.severity}
                     </Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-1">NID: {alert.patientNationalId}</p>
-                  <p className="mt-2 font-medium">{alert.message || alert.type.replace(/_/g, ' ')}</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    NID: {alert.patientNationalId}
+                  </p>
+                  <p className="mt-2 font-medium">
+                    {alert.message || alert.type.replace(/_/g, " ")}
+                  </p>
                 </div>
               </CardContent>
             </Card>

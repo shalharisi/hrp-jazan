@@ -38,7 +38,10 @@ function ProtectedApp() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "#006633" }}>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: "#006633" }}
+      >
         <div className="text-white text-center space-y-3">
           <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
           <p className="text-sm opacity-80">جاري التحميل...</p>

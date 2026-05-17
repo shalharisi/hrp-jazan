@@ -13,9 +13,7 @@ router.get("/alerts", async (req, res): Promise<void> => {
   }
   const sectorFilter = isCoordinator ? req.user!.sectorId : null;
 
-  const sectorClause = sectorFilter
-    ? sql`AND hc.sector_id = ${sectorFilter}`
-    : sql``;
+  const sectorClause = sectorFilter ? sql`AND hc.sector_id = ${sectorFilter}` : sql``;
 
   const [vteRows, criticalRows, missedRows] = await Promise.all([
     // VTE high risk without Enoxaparin

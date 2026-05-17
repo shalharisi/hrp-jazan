@@ -4,14 +4,21 @@ import { useListPregnancies } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Plus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RiskBadge, ComplianceBadge, ReferralBadge } from "@/components/ui/status-badges";
 
 export default function PregnanciesList() {
-  const { t, lang } = useI18n();
-  
+  const { t } = useI18n();
+
   const { data, isLoading } = useListPregnancies({});
 
   return (
@@ -43,12 +50,24 @@ export default function PregnanciesList() {
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
-                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-6 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-6 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-32" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-6 w-20" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-6 w-24" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-6 w-20" />
+                    </TableCell>
                   </TableRow>
                 ))
               ) : data?.items.length === 0 ? (
@@ -58,7 +77,7 @@ export default function PregnanciesList() {
                   </TableCell>
                 </TableRow>
               ) : (
-                data?.items.map(p => (
+                data?.items.map((p) => (
                   <TableRow key={p.id}>
                     <TableCell className="font-medium">
                       <Link href={`/pregnancies/${p.id}`} className="text-primary hover:underline">
@@ -67,9 +86,15 @@ export default function PregnanciesList() {
                     </TableCell>
                     <TableCell>{p.patientNationalId}</TableCell>
                     <TableCell>{new Date(p.visitDate).toLocaleDateString()}</TableCell>
-                    <TableCell><RiskBadge level={p.riskLevel} /></TableCell>
-                    <TableCell><ReferralBadge recommendation={p.referralRecommendation} /></TableCell>
-                    <TableCell><ComplianceBadge status={p.compliance} /></TableCell>
+                    <TableCell>
+                      <RiskBadge level={p.riskLevel} />
+                    </TableCell>
+                    <TableCell>
+                      <ReferralBadge recommendation={p.referralRecommendation} />
+                    </TableCell>
+                    <TableCell>
+                      <ComplianceBadge status={p.compliance} />
+                    </TableCell>
                   </TableRow>
                 ))
               )}

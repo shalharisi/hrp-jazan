@@ -42,7 +42,7 @@ function cleanUpStaleBannerKeys(currentUserId: number) {
       keysToRemove.push(key);
     }
   }
-  keysToRemove.forEach(k => localStorage.removeItem(k));
+  keysToRemove.forEach((k) => localStorage.removeItem(k));
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -64,9 +64,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch(`${API}/auth/refresh`, { method: "POST", credentials: "include" });
       if (!res.ok) return false;
-      const data = await res.json() as { accessToken: string };
+      const data = (await res.json()) as { accessToken: string };
       localStorage.setItem(TOKEN_KEY, data.accessToken);
-      setState(s => ({ ...s, accessToken: data.accessToken }));
+      setState((s) => ({ ...s, accessToken: data.accessToken }));
       return true;
     } catch {
       return false;
@@ -123,7 +123,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
     })();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const login = useCallback(async (username: string, password: string) => {
@@ -135,11 +134,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     if (!res.ok) {
-      const err = await res.json() as { error?: string };
+      const err = (await res.json()) as { error?: string };
       throw new Error(err.error ?? "فشل تسجيل الدخول");
     }
 
-    const data = await res.json() as { accessToken: string; user: AuthUser };
+    const data = (await res.json()) as { accessToken: string; user: AuthUser };
     localStorage.setItem(TOKEN_KEY, data.accessToken);
     cleanUpStaleBannerKeys(data.user.id);
     setState({ user: data.user, accessToken: data.accessToken, loading: false });
@@ -169,14 +168,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       credentials: "include",
       headers: { Authorization: `Bearer ${token ?? ""}` },
     });
-    setState(s => s.user ? { ...s, user: { ...s.user, consentGivenAt: new Date().toISOString() } } : s);
+    setState((s) =>
+      s.user ? { ...s, user: { ...s.user, consentGivenAt: new Date().toISOString() } } : s,
+    );
   }, []);
 
   const canWrite = state.user !== null && state.user.role !== "viewer";
   const isAdmin = state.user?.role === "admin";
 
   return (
-    <AuthContext.Provider value={{ ...state, login, logout, refreshToken, giveConsent, canWrite, isAdmin }}>
+    <AuthContext.Provider
+      value={{ ...state, login, logout, refreshToken, giveConsent, canWrite, isAdmin }}
+    >
       {children}
     </AuthContext.Provider>
   );

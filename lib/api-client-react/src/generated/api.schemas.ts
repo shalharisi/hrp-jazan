@@ -5,14 +5,13 @@
  * High-Risk Pregnancy Tracker API – Jazan Health Cluster 2026
  * OpenAPI spec version: 0.1.0
  */
-export type UserProfileRole = typeof UserProfileRole[keyof typeof UserProfileRole];
-
+export type UserProfileRole = (typeof UserProfileRole)[keyof typeof UserProfileRole];
 
 export const UserProfileRole = {
-  admin: 'admin',
-  coordinator: 'coordinator',
-  doctor: 'doctor',
-  viewer: 'viewer',
+  admin: "admin",
+  coordinator: "coordinator",
+  doctor: "doctor",
+  viewer: "viewer",
 } as const;
 
 export interface UserProfile {
@@ -37,14 +36,13 @@ export interface LoginResponse {
   user: UserProfile;
 }
 
-export type UserCreateInputRole = typeof UserCreateInputRole[keyof typeof UserCreateInputRole];
-
+export type UserCreateInputRole = (typeof UserCreateInputRole)[keyof typeof UserCreateInputRole];
 
 export const UserCreateInputRole = {
-  admin: 'admin',
-  coordinator: 'coordinator',
-  doctor: 'doctor',
-  viewer: 'viewer',
+  admin: "admin",
+  coordinator: "coordinator",
+  doctor: "doctor",
+  viewer: "viewer",
 } as const;
 
 export interface UserCreateInput {
@@ -57,14 +55,13 @@ export interface UserCreateInput {
   sectorId?: string;
 }
 
-export type UserUpdateInputRole = typeof UserUpdateInputRole[keyof typeof UserUpdateInputRole];
-
+export type UserUpdateInputRole = (typeof UserUpdateInputRole)[keyof typeof UserUpdateInputRole];
 
 export const UserUpdateInputRole = {
-  admin: 'admin',
-  coordinator: 'coordinator',
-  doctor: 'doctor',
-  viewer: 'viewer',
+  admin: "admin",
+  coordinator: "coordinator",
+  doctor: "doctor",
+  viewer: "viewer",
 } as const;
 
 export interface UserUpdateInput {
@@ -162,9 +159,9 @@ export interface Patient {
 
 export interface PatientInput {
   /**
-     * @minLength 10
-     * @maxLength 10
-     */
+   * @minLength 10
+   * @maxLength 10
+   */
   nationalId: string;
   /** @minLength 1 */
   nameAr: string;
@@ -199,35 +196,33 @@ export interface PatientList {
   total: number;
 }
 
-export type PregnancyRiskLevel = typeof PregnancyRiskLevel[keyof typeof PregnancyRiskLevel];
-
+export type PregnancyRiskLevel = (typeof PregnancyRiskLevel)[keyof typeof PregnancyRiskLevel];
 
 export const PregnancyRiskLevel = {
-  low: 'low',
-  medium: 'medium',
-  high: 'high',
-  critical: 'critical',
+  low: "low",
+  medium: "medium",
+  high: "high",
+  critical: "critical",
 } as const;
 
-export type PregnancyReferralRecommendation = typeof PregnancyReferralRecommendation[keyof typeof PregnancyReferralRecommendation];
-
+export type PregnancyReferralRecommendation =
+  (typeof PregnancyReferralRecommendation)[keyof typeof PregnancyReferralRecommendation];
 
 export const PregnancyReferralRecommendation = {
-  follow_at_center: 'follow_at_center',
-  follow_at_hospital: 'follow_at_hospital',
-  transfer_kfch: 'transfer_kfch',
+  follow_at_center: "follow_at_center",
+  follow_at_hospital: "follow_at_hospital",
+  transfer_kfch: "transfer_kfch",
 } as const;
 
 /**
  * compliant: <=2 working days, non_compliant: >2, pending: no appointment yet
  */
-export type PregnancyCompliance = typeof PregnancyCompliance[keyof typeof PregnancyCompliance];
-
+export type PregnancyCompliance = (typeof PregnancyCompliance)[keyof typeof PregnancyCompliance];
 
 export const PregnancyCompliance = {
-  compliant: 'compliant',
-  non_compliant: 'non_compliant',
-  pending: 'pending',
+  compliant: "compliant",
+  non_compliant: "non_compliant",
+  pending: "pending",
 } as const;
 
 export interface Pregnancy {
@@ -241,9 +236,9 @@ export interface Pregnancy {
   /** @nullable */
   lmpDate?: string | null;
   /**
-     * Gestational age in weeks
-     * @nullable
-     */
+   * Gestational age in weeks
+   * @nullable
+   */
   gestationalAge: number | null;
   riskLevel: PregnancyRiskLevel;
   /** Field 13: General obstetric risk factors */
@@ -253,16 +248,16 @@ export interface Pregnancy {
   /** Field 15: General medical conditions */
   medicalConditions?: string[];
   /**
-     * Field 16: Contraindicated medications (Warfarin, isotretinoin, etc.)
-     * @nullable
-     */
+   * Field 16: Contraindicated medications (Warfarin, isotretinoin, etc.)
+   * @nullable
+   */
   medications?: string | null;
   isVteHighRisk?: boolean;
   enoxaparinPrescribed?: boolean;
   /**
-     * Field 19: Did doctor explain referral to patient?
-     * @nullable
-     */
+   * Field 19: Did doctor explain referral to patient?
+   * @nullable
+   */
   referralExplained?: boolean | null;
   /** @nullable */
   doctorName?: string | null;
@@ -280,9 +275,9 @@ export interface Pregnancy {
   /** @nullable */
   notes?: string | null;
   /**
-     * Field 27: Follow-up contact responses / notes
-     * @nullable
-     */
+   * Field 27: Follow-up contact responses / notes
+   * @nullable
+   */
   followUpNotes?: string | null;
   /** @nullable */
   coordinatorClassification?: string | null;
@@ -295,23 +290,23 @@ export interface PatientWithPregnancies {
   pregnancies: Pregnancy[];
 }
 
-export type PregnancyInputRiskLevel = typeof PregnancyInputRiskLevel[keyof typeof PregnancyInputRiskLevel];
-
+export type PregnancyInputRiskLevel =
+  (typeof PregnancyInputRiskLevel)[keyof typeof PregnancyInputRiskLevel];
 
 export const PregnancyInputRiskLevel = {
-  low: 'low',
-  medium: 'medium',
-  high: 'high',
-  critical: 'critical',
+  low: "low",
+  medium: "medium",
+  high: "high",
+  critical: "critical",
 } as const;
 
-export type PregnancyInputReferralRecommendation = typeof PregnancyInputReferralRecommendation[keyof typeof PregnancyInputReferralRecommendation];
-
+export type PregnancyInputReferralRecommendation =
+  (typeof PregnancyInputReferralRecommendation)[keyof typeof PregnancyInputReferralRecommendation];
 
 export const PregnancyInputReferralRecommendation = {
-  follow_at_center: 'follow_at_center',
-  follow_at_hospital: 'follow_at_hospital',
-  transfer_kfch: 'transfer_kfch',
+  follow_at_center: "follow_at_center",
+  follow_at_hospital: "follow_at_hospital",
+  transfer_kfch: "transfer_kfch",
 } as const;
 
 export interface PregnancyInput {
@@ -346,23 +341,23 @@ export interface PregnancyInput {
   coordinatorClassification?: string | null;
 }
 
-export type PregnancyUpdateRiskLevel = typeof PregnancyUpdateRiskLevel[keyof typeof PregnancyUpdateRiskLevel];
-
+export type PregnancyUpdateRiskLevel =
+  (typeof PregnancyUpdateRiskLevel)[keyof typeof PregnancyUpdateRiskLevel];
 
 export const PregnancyUpdateRiskLevel = {
-  low: 'low',
-  medium: 'medium',
-  high: 'high',
-  critical: 'critical',
+  low: "low",
+  medium: "medium",
+  high: "high",
+  critical: "critical",
 } as const;
 
-export type PregnancyUpdateReferralRecommendation = typeof PregnancyUpdateReferralRecommendation[keyof typeof PregnancyUpdateReferralRecommendation];
-
+export type PregnancyUpdateReferralRecommendation =
+  (typeof PregnancyUpdateReferralRecommendation)[keyof typeof PregnancyUpdateReferralRecommendation];
 
 export const PregnancyUpdateReferralRecommendation = {
-  follow_at_center: 'follow_at_center',
-  follow_at_hospital: 'follow_at_hospital',
-  transfer_kfch: 'transfer_kfch',
+  follow_at_center: "follow_at_center",
+  follow_at_hospital: "follow_at_hospital",
+  transfer_kfch: "transfer_kfch",
 } as const;
 
 export interface PregnancyUpdate {
@@ -400,14 +395,15 @@ export interface PregnancyUpdate {
  * Risk level of the associated pregnancy
  * @nullable
  */
-export type AppointmentRiskLevel = typeof AppointmentRiskLevel[keyof typeof AppointmentRiskLevel] | null;
-
+export type AppointmentRiskLevel =
+  | (typeof AppointmentRiskLevel)[keyof typeof AppointmentRiskLevel]
+  | null;
 
 export const AppointmentRiskLevel = {
-  low: 'low',
-  medium: 'medium',
-  high: 'high',
-  critical: 'critical',
+  low: "low",
+  medium: "medium",
+  high: "high",
+  critical: "critical",
 } as const;
 
 export interface Appointment {
@@ -418,9 +414,9 @@ export interface Appointment {
   hospitalNameAr?: string | null;
   appointmentDate: string;
   /**
-     * null = not yet, true = attended, false = missed
-     * @nullable
-     */
+   * null = not yet, true = attended, false = missed
+   * @nullable
+   */
   attended: boolean | null;
   /** @nullable */
   attendanceNote?: string | null;
@@ -434,9 +430,9 @@ export interface Appointment {
   /** @nullable */
   sectorNameAr?: string | null;
   /**
-     * Risk level of the associated pregnancy
-     * @nullable
-     */
+   * Risk level of the associated pregnancy
+   * @nullable
+   */
   riskLevel?: AppointmentRiskLevel;
 }
 
@@ -507,14 +503,14 @@ export interface HospitalStats {
   attendanceRate: number;
 }
 
-export type RiskLevelStatsRiskLevel = typeof RiskLevelStatsRiskLevel[keyof typeof RiskLevelStatsRiskLevel];
-
+export type RiskLevelStatsRiskLevel =
+  (typeof RiskLevelStatsRiskLevel)[keyof typeof RiskLevelStatsRiskLevel];
 
 export const RiskLevelStatsRiskLevel = {
-  low: 'low',
-  medium: 'medium',
-  high: 'high',
-  critical: 'critical',
+  low: "low",
+  medium: "medium",
+  high: "high",
+  critical: "critical",
 } as const;
 
 export interface RiskLevelStats {
@@ -535,22 +531,20 @@ export interface ComplianceStats {
   attendanceRate?: number;
 }
 
-export type AlertType = typeof AlertType[keyof typeof AlertType];
-
+export type AlertType = (typeof AlertType)[keyof typeof AlertType];
 
 export const AlertType = {
-  vte_without_enoxaparin: 'vte_without_enoxaparin',
-  critical_without_appointment: 'critical_without_appointment',
-  missed_appointment: 'missed_appointment',
-  overdue_critical: 'overdue_critical',
+  vte_without_enoxaparin: "vte_without_enoxaparin",
+  critical_without_appointment: "critical_without_appointment",
+  missed_appointment: "missed_appointment",
+  overdue_critical: "overdue_critical",
 } as const;
 
-export type AlertSeverity = typeof AlertSeverity[keyof typeof AlertSeverity];
-
+export type AlertSeverity = (typeof AlertSeverity)[keyof typeof AlertSeverity];
 
 export const AlertSeverity = {
-  warning: 'warning',
-  critical: 'critical',
+  warning: "warning",
+  critical: "critical",
 } as const;
 
 export interface Alert {
@@ -581,10 +575,10 @@ export type AuthRefresh200 = {
 };
 
 export type ListAuditLogsParams = {
-userId?: number;
-action?: string;
-limit?: number;
-offset?: number;
+  userId?: number;
+  action?: string;
+  limit?: number;
+  offset?: number;
 };
 
 export type ListAuditLogs200 = {
@@ -593,52 +587,51 @@ export type ListAuditLogs200 = {
 };
 
 export type ListHealthCentersParams = {
-sectorId?: number;
+  sectorId?: number;
 };
 
 export type ListPatientsParams = {
-/**
- * Search by national ID or name
- */
-search?: string;
-sectorId?: number;
-healthCenterId?: number;
-limit?: number;
-offset?: number;
+  /**
+   * Search by national ID or name
+   */
+  search?: string;
+  sectorId?: number;
+  healthCenterId?: number;
+  limit?: number;
+  offset?: number;
 };
 
 export type ListPregnanciesParams = {
-patientId?: number;
-riskLevel?: ListPregnanciesRiskLevel;
-hospitalId?: number;
-sectorId?: number;
-compliance?: ListPregnanciesCompliance;
-limit?: number;
-offset?: number;
+  patientId?: number;
+  riskLevel?: ListPregnanciesRiskLevel;
+  hospitalId?: number;
+  sectorId?: number;
+  compliance?: ListPregnanciesCompliance;
+  limit?: number;
+  offset?: number;
 };
 
-export type ListPregnanciesRiskLevel = typeof ListPregnanciesRiskLevel[keyof typeof ListPregnanciesRiskLevel];
-
+export type ListPregnanciesRiskLevel =
+  (typeof ListPregnanciesRiskLevel)[keyof typeof ListPregnanciesRiskLevel];
 
 export const ListPregnanciesRiskLevel = {
-  low: 'low',
-  medium: 'medium',
-  high: 'high',
-  critical: 'critical',
+  low: "low",
+  medium: "medium",
+  high: "high",
+  critical: "critical",
 } as const;
 
-export type ListPregnanciesCompliance = typeof ListPregnanciesCompliance[keyof typeof ListPregnanciesCompliance];
-
+export type ListPregnanciesCompliance =
+  (typeof ListPregnanciesCompliance)[keyof typeof ListPregnanciesCompliance];
 
 export const ListPregnanciesCompliance = {
-  compliant: 'compliant',
-  non_compliant: 'non_compliant',
-  pending: 'pending',
+  compliant: "compliant",
+  non_compliant: "non_compliant",
+  pending: "pending",
 } as const;
 
 export type ListAppointmentsParams = {
-pregnancyId?: number;
-hospitalId?: number;
-attended?: boolean;
+  pregnancyId?: number;
+  hospitalId?: number;
+  attended?: boolean;
 };
-

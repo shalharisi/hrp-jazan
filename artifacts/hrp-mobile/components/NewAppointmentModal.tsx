@@ -54,10 +54,10 @@ export function NewAppointmentModal({
   const [pregnancySearch, setPregnancySearch] = useState("");
   const [hospitalSearch, setHospitalSearch] = useState("");
   const [selectedPregnancyId, setSelectedPregnancyId] = useState<number | null>(
-    initialPregnancyId ?? null
+    initialPregnancyId ?? null,
   );
   const [selectedHospitalId, setSelectedHospitalId] = useState<number | null>(
-    initialHospitalId ?? null
+    initialHospitalId ?? null,
   );
   const [apptDateObj, setApptDateObj] = useState(new Date());
 
@@ -93,15 +93,13 @@ export function NewAppointmentModal({
   const filteredHospitals = useMemo(() => {
     const q = hospitalSearch.trim().toLowerCase();
     if (!q) return allHospitals;
-    return allHospitals.filter((h) =>
-      (h.nameAr ?? "").toLowerCase().includes(q) ||
-      (h.nameEn ?? "").toLowerCase().includes(q)
+    return allHospitals.filter(
+      (h) =>
+        (h.nameAr ?? "").toLowerCase().includes(q) || (h.nameEn ?? "").toLowerCase().includes(q),
     );
   }, [allHospitals, hospitalSearch]);
 
-  const selectedPregnancy = allPregnancies.find(
-    (p) => p.id === selectedPregnancyId
-  );
+  const selectedPregnancy = allPregnancies.find((p) => p.id === selectedPregnancyId);
 
   const styles = makeStyles(colors, isRTL);
 
@@ -129,7 +127,7 @@ export function NewAppointmentModal({
         onError: () => {
           Alert.alert(t("appointments.createError"));
         },
-      }
+      },
     );
   }
 
@@ -138,7 +136,8 @@ export function NewAppointmentModal({
   const prefilled = !!initialPregnancyId;
 
   const displayNameAr = initialPregnancyLabel?.nameAr ?? selectedPregnancy?.patientNameAr ?? "—";
-  const displayNid = initialPregnancyLabel?.nationalId ?? selectedPregnancy?.patientNationalId ?? "";
+  const displayNid =
+    initialPregnancyLabel?.nationalId ?? selectedPregnancy?.patientNationalId ?? "";
 
   return (
     <Modal
@@ -164,11 +163,7 @@ export function NewAppointmentModal({
             <Text style={[styles.title, isRTL && styles.rtlText]}>
               {t("appointments.newApptTitle")}
             </Text>
-            <Pressable
-              style={styles.closeBtn}
-              onPress={handleClose}
-              hitSlop={8}
-            >
+            <Pressable style={styles.closeBtn} onPress={handleClose} hitSlop={8}>
               <Ionicons name="close" size={22} color={colors.foreground} />
             </Pressable>
           </View>
@@ -185,11 +180,7 @@ export function NewAppointmentModal({
 
             {prefilled ? (
               <View style={[styles.selectedCard, isRTL && styles.rowReverse]}>
-                <Ionicons
-                  name="lock-closed-outline"
-                  size={16}
-                  color={colors.primary}
-                />
+                <Ionicons name="lock-closed-outline" size={16} color={colors.primary} />
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.selectedCardName, isRTL && styles.rtlText]}>
                     {displayNameAr}
@@ -214,11 +205,7 @@ export function NewAppointmentModal({
                     {selectedPregnancy.patientNationalId ?? ""}
                   </Text>
                 </View>
-                <Ionicons
-                  name="close-circle"
-                  size={20}
-                  color={colors.mutedForeground}
-                />
+                <Ionicons name="close-circle" size={20} color={colors.mutedForeground} />
               </Pressable>
             ) : (
               <>
@@ -247,14 +234,10 @@ export function NewAppointmentModal({
                         onPress={() => setSelectedPregnancyId(p.id)}
                       >
                         <View style={{ flex: 1 }}>
-                          <Text
-                            style={[styles.pickItemName, isRTL && styles.rtlText]}
-                          >
+                          <Text style={[styles.pickItemName, isRTL && styles.rtlText]}>
                             {p.patientNameAr ?? "—"}
                           </Text>
-                          <Text
-                            style={[styles.pickItemSub, isRTL && styles.rtlText]}
-                          >
+                          <Text style={[styles.pickItemSub, isRTL && styles.rtlText]}>
                             {p.patientNationalId ?? ""}
                           </Text>
                         </View>
@@ -262,11 +245,7 @@ export function NewAppointmentModal({
                           name="chevron-forward"
                           size={16}
                           color={colors.mutedForeground}
-                          style={
-                            isRTL
-                              ? { transform: [{ scaleX: -1 }] }
-                              : undefined
-                          }
+                          style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined}
                         />
                       </Pressable>
                     ))}
@@ -304,8 +283,7 @@ export function NewAppointmentModal({
                     <Text
                       style={[
                         styles.hospitalChipText,
-                        selectedHospitalId === h.id &&
-                          styles.hospitalChipTextActive,
+                        selectedHospitalId === h.id && styles.hospitalChipTextActive,
                         isRTL && styles.rtlText,
                       ]}
                       numberOfLines={2}
@@ -337,8 +315,7 @@ export function NewAppointmentModal({
             <Pressable
               style={[
                 styles.submitBtn,
-                (!canSubmit || createAppt.isPending) &&
-                  styles.submitBtnDisabled,
+                (!canSubmit || createAppt.isPending) && styles.submitBtnDisabled,
               ]}
               onPress={handleSubmit}
               disabled={!canSubmit || createAppt.isPending}
@@ -346,9 +323,7 @@ export function NewAppointmentModal({
               {createAppt.isPending ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={styles.submitBtnText}>
-                  {t("appointments.submit")}
-                </Text>
+                <Text style={styles.submitBtnText}>{t("appointments.submit")}</Text>
               )}
             </Pressable>
           </ScrollView>

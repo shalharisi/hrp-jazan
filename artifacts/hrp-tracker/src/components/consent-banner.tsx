@@ -59,17 +59,22 @@ export function ConsentBanner() {
           </p>
 
           <ul className="text-sm text-gray-600 space-y-1.5 mb-5 list-none">
-            {(ar ? [
-              "لن أشارك البيانات مع جهات غير مصرح لها",
-              "سأستخدم النظام لأغراض الرعاية الصحية فحسب",
-              "أدرك أن مخالفة ذلك تستوجب المساءلة القانونية",
-            ] : [
-              "I will not share data with unauthorized parties",
-              "I will use the system for healthcare purposes only",
-              "I understand that violations may result in legal consequences",
-            ]).map((item, i) => (
+            {(ar
+              ? [
+                  "لن أشارك البيانات مع جهات غير مصرح لها",
+                  "سأستخدم النظام لأغراض الرعاية الصحية فحسب",
+                  "أدرك أن مخالفة ذلك تستوجب المساءلة القانونية",
+                ]
+              : [
+                  "I will not share data with unauthorized parties",
+                  "I will use the system for healthcare purposes only",
+                  "I understand that violations may result in legal consequences",
+                ]
+            ).map((item, i) => (
               <li key={i} className="flex items-start gap-2">
-                <span style={{ color: "#006633" }} aria-hidden="true">✓</span>
+                <span style={{ color: "#006633" }} aria-hidden="true">
+                  ✓
+                </span>
                 <span>{item}</span>
               </li>
             ))}

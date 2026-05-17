@@ -136,7 +136,7 @@ export default function PatientsList() {
                   <SelectItem value="all">{t("filter.allHospitals")}</SelectItem>
                   {hospitals.map((h) => (
                     <SelectItem key={h.id} value={String(h.id)}>
-                      {ar ? h.nameAr : (h.nameEn || h.nameAr)}
+                      {ar ? h.nameAr : h.nameEn || h.nameAr}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -160,7 +160,7 @@ export default function PatientsList() {
                   <SelectItem value="all">{t("filter.allSectors")}</SelectItem>
                   {filteredSectors.map((s) => (
                     <SelectItem key={s.id} value={String(s.id)}>
-                      {ar ? s.nameAr : (s.nameEn || s.nameAr)}
+                      {ar ? s.nameAr : s.nameEn || s.nameAr}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -184,7 +184,7 @@ export default function PatientsList() {
                   <SelectItem value="all">{t("filter.allCenters")}</SelectItem>
                   {filteredCenters.map((c) => (
                     <SelectItem key={c.id} value={String(c.id)}>
-                      {ar ? c.nameAr : (c.nameEn || c.nameAr)}
+                      {ar ? c.nameAr : c.nameEn || c.nameAr}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -229,7 +229,9 @@ export default function PatientsList() {
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
                       {Array.from({ length: 5 }).map((__, j) => (
-                        <TableCell key={j}><Skeleton className="h-4 w-28" /></TableCell>
+                        <TableCell key={j}>
+                          <Skeleton className="h-4 w-28" />
+                        </TableCell>
                       ))}
                     </TableRow>
                   ))
@@ -247,7 +249,7 @@ export default function PatientsList() {
                           href={`/patients/${patient.id}`}
                           className="text-primary hover:underline"
                         >
-                          {ar ? patient.nameAr : (patient.nameEn || patient.nameAr)}
+                          {ar ? patient.nameAr : patient.nameEn || patient.nameAr}
                         </Link>
                       </TableCell>
                       <TableCell>{patient.nationalId}</TableCell>

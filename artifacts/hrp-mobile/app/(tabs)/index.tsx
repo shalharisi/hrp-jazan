@@ -105,14 +105,12 @@ export default function DashboardScreen() {
   useFocusEffect(
     useCallback(() => {
       refetchAppointments();
-    }, [refetchAppointments])
+    }, [refetchAppointments]),
   );
 
   const needsActionCount = useMemo(() => {
     const all = appointments.data ?? [];
-    return all.filter(
-      (a) => a.appointmentDate.slice(0, 10) < today && a.attended === null
-    ).length;
+    return all.filter((a) => a.appointmentDate.slice(0, 10) < today && a.attended === null).length;
   }, [appointments.data, today]);
 
   const showUrgentBanner = !bannerDismissed && needsActionCount > URGENT_THRESHOLD;
@@ -199,12 +197,8 @@ export default function DashboardScreen() {
     >
       <View style={[styles.header, isRTL && styles.rowReverse]}>
         <View>
-          <Text style={[styles.headerTitle, isRTL && styles.rtlText]}>
-            {t("dashboard.title")}
-          </Text>
-          <Text style={[styles.headerSub, isRTL && styles.rtlText]}>
-            تجمع جازان الصحي
-          </Text>
+          <Text style={[styles.headerTitle, isRTL && styles.rtlText]}>{t("dashboard.title")}</Text>
+          <Text style={[styles.headerSub, isRTL && styles.rtlText]}>تجمع جازان الصحي</Text>
         </View>
         <View style={styles.headerBadge}>
           <Ionicons name="pulse" size={20} color={colors.primary} />
@@ -234,11 +228,7 @@ export default function DashboardScreen() {
             </View>
           </View>
           <View style={[styles.urgentBannerActions, isRTL && styles.rowReverse]}>
-            <Ionicons
-              name={isRTL ? "chevron-back" : "chevron-forward"}
-              size={16}
-              color="#c2410c"
-            />
+            <Ionicons name={isRTL ? "chevron-back" : "chevron-forward"} size={16} color="#c2410c" />
             <Pressable
               style={styles.urgentBannerDismiss}
               onPress={(e) => {
@@ -281,18 +271,11 @@ export default function DashboardScreen() {
                 onPress={card.onPress}
                 disabled={!card.onPress}
               >
-                <View
-                  style={[
-                    styles.kpiIconWrap,
-                    { backgroundColor: `${card.color}15` },
-                  ]}
-                >
+                <View style={[styles.kpiIconWrap, { backgroundColor: `${card.color}15` }]}>
                   <Ionicons name={card.icon} size={20} color={card.color} />
                 </View>
                 <Text style={styles.kpiValue}>{card.value}</Text>
-                <Text style={[styles.kpiLabel, isRTL && styles.rtlText]}>
-                  {card.label}
-                </Text>
+                <Text style={[styles.kpiLabel, isRTL && styles.rtlText]}>{card.label}</Text>
                 {card.onPress && (
                   <Ionicons
                     name={isRTL ? "chevron-back" : "chevron-forward"}
@@ -319,9 +302,7 @@ export default function DashboardScreen() {
                         { backgroundColor: RISK_COLORS[r.riskLevel] ?? colors.primary },
                       ]}
                     />
-                    <Text style={styles.riskLabel}>
-                      {t(`risk.${r.riskLevel}` as "risk.low")}
-                    </Text>
+                    <Text style={styles.riskLabel}>{t(`risk.${r.riskLevel}` as "risk.low")}</Text>
                     <Text style={styles.riskCount}>{r.count}</Text>
                   </View>
                   <View style={styles.riskBarBg}>
@@ -346,10 +327,7 @@ export default function DashboardScreen() {
                 <Text style={[styles.sectionTitle, isRTL && styles.rtlText]}>
                   {t("dashboard.recentAlerts")}
                 </Text>
-                <Pressable
-                  onPress={() => router.push("/(tabs)/alerts")}
-                  style={styles.seeAllBtn}
-                >
+                <Pressable onPress={() => router.push("/(tabs)/alerts")} style={styles.seeAllBtn}>
                   <Text style={styles.seeAllText}>{t("dashboard.seeAll")}</Text>
                 </Pressable>
               </View>
@@ -358,34 +336,20 @@ export default function DashboardScreen() {
                   key={`${alert.pregnancyId}-${idx}`}
                   style={[
                     styles.alertCard,
-                    alert.severity === "critical"
-                      ? styles.alertCritical
-                      : styles.alertWarning,
+                    alert.severity === "critical" ? styles.alertCritical : styles.alertWarning,
                   ]}
-                  onPress={() =>
-                    router.push(`/pregnancy/${alert.pregnancyId}`)
-                  }
+                  onPress={() => router.push(`/pregnancy/${alert.pregnancyId}`)}
                 >
                   <Ionicons
-                    name={
-                      alert.severity === "critical"
-                        ? "alert-circle"
-                        : "warning"
-                    }
+                    name={alert.severity === "critical" ? "alert-circle" : "warning"}
                     size={18}
-                    color={
-                      alert.severity === "critical" ? "#ef4444" : "#f59e0b"
-                    }
+                    color={alert.severity === "critical" ? "#ef4444" : "#f59e0b"}
                   />
                   <View style={styles.alertContent}>
-                    <Text
-                      style={[styles.alertName, isRTL && styles.rtlText]}
-                    >
+                    <Text style={[styles.alertName, isRTL && styles.rtlText]}>
                       {alert.patientNameAr}
                     </Text>
-                    <Text
-                      style={[styles.alertMsg, isRTL && styles.rtlText]}
-                    >
+                    <Text style={[styles.alertMsg, isRTL && styles.rtlText]}>
                       {t(`alert.${alert.type}` as "alert.missed_appointment")}
                     </Text>
                   </View>

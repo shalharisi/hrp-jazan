@@ -10,6 +10,9 @@ export const sectorsTable = pgTable("sectors", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const insertSectorSchema = createInsertSchema(sectorsTable).omit({ id: true, createdAt: true });
+export const insertSectorSchema = createInsertSchema(sectorsTable).omit({
+  id: true,
+  createdAt: true,
+});
 export type InsertSector = z.infer<typeof insertSectorSchema>;
 export type Sector = typeof sectorsTable.$inferSelect;

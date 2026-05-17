@@ -7,8 +7,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus, Users, CheckCircle, XCircle, Pencil } from "lucide-react";
 
@@ -28,7 +40,9 @@ const API = `${BASE}/api`;
 
 function getAuthHeaders(): Record<string, string> {
   const token = localStorage.getItem("hrp_access_token");
-  return token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" };
+  return token
+    ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
+    : { "Content-Type": "application/json" };
 }
 
 const roleColor: Record<string, string> = {
@@ -56,13 +70,20 @@ export default function UsersPage() {
   const [editRole, setEditRole] = useState<string>("");
 
   const [form, setForm] = useState({
-    username: "", password: "", nameAr: "", nameEn: "", role: "viewer" as string,
+    username: "",
+    password: "",
+    nameAr: "",
+    nameEn: "",
+    role: "viewer" as string,
   });
 
   const { data: users = [], isLoading } = useQuery<User[]>({
     queryKey: ["users"],
     queryFn: async () => {
-      const res = await fetch(`${API}/users`, { headers: getAuthHeaders(), credentials: "include" });
+      const res = await fetch(`${API}/users`, {
+        headers: getAuthHeaders(),
+        credentials: "include",
+      });
       if (!res.ok) throw new Error("Failed to load users");
       return res.json();
     },
@@ -77,7 +98,10 @@ export default function UsersPage() {
         credentials: "include",
         body: JSON.stringify(body),
       });
-      if (!res.ok) { const e = await res.json(); throw new Error(e.error); }
+      if (!res.ok) {
+        const e = await res.json();
+        throw new Error(e.error);
+      }
       return res.json();
     },
     onSuccess: () => {
@@ -99,7 +123,10 @@ export default function UsersPage() {
         credentials: "include",
         body: JSON.stringify({ isActive }),
       });
-      if (!res.ok) { const e = await res.json(); throw new Error(e.error); }
+      if (!res.ok) {
+        const e = await res.json();
+        throw new Error(e.error);
+      }
       return res.json();
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["users"] }),
@@ -114,7 +141,10 @@ export default function UsersPage() {
         credentials: "include",
         body: JSON.stringify({ role }),
       });
-      if (!res.ok) { const e = await res.json(); throw new Error(e.error); }
+      if (!res.ok) {
+        const e = await res.json();
+        throw new Error(e.error);
+      }
       return res.json();
     },
     onSuccess: () => {
@@ -128,7 +158,9 @@ export default function UsersPage() {
   if (!isAdmin) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">{ar ? "هذه الصفحة للمدراء فقط" : "This page is for admins only"}</p>
+        <p className="text-muted-foreground">
+          {ar ? "هذه الصفحة للمدراء فقط" : "This page is for admins only"}
+        </p>
       </div>
     );
   }
@@ -154,29 +186,47 @@ export default function UsersPage() {
             <div className="space-y-4 mt-2">
               <div>
                 <Label>{ar ? "اسم المستخدم" : "Username"}</Label>
-                <Input value={form.username} onChange={e => setForm(p => ({ ...p, username: e.target.value }))} />
+                <Input
+                  value={form.username}
+                  onChange={(e) => setForm((p) => ({ ...p, username: e.target.value }))}
+                />
               </div>
               <div>
                 <Label>{ar ? "كلمة المرور" : "Password"}</Label>
-                <Input type="password" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} />
+                <Input
+                  type="password"
+                  value={form.password}
+                  onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
+                />
               </div>
               <div>
                 <Label>{ar ? "الاسم بالعربية" : "Arabic Name"}</Label>
-                <Input value={form.nameAr} onChange={e => setForm(p => ({ ...p, nameAr: e.target.value }))} />
+                <Input
+                  value={form.nameAr}
+                  onChange={(e) => setForm((p) => ({ ...p, nameAr: e.target.value }))}
+                />
               </div>
               <div>
                 <Label>{ar ? "الاسم بالإنجليزية (اختياري)" : "English Name (optional)"}</Label>
-                <Input value={form.nameEn} onChange={e => setForm(p => ({ ...p, nameEn: e.target.value }))} />
+                <Input
+                  value={form.nameEn}
+                  onChange={(e) => setForm((p) => ({ ...p, nameEn: e.target.value }))}
+                />
               </div>
               <div>
                 <Label>{ar ? "الدور" : "Role"}</Label>
-                <Select value={form.role} onValueChange={v => setForm(p => ({ ...p, role: v }))}>
+                <Select
+                  value={form.role}
+                  onValueChange={(v) => setForm((p) => ({ ...p, role: v }))}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {Object.entries(roleLabel).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>{ar ? v.ar : v.en}</SelectItem>
+                      <SelectItem key={k} value={k}>
+                        {ar ? v.ar : v.en}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -185,7 +235,9 @@ export default function UsersPage() {
                 className="w-full"
                 style={{ background: "#006633", color: "#fff" }}
                 onClick={() => createMutation.mutate(form)}
-                disabled={createMutation.isPending || !form.username || !form.password || !form.nameAr}
+                disabled={
+                  createMutation.isPending || !form.username || !form.password || !form.nameAr
+                }
               >
                 {ar ? "إنشاء الحساب" : "Create Account"}
               </Button>
@@ -196,24 +248,37 @@ export default function UsersPage() {
 
       {/* Role-edit dialog */}
       {editTarget && (
-        <Dialog open={!!editTarget} onOpenChange={(v) => { if (!v) setEditTarget(null); }}>
+        <Dialog
+          open={!!editTarget}
+          onOpenChange={(v) => {
+            if (!v) setEditTarget(null);
+          }}
+        >
           <DialogContent dir={ar ? "rtl" : "ltr"} className="sm:max-w-sm">
             <DialogHeader>
               <DialogTitle>{ar ? "تغيير دور المستخدم" : "Change User Role"}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-2">
               <p className="text-sm text-muted-foreground">
-                {ar ? `المستخدم: ${editTarget.nameAr} (@${editTarget.username})` : `User: ${editTarget.nameAr} (@${editTarget.username})`}
+                {ar
+                  ? `المستخدم: ${editTarget.nameAr} (@${editTarget.username})`
+                  : `User: ${editTarget.nameAr} (@${editTarget.username})`}
               </p>
               <div>
                 <Label>{ar ? "الدور الجديد" : "New Role"}</Label>
                 <Select value={editRole} onValueChange={setEditRole}>
                   <SelectTrigger className="mt-1">
-                    <SelectValue placeholder={ar ? roleLabel[editTarget.role]?.ar : roleLabel[editTarget.role]?.en} />
+                    <SelectValue
+                      placeholder={
+                        ar ? roleLabel[editTarget.role]?.ar : roleLabel[editTarget.role]?.en
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {Object.entries(roleLabel).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>{ar ? v.ar : v.en}</SelectItem>
+                      <SelectItem key={k} value={k}>
+                        {ar ? v.ar : v.en}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -225,7 +290,9 @@ export default function UsersPage() {
                 <Button
                   style={{ background: "#006633" }}
                   className="text-white"
-                  disabled={!editRole || editRole === editTarget.role || changeRoleMutation.isPending}
+                  disabled={
+                    !editRole || editRole === editTarget.role || changeRoleMutation.isPending
+                  }
                   onClick={() => changeRoleMutation.mutate({ id: editTarget.id, role: editRole })}
                 >
                   {changeRoleMutation.isPending ? "..." : ar ? "حفظ" : "Save"}
@@ -244,10 +311,12 @@ export default function UsersPage() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <p className="text-center text-muted-foreground py-8">{ar ? "جاري التحميل..." : "Loading..."}</p>
+            <p className="text-center text-muted-foreground py-8">
+              {ar ? "جاري التحميل..." : "Loading..."}
+            </p>
           ) : (
             <div className="space-y-3">
-              {users.map(user => (
+              {users.map((user) => (
                 <div
                   key={user.id}
                   className="flex items-center justify-between p-4 border rounded-lg bg-card"
@@ -255,7 +324,9 @@ export default function UsersPage() {
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium">{user.nameAr}</span>
-                      {user.nameEn && <span className="text-sm text-muted-foreground">({user.nameEn})</span>}
+                      {user.nameEn && (
+                        <span className="text-sm text-muted-foreground">({user.nameEn})</span>
+                      )}
                       <Badge className={roleColor[user.role] ?? "bg-gray-100 text-gray-700"}>
                         {ar ? roleLabel[user.role]?.ar : roleLabel[user.role]?.en}
                       </Badge>
@@ -265,7 +336,8 @@ export default function UsersPage() {
                     </div>
                     <p className="text-xs text-muted-foreground">
                       @{user.username}
-                      {user.lastLogin && ` · ${ar ? "آخر دخول" : "Last login"}: ${new Date(user.lastLogin).toLocaleDateString(ar ? "ar-SA" : "en-GB")}`}
+                      {user.lastLogin &&
+                        ` · ${ar ? "آخر دخول" : "Last login"}: ${new Date(user.lastLogin).toLocaleDateString(ar ? "ar-SA" : "en-GB")}`}
                     </p>
                   </div>
                   <div className="flex items-center gap-1">
@@ -273,7 +345,10 @@ export default function UsersPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => { setEditTarget(user); setEditRole(user.role); }}
+                      onClick={() => {
+                        setEditTarget(user);
+                        setEditRole(user.role);
+                      }}
                       title={ar ? "تغيير الدور" : "Change role"}
                     >
                       <Pencil className="w-4 h-4 text-muted-foreground" />
@@ -282,12 +357,24 @@ export default function UsersPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => toggleActiveMutation.mutate({ id: user.id, isActive: !user.isActive })}
-                      title={ar ? (user.isActive ? "إيقاف الحساب" : "تفعيل الحساب") : (user.isActive ? "Deactivate" : "Activate")}
+                      onClick={() =>
+                        toggleActiveMutation.mutate({ id: user.id, isActive: !user.isActive })
+                      }
+                      title={
+                        ar
+                          ? user.isActive
+                            ? "إيقاف الحساب"
+                            : "تفعيل الحساب"
+                          : user.isActive
+                            ? "Deactivate"
+                            : "Activate"
+                      }
                     >
-                      {user.isActive
-                        ? <CheckCircle className="w-5 h-5 text-green-600" />
-                        : <XCircle className="w-5 h-5 text-red-500" />}
+                      {user.isActive ? (
+                        <CheckCircle className="w-5 h-5 text-green-600" />
+                      ) : (
+                        <XCircle className="w-5 h-5 text-red-500" />
+                      )}
                     </Button>
                   </div>
                 </div>

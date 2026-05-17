@@ -64,10 +64,7 @@ export default function LoginPage() {
                 alt={ar ? "شعار تجمع جازان الصحي" : "Jazan Health Cluster Logo"}
                 className="w-20 h-20 object-contain mb-3"
               />
-              <h1
-                className="text-xl font-bold text-center"
-                style={{ color: "#006633" }}
-              >
+              <h1 className="text-xl font-bold text-center" style={{ color: "#006633" }}>
                 {ar ? "منظومة تتبع الحمل عالي الخطورة" : "High-Risk Pregnancy Tracker"}
               </h1>
               <p className="text-sm text-gray-500 mt-1 text-center">
@@ -86,7 +83,7 @@ export default function LoginPage() {
                   type="text"
                   autoComplete="username"
                   value={username}
-                  onChange={e => setUsername(e.target.value)}
+                  onChange={(e) => setUsername(e.target.value)}
                   placeholder={ar ? "أدخل اسم المستخدم" : "Enter username"}
                   required
                   className="h-11 text-base"
@@ -104,7 +101,7 @@ export default function LoginPage() {
                   type="password"
                   autoComplete="current-password"
                   value={password}
-                  onChange={e => setPassword(e.target.value)}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder={ar ? "أدخل كلمة المرور" : "Enter password"}
                   required
                   className="h-11 text-base"
@@ -127,15 +124,23 @@ export default function LoginPage() {
                 aria-busy={loading}
               >
                 {loading ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /><span className="mx-2">{ar ? "جاري تسجيل الدخول..." : "Signing in..."}</span></>
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="mx-2">{ar ? "جاري تسجيل الدخول..." : "Signing in..."}</span>
+                  </>
+                ) : ar ? (
+                  "تسجيل الدخول"
                 ) : (
-                  ar ? "تسجيل الدخول" : "Sign In"
+                  "Sign In"
                 )}
               </Button>
             </form>
 
             {/* Security notice */}
-            <div className="mt-6 flex items-start gap-2 p-3 bg-green-50 rounded-lg border border-green-200" role="note">
+            <div
+              className="mt-6 flex items-start gap-2 p-3 bg-green-50 rounded-lg border border-green-200"
+              role="note"
+            >
               <ShieldCheck className="w-4 h-4 text-green-700 mt-0.5 shrink-0" aria-hidden="true" />
               <p className="text-xs text-green-800 leading-relaxed">
                 {ar
@@ -146,9 +151,7 @@ export default function LoginPage() {
           </div>
 
           {/* Footer */}
-          <div
-            className="px-8 py-4 text-center text-xs text-gray-400 border-t"
-          >
+          <div className="px-8 py-4 text-center text-xs text-gray-400 border-t">
             {ar
               ? "منظومة المعلومات الصحية | تجمع جازان الصحي 2026"
               : "Health Information System | Jazan Health Cluster 2026"}

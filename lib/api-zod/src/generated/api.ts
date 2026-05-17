@@ -5,127 +5,116 @@
  * High-Risk Pregnancy Tracker API – Jazan Health Cluster 2026
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
-
+import * as zod from "zod";
 
 /**
  * @summary Login with username and password
  */
 export const AuthLoginBody = zod.object({
-  "username": zod.string(),
-  "password": zod.string()
-})
+  username: zod.string(),
+  password: zod.string(),
+});
 
 export const AuthLoginResponse = zod.object({
-  "accessToken": zod.string(),
-  "user": zod.object({
-  "id": zod.number(),
-  "username": zod.string(),
-  "role": zod.enum(['admin', 'coordinator', 'doctor', 'viewer']),
-  "nameAr": zod.string(),
-  "nameEn": zod.string().nullish(),
-  "sectorId": zod.string().nullish(),
-  "isActive": zod.boolean().optional(),
-  "lastLogin": zod.coerce.date().nullish(),
-  "consentGivenAt": zod.coerce.date().nullish(),
-  "createdAt": zod.coerce.date().optional()
-})
-})
-
+  accessToken: zod.string(),
+  user: zod.object({
+    id: zod.number(),
+    username: zod.string(),
+    role: zod.enum(["admin", "coordinator", "doctor", "viewer"]),
+    nameAr: zod.string(),
+    nameEn: zod.string().nullish(),
+    sectorId: zod.string().nullish(),
+    isActive: zod.boolean().optional(),
+    lastLogin: zod.coerce.date().nullish(),
+    consentGivenAt: zod.coerce.date().nullish(),
+    createdAt: zod.coerce.date().optional(),
+  }),
+});
 
 /**
  * @summary Refresh access token using httpOnly refresh token cookie
  */
 export const AuthRefreshResponse = zod.object({
-  "accessToken": zod.string()
-})
-
+  accessToken: zod.string(),
+});
 
 /**
  * @summary Get current authenticated user profile
  */
 export const AuthMeResponse = zod.object({
-  "id": zod.number(),
-  "username": zod.string(),
-  "role": zod.enum(['admin', 'coordinator', 'doctor', 'viewer']),
-  "nameAr": zod.string(),
-  "nameEn": zod.string().nullish(),
-  "sectorId": zod.string().nullish(),
-  "isActive": zod.boolean().optional(),
-  "lastLogin": zod.coerce.date().nullish(),
-  "consentGivenAt": zod.coerce.date().nullish(),
-  "createdAt": zod.coerce.date().optional()
-})
-
+  id: zod.number(),
+  username: zod.string(),
+  role: zod.enum(["admin", "coordinator", "doctor", "viewer"]),
+  nameAr: zod.string(),
+  nameEn: zod.string().nullish(),
+  sectorId: zod.string().nullish(),
+  isActive: zod.boolean().optional(),
+  lastLogin: zod.coerce.date().nullish(),
+  consentGivenAt: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date().optional(),
+});
 
 /**
  * @summary List all users (admin only)
  */
 export const ListUsersResponseItem = zod.object({
-  "id": zod.number(),
-  "username": zod.string(),
-  "role": zod.enum(['admin', 'coordinator', 'doctor', 'viewer']),
-  "nameAr": zod.string(),
-  "nameEn": zod.string().nullish(),
-  "sectorId": zod.string().nullish(),
-  "isActive": zod.boolean().optional(),
-  "lastLogin": zod.coerce.date().nullish(),
-  "consentGivenAt": zod.coerce.date().nullish(),
-  "createdAt": zod.coerce.date().optional()
-})
-export const ListUsersResponse = zod.array(ListUsersResponseItem)
-
+  id: zod.number(),
+  username: zod.string(),
+  role: zod.enum(["admin", "coordinator", "doctor", "viewer"]),
+  nameAr: zod.string(),
+  nameEn: zod.string().nullish(),
+  sectorId: zod.string().nullish(),
+  isActive: zod.boolean().optional(),
+  lastLogin: zod.coerce.date().nullish(),
+  consentGivenAt: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date().optional(),
+});
+export const ListUsersResponse = zod.array(ListUsersResponseItem);
 
 /**
  * @summary Create a new user (admin only)
  */
 export const createUserBodyPasswordMin = 8;
 
-
-
 export const CreateUserBody = zod.object({
-  "username": zod.string(),
-  "password": zod.string().min(createUserBodyPasswordMin),
-  "role": zod.enum(['admin', 'coordinator', 'doctor', 'viewer']),
-  "nameAr": zod.string(),
-  "nameEn": zod.string().optional(),
-  "sectorId": zod.string().optional()
-})
-
+  username: zod.string(),
+  password: zod.string().min(createUserBodyPasswordMin),
+  role: zod.enum(["admin", "coordinator", "doctor", "viewer"]),
+  nameAr: zod.string(),
+  nameEn: zod.string().optional(),
+  sectorId: zod.string().optional(),
+});
 
 /**
  * @summary Update a user (admin only)
  */
 export const UpdateUserParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const updateUserBodyPasswordMin = 8;
 
-
-
 export const UpdateUserBody = zod.object({
-  "role": zod.enum(['admin', 'coordinator', 'doctor', 'viewer']).optional(),
-  "nameAr": zod.string().optional(),
-  "nameEn": zod.string().optional(),
-  "sectorId": zod.string().optional(),
-  "isActive": zod.boolean().optional(),
-  "password": zod.string().min(updateUserBodyPasswordMin).optional()
-})
+  role: zod.enum(["admin", "coordinator", "doctor", "viewer"]).optional(),
+  nameAr: zod.string().optional(),
+  nameEn: zod.string().optional(),
+  sectorId: zod.string().optional(),
+  isActive: zod.boolean().optional(),
+  password: zod.string().min(updateUserBodyPasswordMin).optional(),
+});
 
 export const UpdateUserResponse = zod.object({
-  "id": zod.number(),
-  "username": zod.string(),
-  "role": zod.enum(['admin', 'coordinator', 'doctor', 'viewer']),
-  "nameAr": zod.string(),
-  "nameEn": zod.string().nullish(),
-  "sectorId": zod.string().nullish(),
-  "isActive": zod.boolean().optional(),
-  "lastLogin": zod.coerce.date().nullish(),
-  "consentGivenAt": zod.coerce.date().nullish(),
-  "createdAt": zod.coerce.date().optional()
-})
-
+  id: zod.number(),
+  username: zod.string(),
+  role: zod.enum(["admin", "coordinator", "doctor", "viewer"]),
+  nameAr: zod.string(),
+  nameEn: zod.string().nullish(),
+  sectorId: zod.string().nullish(),
+  isActive: zod.boolean().optional(),
+  lastLogin: zod.coerce.date().nullish(),
+  consentGivenAt: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date().optional(),
+});
 
 /**
  * @summary List audit logs (admin only)
@@ -134,80 +123,77 @@ export const listAuditLogsQueryLimitDefault = 50;
 export const listAuditLogsQueryOffsetDefault = 0;
 
 export const ListAuditLogsQueryParams = zod.object({
-  "userId": zod.coerce.number().optional(),
-  "action": zod.coerce.string().optional(),
-  "limit": zod.coerce.number().default(listAuditLogsQueryLimitDefault),
-  "offset": zod.coerce.number().default(listAuditLogsQueryOffsetDefault)
-})
+  userId: zod.coerce.number().optional(),
+  action: zod.coerce.string().optional(),
+  limit: zod.coerce.number().default(listAuditLogsQueryLimitDefault),
+  offset: zod.coerce.number().default(listAuditLogsQueryOffsetDefault),
+});
 
 export const ListAuditLogsResponse = zod.object({
-  "items": zod.array(zod.object({
-  "id": zod.number(),
-  "userId": zod.number().nullish(),
-  "username": zod.string().nullish(),
-  "action": zod.string(),
-  "resourceType": zod.string(),
-  "resourceId": zod.string().nullish(),
-  "ipAddress": zod.string().nullish(),
-  "userAgent": zod.string().nullish(),
-  "createdAt": zod.coerce.date()
-})),
-  "total": zod.number()
-})
-
+  items: zod.array(
+    zod.object({
+      id: zod.number(),
+      userId: zod.number().nullish(),
+      username: zod.string().nullish(),
+      action: zod.string(),
+      resourceType: zod.string(),
+      resourceId: zod.string().nullish(),
+      ipAddress: zod.string().nullish(),
+      userAgent: zod.string().nullish(),
+      createdAt: zod.coerce.date(),
+    }),
+  ),
+  total: zod.number(),
+});
 
 /**
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
-  "status": zod.string()
-})
-
+  status: zod.string(),
+});
 
 /**
  * @summary List all sectors
  */
 export const ListSectorsResponseItem = zod.object({
-  "id": zod.number(),
-  "nameAr": zod.string(),
-  "nameEn": zod.string(),
-  "hospitalId": zod.number(),
-  "hospitalNameAr": zod.string().nullish(),
-  "hospitalNameEn": zod.string().nullish(),
-  "healthCenterCount": zod.number().nullish()
-})
-export const ListSectorsResponse = zod.array(ListSectorsResponseItem)
-
+  id: zod.number(),
+  nameAr: zod.string(),
+  nameEn: zod.string(),
+  hospitalId: zod.number(),
+  hospitalNameAr: zod.string().nullish(),
+  hospitalNameEn: zod.string().nullish(),
+  healthCenterCount: zod.number().nullish(),
+});
+export const ListSectorsResponse = zod.array(ListSectorsResponseItem);
 
 /**
  * @summary List all hospitals
  */
 export const ListHospitalsResponseItem = zod.object({
-  "id": zod.number(),
-  "nameAr": zod.string(),
-  "nameEn": zod.string(),
-  "isKfch": zod.boolean(),
-  "totalCases": zod.number().nullish()
-})
-export const ListHospitalsResponse = zod.array(ListHospitalsResponseItem)
-
+  id: zod.number(),
+  nameAr: zod.string(),
+  nameEn: zod.string(),
+  isKfch: zod.boolean(),
+  totalCases: zod.number().nullish(),
+});
+export const ListHospitalsResponse = zod.array(ListHospitalsResponseItem);
 
 /**
  * @summary List health centers, optionally filtered by sector
  */
 export const ListHealthCentersQueryParams = zod.object({
-  "sectorId": zod.coerce.number().optional()
-})
+  sectorId: zod.coerce.number().optional(),
+});
 
 export const ListHealthCentersResponseItem = zod.object({
-  "id": zod.number(),
-  "nameAr": zod.string(),
-  "nameEn": zod.string().nullish(),
-  "sectorId": zod.number(),
-  "sectorNameAr": zod.string().nullish()
-})
-export const ListHealthCentersResponse = zod.array(ListHealthCentersResponseItem)
-
+  id: zod.number(),
+  nameAr: zod.string(),
+  nameEn: zod.string().nullish(),
+  sectorId: zod.number(),
+  sectorNameAr: zod.string().nullish(),
+});
+export const ListHealthCentersResponse = zod.array(ListHealthCentersResponseItem);
 
 /**
  * @summary List patients with optional search
@@ -216,34 +202,35 @@ export const listPatientsQueryLimitDefault = 50;
 export const listPatientsQueryOffsetDefault = 0;
 
 export const ListPatientsQueryParams = zod.object({
-  "search": zod.coerce.string().optional().describe('Search by national ID or name'),
-  "sectorId": zod.coerce.number().optional(),
-  "healthCenterId": zod.coerce.number().optional(),
-  "limit": zod.coerce.number().default(listPatientsQueryLimitDefault),
-  "offset": zod.coerce.number().default(listPatientsQueryOffsetDefault)
-})
+  search: zod.coerce.string().optional().describe("Search by national ID or name"),
+  sectorId: zod.coerce.number().optional(),
+  healthCenterId: zod.coerce.number().optional(),
+  limit: zod.coerce.number().default(listPatientsQueryLimitDefault),
+  offset: zod.coerce.number().default(listPatientsQueryOffsetDefault),
+});
 
 export const ListPatientsResponse = zod.object({
-  "items": zod.array(zod.object({
-  "id": zod.number(),
-  "nationalId": zod.string(),
-  "nameAr": zod.string(),
-  "nameEn": zod.string().nullish(),
-  "dateOfBirth": zod.string().nullish(),
-  "age": zod.number().nullish(),
-  "phone": zod.string(),
-  "doctorPhone": zod.string().nullish(),
-  "address": zod.string().nullish(),
-  "healthCenterId": zod.number(),
-  "healthCenterNameAr": zod.string().nullish(),
-  "sectorId": zod.number(),
-  "sectorNameAr": zod.string().nullish(),
-  "totalPregnancies": zod.number().nullish(),
-  "createdAt": zod.string()
-})),
-  "total": zod.number()
-})
-
+  items: zod.array(
+    zod.object({
+      id: zod.number(),
+      nationalId: zod.string(),
+      nameAr: zod.string(),
+      nameEn: zod.string().nullish(),
+      dateOfBirth: zod.string().nullish(),
+      age: zod.number().nullish(),
+      phone: zod.string(),
+      doctorPhone: zod.string().nullish(),
+      address: zod.string().nullish(),
+      healthCenterId: zod.number(),
+      healthCenterNameAr: zod.string().nullish(),
+      sectorId: zod.number(),
+      sectorNameAr: zod.string().nullish(),
+      totalPregnancies: zod.number().nullish(),
+      createdAt: zod.string(),
+    }),
+  ),
+  total: zod.number(),
+});
 
 /**
  * @summary Register a new patient
@@ -251,139 +238,154 @@ export const ListPatientsResponse = zod.object({
 export const createPatientBodyNationalIdMin = 10;
 export const createPatientBodyNationalIdMax = 10;
 
-
-
-
 export const CreatePatientBody = zod.object({
-  "nationalId": zod.string().min(createPatientBodyNationalIdMin).max(createPatientBodyNationalIdMax),
-  "nameAr": zod.string().min(1),
-  "nameEn": zod.string().nullish(),
-  "dateOfBirth": zod.string().nullish(),
-  "phone": zod.string(),
-  "doctorPhone": zod.string().nullish(),
-  "address": zod.string().nullish(),
-  "healthCenterId": zod.number()
-})
-
+  nationalId: zod.string().min(createPatientBodyNationalIdMin).max(createPatientBodyNationalIdMax),
+  nameAr: zod.string().min(1),
+  nameEn: zod.string().nullish(),
+  dateOfBirth: zod.string().nullish(),
+  phone: zod.string(),
+  doctorPhone: zod.string().nullish(),
+  address: zod.string().nullish(),
+  healthCenterId: zod.number(),
+});
 
 /**
  * @summary Get patient by ID
  */
 export const GetPatientParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const GetPatientResponse = zod.object({
-  "id": zod.number(),
-  "nationalId": zod.string(),
-  "nameAr": zod.string(),
-  "nameEn": zod.string().nullish(),
-  "dateOfBirth": zod.string().nullish(),
-  "age": zod.number().nullish(),
-  "phone": zod.string(),
-  "doctorPhone": zod.string().nullish(),
-  "address": zod.string().nullish(),
-  "healthCenterId": zod.number(),
-  "healthCenterNameAr": zod.string().nullish(),
-  "sectorId": zod.number(),
-  "sectorNameAr": zod.string().nullish(),
-  "totalPregnancies": zod.number().nullish(),
-  "createdAt": zod.string()
-})
-
+  id: zod.number(),
+  nationalId: zod.string(),
+  nameAr: zod.string(),
+  nameEn: zod.string().nullish(),
+  dateOfBirth: zod.string().nullish(),
+  age: zod.number().nullish(),
+  phone: zod.string(),
+  doctorPhone: zod.string().nullish(),
+  address: zod.string().nullish(),
+  healthCenterId: zod.number(),
+  healthCenterNameAr: zod.string().nullish(),
+  sectorId: zod.number(),
+  sectorNameAr: zod.string().nullish(),
+  totalPregnancies: zod.number().nullish(),
+  createdAt: zod.string(),
+});
 
 /**
  * @summary Update patient details
  */
 export const UpdatePatientParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const UpdatePatientBody = zod.object({
-  "nameAr": zod.string().optional(),
-  "nameEn": zod.string().nullish(),
-  "dateOfBirth": zod.string().nullish(),
-  "phone": zod.string().optional(),
-  "doctorPhone": zod.string().nullish(),
-  "address": zod.string().nullish(),
-  "healthCenterId": zod.number().optional()
-})
+  nameAr: zod.string().optional(),
+  nameEn: zod.string().nullish(),
+  dateOfBirth: zod.string().nullish(),
+  phone: zod.string().optional(),
+  doctorPhone: zod.string().nullish(),
+  address: zod.string().nullish(),
+  healthCenterId: zod.number().optional(),
+});
 
 export const UpdatePatientResponse = zod.object({
-  "id": zod.number(),
-  "nationalId": zod.string(),
-  "nameAr": zod.string(),
-  "nameEn": zod.string().nullish(),
-  "dateOfBirth": zod.string().nullish(),
-  "age": zod.number().nullish(),
-  "phone": zod.string(),
-  "doctorPhone": zod.string().nullish(),
-  "address": zod.string().nullish(),
-  "healthCenterId": zod.number(),
-  "healthCenterNameAr": zod.string().nullish(),
-  "sectorId": zod.number(),
-  "sectorNameAr": zod.string().nullish(),
-  "totalPregnancies": zod.number().nullish(),
-  "createdAt": zod.string()
-})
-
+  id: zod.number(),
+  nationalId: zod.string(),
+  nameAr: zod.string(),
+  nameEn: zod.string().nullish(),
+  dateOfBirth: zod.string().nullish(),
+  age: zod.number().nullish(),
+  phone: zod.string(),
+  doctorPhone: zod.string().nullish(),
+  address: zod.string().nullish(),
+  healthCenterId: zod.number(),
+  healthCenterNameAr: zod.string().nullish(),
+  sectorId: zod.number(),
+  sectorNameAr: zod.string().nullish(),
+  totalPregnancies: zod.number().nullish(),
+  createdAt: zod.string(),
+});
 
 /**
  * @summary Look up a patient by national ID
  */
 export const GetPatientByNidParams = zod.object({
-  "nationalId": zod.coerce.string()
-})
+  nationalId: zod.coerce.string(),
+});
 
 export const GetPatientByNidResponse = zod.object({
-  "patient": zod.object({
-  "id": zod.number(),
-  "nationalId": zod.string(),
-  "nameAr": zod.string(),
-  "nameEn": zod.string().nullish(),
-  "dateOfBirth": zod.string().nullish(),
-  "age": zod.number().nullish(),
-  "phone": zod.string(),
-  "doctorPhone": zod.string().nullish(),
-  "address": zod.string().nullish(),
-  "healthCenterId": zod.number(),
-  "healthCenterNameAr": zod.string().nullish(),
-  "sectorId": zod.number(),
-  "sectorNameAr": zod.string().nullish(),
-  "totalPregnancies": zod.number().nullish(),
-  "createdAt": zod.string()
-}),
-  "pregnancies": zod.array(zod.object({
-  "id": zod.number(),
-  "patientId": zod.number(),
-  "patientNameAr": zod.string().nullish(),
-  "patientNationalId": zod.string().nullish(),
-  "visitDate": zod.string(),
-  "lmpDate": zod.string().nullish(),
-  "gestationalAge": zod.number().nullable().describe('Gestational age in weeks'),
-  "riskLevel": zod.enum(['low', 'medium', 'high', 'critical']),
-  "riskFactors": zod.array(zod.string()).optional().describe('Field 13: General obstetric risk factors'),
-  "pregnancyRiskFactors": zod.array(zod.string()).optional().describe('Field 14: Pregnancy-related or current health risk factors'),
-  "medicalConditions": zod.array(zod.string()).optional().describe('Field 15: General medical conditions'),
-  "medications": zod.string().nullish().describe('Field 16: Contraindicated medications (Warfarin, isotretinoin, etc.)'),
-  "isVteHighRisk": zod.boolean().optional(),
-  "enoxaparinPrescribed": zod.boolean().optional(),
-  "referralExplained": zod.boolean().nullish().describe('Field 19: Did doctor explain referral to patient?'),
-  "doctorName": zod.string().nullish(),
-  "referralRecommendation": zod.enum(['follow_at_center', 'follow_at_hospital', 'transfer_kfch']),
-  "referredHospitalId": zod.number().nullish(),
-  "referredHospitalNameAr": zod.string().nullish(),
-  "appointmentDate": zod.string().nullish(),
-  "compliance": zod.enum(['compliant', 'non_compliant', 'pending']).describe('compliant: <=2 working days, non_compliant: >2, pending: no appointment yet'),
-  "workingDaysToAppointment": zod.number().nullish(),
-  "notes": zod.string().nullish(),
-  "followUpNotes": zod.string().nullish().describe('Field 27: Follow-up contact responses \/ notes'),
-  "coordinatorClassification": zod.string().nullish(),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string().optional()
-}))
-})
-
+  patient: zod.object({
+    id: zod.number(),
+    nationalId: zod.string(),
+    nameAr: zod.string(),
+    nameEn: zod.string().nullish(),
+    dateOfBirth: zod.string().nullish(),
+    age: zod.number().nullish(),
+    phone: zod.string(),
+    doctorPhone: zod.string().nullish(),
+    address: zod.string().nullish(),
+    healthCenterId: zod.number(),
+    healthCenterNameAr: zod.string().nullish(),
+    sectorId: zod.number(),
+    sectorNameAr: zod.string().nullish(),
+    totalPregnancies: zod.number().nullish(),
+    createdAt: zod.string(),
+  }),
+  pregnancies: zod.array(
+    zod.object({
+      id: zod.number(),
+      patientId: zod.number(),
+      patientNameAr: zod.string().nullish(),
+      patientNationalId: zod.string().nullish(),
+      visitDate: zod.string(),
+      lmpDate: zod.string().nullish(),
+      gestationalAge: zod.number().nullable().describe("Gestational age in weeks"),
+      riskLevel: zod.enum(["low", "medium", "high", "critical"]),
+      riskFactors: zod
+        .array(zod.string())
+        .optional()
+        .describe("Field 13: General obstetric risk factors"),
+      pregnancyRiskFactors: zod
+        .array(zod.string())
+        .optional()
+        .describe("Field 14: Pregnancy-related or current health risk factors"),
+      medicalConditions: zod
+        .array(zod.string())
+        .optional()
+        .describe("Field 15: General medical conditions"),
+      medications: zod
+        .string()
+        .nullish()
+        .describe("Field 16: Contraindicated medications (Warfarin, isotretinoin, etc.)"),
+      isVteHighRisk: zod.boolean().optional(),
+      enoxaparinPrescribed: zod.boolean().optional(),
+      referralExplained: zod
+        .boolean()
+        .nullish()
+        .describe("Field 19: Did doctor explain referral to patient?"),
+      doctorName: zod.string().nullish(),
+      referralRecommendation: zod.enum(["follow_at_center", "follow_at_hospital", "transfer_kfch"]),
+      referredHospitalId: zod.number().nullish(),
+      referredHospitalNameAr: zod.string().nullish(),
+      appointmentDate: zod.string().nullish(),
+      compliance: zod
+        .enum(["compliant", "non_compliant", "pending"])
+        .describe("compliant: <=2 working days, non_compliant: >2, pending: no appointment yet"),
+      workingDaysToAppointment: zod.number().nullish(),
+      notes: zod.string().nullish(),
+      followUpNotes: zod
+        .string()
+        .nullish()
+        .describe("Field 27: Follow-up contact responses \/ notes"),
+      coordinatorClassification: zod.string().nullish(),
+      createdAt: zod.string(),
+      updatedAt: zod.string().optional(),
+    }),
+  ),
+});
 
 /**
  * @summary List pregnancy cases with filters
@@ -392,372 +394,457 @@ export const listPregnanciesQueryLimitDefault = 50;
 export const listPregnanciesQueryOffsetDefault = 0;
 
 export const ListPregnanciesQueryParams = zod.object({
-  "patientId": zod.coerce.number().optional(),
-  "riskLevel": zod.enum(['low', 'medium', 'high', 'critical']).optional(),
-  "hospitalId": zod.coerce.number().optional(),
-  "sectorId": zod.coerce.number().optional(),
-  "compliance": zod.enum(['compliant', 'non_compliant', 'pending']).optional(),
-  "limit": zod.coerce.number().default(listPregnanciesQueryLimitDefault),
-  "offset": zod.coerce.number().default(listPregnanciesQueryOffsetDefault)
-})
+  patientId: zod.coerce.number().optional(),
+  riskLevel: zod.enum(["low", "medium", "high", "critical"]).optional(),
+  hospitalId: zod.coerce.number().optional(),
+  sectorId: zod.coerce.number().optional(),
+  compliance: zod.enum(["compliant", "non_compliant", "pending"]).optional(),
+  limit: zod.coerce.number().default(listPregnanciesQueryLimitDefault),
+  offset: zod.coerce.number().default(listPregnanciesQueryOffsetDefault),
+});
 
 export const ListPregnanciesResponse = zod.object({
-  "items": zod.array(zod.object({
-  "id": zod.number(),
-  "patientId": zod.number(),
-  "patientNameAr": zod.string().nullish(),
-  "patientNationalId": zod.string().nullish(),
-  "visitDate": zod.string(),
-  "lmpDate": zod.string().nullish(),
-  "gestationalAge": zod.number().nullable().describe('Gestational age in weeks'),
-  "riskLevel": zod.enum(['low', 'medium', 'high', 'critical']),
-  "riskFactors": zod.array(zod.string()).optional().describe('Field 13: General obstetric risk factors'),
-  "pregnancyRiskFactors": zod.array(zod.string()).optional().describe('Field 14: Pregnancy-related or current health risk factors'),
-  "medicalConditions": zod.array(zod.string()).optional().describe('Field 15: General medical conditions'),
-  "medications": zod.string().nullish().describe('Field 16: Contraindicated medications (Warfarin, isotretinoin, etc.)'),
-  "isVteHighRisk": zod.boolean().optional(),
-  "enoxaparinPrescribed": zod.boolean().optional(),
-  "referralExplained": zod.boolean().nullish().describe('Field 19: Did doctor explain referral to patient?'),
-  "doctorName": zod.string().nullish(),
-  "referralRecommendation": zod.enum(['follow_at_center', 'follow_at_hospital', 'transfer_kfch']),
-  "referredHospitalId": zod.number().nullish(),
-  "referredHospitalNameAr": zod.string().nullish(),
-  "appointmentDate": zod.string().nullish(),
-  "compliance": zod.enum(['compliant', 'non_compliant', 'pending']).describe('compliant: <=2 working days, non_compliant: >2, pending: no appointment yet'),
-  "workingDaysToAppointment": zod.number().nullish(),
-  "notes": zod.string().nullish(),
-  "followUpNotes": zod.string().nullish().describe('Field 27: Follow-up contact responses \/ notes'),
-  "coordinatorClassification": zod.string().nullish(),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string().optional()
-})),
-  "total": zod.number()
-})
-
+  items: zod.array(
+    zod.object({
+      id: zod.number(),
+      patientId: zod.number(),
+      patientNameAr: zod.string().nullish(),
+      patientNationalId: zod.string().nullish(),
+      visitDate: zod.string(),
+      lmpDate: zod.string().nullish(),
+      gestationalAge: zod.number().nullable().describe("Gestational age in weeks"),
+      riskLevel: zod.enum(["low", "medium", "high", "critical"]),
+      riskFactors: zod
+        .array(zod.string())
+        .optional()
+        .describe("Field 13: General obstetric risk factors"),
+      pregnancyRiskFactors: zod
+        .array(zod.string())
+        .optional()
+        .describe("Field 14: Pregnancy-related or current health risk factors"),
+      medicalConditions: zod
+        .array(zod.string())
+        .optional()
+        .describe("Field 15: General medical conditions"),
+      medications: zod
+        .string()
+        .nullish()
+        .describe("Field 16: Contraindicated medications (Warfarin, isotretinoin, etc.)"),
+      isVteHighRisk: zod.boolean().optional(),
+      enoxaparinPrescribed: zod.boolean().optional(),
+      referralExplained: zod
+        .boolean()
+        .nullish()
+        .describe("Field 19: Did doctor explain referral to patient?"),
+      doctorName: zod.string().nullish(),
+      referralRecommendation: zod.enum(["follow_at_center", "follow_at_hospital", "transfer_kfch"]),
+      referredHospitalId: zod.number().nullish(),
+      referredHospitalNameAr: zod.string().nullish(),
+      appointmentDate: zod.string().nullish(),
+      compliance: zod
+        .enum(["compliant", "non_compliant", "pending"])
+        .describe("compliant: <=2 working days, non_compliant: >2, pending: no appointment yet"),
+      workingDaysToAppointment: zod.number().nullish(),
+      notes: zod.string().nullish(),
+      followUpNotes: zod
+        .string()
+        .nullish()
+        .describe("Field 27: Follow-up contact responses \/ notes"),
+      coordinatorClassification: zod.string().nullish(),
+      createdAt: zod.string(),
+      updatedAt: zod.string().optional(),
+    }),
+  ),
+  total: zod.number(),
+});
 
 /**
  * @summary Create a new pregnancy case
  */
 export const CreatePregnancyBody = zod.object({
-  "patientId": zod.number(),
-  "visitDate": zod.string(),
-  "lmpDate": zod.string().nullish(),
-  "gestationalAge": zod.number().nullish(),
-  "riskLevel": zod.enum(['low', 'medium', 'high', 'critical']),
-  "riskFactors": zod.array(zod.string()).optional(),
-  "pregnancyRiskFactors": zod.array(zod.string()).optional(),
-  "medicalConditions": zod.array(zod.string()).optional(),
-  "medications": zod.string().nullish(),
-  "isVteHighRisk": zod.boolean().optional(),
-  "enoxaparinPrescribed": zod.boolean().optional(),
-  "referralExplained": zod.boolean().nullish(),
-  "doctorName": zod.string().nullish(),
-  "referralRecommendation": zod.enum(['follow_at_center', 'follow_at_hospital', 'transfer_kfch']),
-  "referredHospitalId": zod.number().nullish(),
-  "appointmentDate": zod.string().nullish(),
-  "notes": zod.string().nullish(),
-  "followUpNotes": zod.string().nullish(),
-  "coordinatorClassification": zod.string().nullish()
-})
-
+  patientId: zod.number(),
+  visitDate: zod.string(),
+  lmpDate: zod.string().nullish(),
+  gestationalAge: zod.number().nullish(),
+  riskLevel: zod.enum(["low", "medium", "high", "critical"]),
+  riskFactors: zod.array(zod.string()).optional(),
+  pregnancyRiskFactors: zod.array(zod.string()).optional(),
+  medicalConditions: zod.array(zod.string()).optional(),
+  medications: zod.string().nullish(),
+  isVteHighRisk: zod.boolean().optional(),
+  enoxaparinPrescribed: zod.boolean().optional(),
+  referralExplained: zod.boolean().nullish(),
+  doctorName: zod.string().nullish(),
+  referralRecommendation: zod.enum(["follow_at_center", "follow_at_hospital", "transfer_kfch"]),
+  referredHospitalId: zod.number().nullish(),
+  appointmentDate: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  followUpNotes: zod.string().nullish(),
+  coordinatorClassification: zod.string().nullish(),
+});
 
 /**
  * @summary Get pregnancy case by ID
  */
 export const GetPregnancyParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const GetPregnancyResponse = zod.object({
-  "pregnancy": zod.object({
-  "id": zod.number(),
-  "patientId": zod.number(),
-  "patientNameAr": zod.string().nullish(),
-  "patientNationalId": zod.string().nullish(),
-  "visitDate": zod.string(),
-  "lmpDate": zod.string().nullish(),
-  "gestationalAge": zod.number().nullable().describe('Gestational age in weeks'),
-  "riskLevel": zod.enum(['low', 'medium', 'high', 'critical']),
-  "riskFactors": zod.array(zod.string()).optional().describe('Field 13: General obstetric risk factors'),
-  "pregnancyRiskFactors": zod.array(zod.string()).optional().describe('Field 14: Pregnancy-related or current health risk factors'),
-  "medicalConditions": zod.array(zod.string()).optional().describe('Field 15: General medical conditions'),
-  "medications": zod.string().nullish().describe('Field 16: Contraindicated medications (Warfarin, isotretinoin, etc.)'),
-  "isVteHighRisk": zod.boolean().optional(),
-  "enoxaparinPrescribed": zod.boolean().optional(),
-  "referralExplained": zod.boolean().nullish().describe('Field 19: Did doctor explain referral to patient?'),
-  "doctorName": zod.string().nullish(),
-  "referralRecommendation": zod.enum(['follow_at_center', 'follow_at_hospital', 'transfer_kfch']),
-  "referredHospitalId": zod.number().nullish(),
-  "referredHospitalNameAr": zod.string().nullish(),
-  "appointmentDate": zod.string().nullish(),
-  "compliance": zod.enum(['compliant', 'non_compliant', 'pending']).describe('compliant: <=2 working days, non_compliant: >2, pending: no appointment yet'),
-  "workingDaysToAppointment": zod.number().nullish(),
-  "notes": zod.string().nullish(),
-  "followUpNotes": zod.string().nullish().describe('Field 27: Follow-up contact responses \/ notes'),
-  "coordinatorClassification": zod.string().nullish(),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string().optional()
-}),
-  "patient": zod.object({
-  "id": zod.number(),
-  "nationalId": zod.string(),
-  "nameAr": zod.string(),
-  "nameEn": zod.string().nullish(),
-  "dateOfBirth": zod.string().nullish(),
-  "age": zod.number().nullish(),
-  "phone": zod.string(),
-  "doctorPhone": zod.string().nullish(),
-  "address": zod.string().nullish(),
-  "healthCenterId": zod.number(),
-  "healthCenterNameAr": zod.string().nullish(),
-  "sectorId": zod.number(),
-  "sectorNameAr": zod.string().nullish(),
-  "totalPregnancies": zod.number().nullish(),
-  "createdAt": zod.string()
-}),
-  "appointments": zod.array(zod.object({
-  "id": zod.number(),
-  "pregnancyId": zod.number(),
-  "hospitalId": zod.number(),
-  "hospitalNameAr": zod.string().nullish(),
-  "appointmentDate": zod.string(),
-  "attended": zod.boolean().nullable().describe('null = not yet, true = attended, false = missed'),
-  "attendanceNote": zod.string().nullish(),
-  "createdAt": zod.string(),
-  "patientNameAr": zod.string().nullish(),
-  "patientNationalId": zod.string().nullish(),
-  "sectorId": zod.number().nullish(),
-  "sectorNameAr": zod.string().nullish(),
-  "riskLevel": zod.union([zod.literal('low'),zod.literal('medium'),zod.literal('high'),zod.literal('critical'),zod.literal(null)]).nullish().describe('Risk level of the associated pregnancy')
-}))
-})
-
+  pregnancy: zod.object({
+    id: zod.number(),
+    patientId: zod.number(),
+    patientNameAr: zod.string().nullish(),
+    patientNationalId: zod.string().nullish(),
+    visitDate: zod.string(),
+    lmpDate: zod.string().nullish(),
+    gestationalAge: zod.number().nullable().describe("Gestational age in weeks"),
+    riskLevel: zod.enum(["low", "medium", "high", "critical"]),
+    riskFactors: zod
+      .array(zod.string())
+      .optional()
+      .describe("Field 13: General obstetric risk factors"),
+    pregnancyRiskFactors: zod
+      .array(zod.string())
+      .optional()
+      .describe("Field 14: Pregnancy-related or current health risk factors"),
+    medicalConditions: zod
+      .array(zod.string())
+      .optional()
+      .describe("Field 15: General medical conditions"),
+    medications: zod
+      .string()
+      .nullish()
+      .describe("Field 16: Contraindicated medications (Warfarin, isotretinoin, etc.)"),
+    isVteHighRisk: zod.boolean().optional(),
+    enoxaparinPrescribed: zod.boolean().optional(),
+    referralExplained: zod
+      .boolean()
+      .nullish()
+      .describe("Field 19: Did doctor explain referral to patient?"),
+    doctorName: zod.string().nullish(),
+    referralRecommendation: zod.enum(["follow_at_center", "follow_at_hospital", "transfer_kfch"]),
+    referredHospitalId: zod.number().nullish(),
+    referredHospitalNameAr: zod.string().nullish(),
+    appointmentDate: zod.string().nullish(),
+    compliance: zod
+      .enum(["compliant", "non_compliant", "pending"])
+      .describe("compliant: <=2 working days, non_compliant: >2, pending: no appointment yet"),
+    workingDaysToAppointment: zod.number().nullish(),
+    notes: zod.string().nullish(),
+    followUpNotes: zod
+      .string()
+      .nullish()
+      .describe("Field 27: Follow-up contact responses \/ notes"),
+    coordinatorClassification: zod.string().nullish(),
+    createdAt: zod.string(),
+    updatedAt: zod.string().optional(),
+  }),
+  patient: zod.object({
+    id: zod.number(),
+    nationalId: zod.string(),
+    nameAr: zod.string(),
+    nameEn: zod.string().nullish(),
+    dateOfBirth: zod.string().nullish(),
+    age: zod.number().nullish(),
+    phone: zod.string(),
+    doctorPhone: zod.string().nullish(),
+    address: zod.string().nullish(),
+    healthCenterId: zod.number(),
+    healthCenterNameAr: zod.string().nullish(),
+    sectorId: zod.number(),
+    sectorNameAr: zod.string().nullish(),
+    totalPregnancies: zod.number().nullish(),
+    createdAt: zod.string(),
+  }),
+  appointments: zod.array(
+    zod.object({
+      id: zod.number(),
+      pregnancyId: zod.number(),
+      hospitalId: zod.number(),
+      hospitalNameAr: zod.string().nullish(),
+      appointmentDate: zod.string(),
+      attended: zod
+        .boolean()
+        .nullable()
+        .describe("null = not yet, true = attended, false = missed"),
+      attendanceNote: zod.string().nullish(),
+      createdAt: zod.string(),
+      patientNameAr: zod.string().nullish(),
+      patientNationalId: zod.string().nullish(),
+      sectorId: zod.number().nullish(),
+      sectorNameAr: zod.string().nullish(),
+      riskLevel: zod
+        .union([
+          zod.literal("low"),
+          zod.literal("medium"),
+          zod.literal("high"),
+          zod.literal("critical"),
+          zod.literal(null),
+        ])
+        .nullish()
+        .describe("Risk level of the associated pregnancy"),
+    }),
+  ),
+});
 
 /**
  * @summary Update pregnancy case
  */
 export const UpdatePregnancyParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const UpdatePregnancyBody = zod.object({
-  "visitDate": zod.string().optional(),
-  "lmpDate": zod.string().nullish(),
-  "gestationalAge": zod.number().nullish(),
-  "riskLevel": zod.enum(['low', 'medium', 'high', 'critical']).optional(),
-  "riskFactors": zod.array(zod.string()).optional(),
-  "pregnancyRiskFactors": zod.array(zod.string()).optional(),
-  "medicalConditions": zod.array(zod.string()).optional(),
-  "medications": zod.string().nullish(),
-  "isVteHighRisk": zod.boolean().optional(),
-  "enoxaparinPrescribed": zod.boolean().optional(),
-  "referralExplained": zod.boolean().nullish(),
-  "doctorName": zod.string().nullish(),
-  "referralRecommendation": zod.enum(['follow_at_center', 'follow_at_hospital', 'transfer_kfch']).optional(),
-  "referredHospitalId": zod.number().nullish(),
-  "appointmentDate": zod.string().nullish(),
-  "notes": zod.string().nullish(),
-  "followUpNotes": zod.string().nullish(),
-  "coordinatorClassification": zod.string().nullish()
-})
+  visitDate: zod.string().optional(),
+  lmpDate: zod.string().nullish(),
+  gestationalAge: zod.number().nullish(),
+  riskLevel: zod.enum(["low", "medium", "high", "critical"]).optional(),
+  riskFactors: zod.array(zod.string()).optional(),
+  pregnancyRiskFactors: zod.array(zod.string()).optional(),
+  medicalConditions: zod.array(zod.string()).optional(),
+  medications: zod.string().nullish(),
+  isVteHighRisk: zod.boolean().optional(),
+  enoxaparinPrescribed: zod.boolean().optional(),
+  referralExplained: zod.boolean().nullish(),
+  doctorName: zod.string().nullish(),
+  referralRecommendation: zod
+    .enum(["follow_at_center", "follow_at_hospital", "transfer_kfch"])
+    .optional(),
+  referredHospitalId: zod.number().nullish(),
+  appointmentDate: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  followUpNotes: zod.string().nullish(),
+  coordinatorClassification: zod.string().nullish(),
+});
 
 export const UpdatePregnancyResponse = zod.object({
-  "id": zod.number(),
-  "patientId": zod.number(),
-  "patientNameAr": zod.string().nullish(),
-  "patientNationalId": zod.string().nullish(),
-  "visitDate": zod.string(),
-  "lmpDate": zod.string().nullish(),
-  "gestationalAge": zod.number().nullable().describe('Gestational age in weeks'),
-  "riskLevel": zod.enum(['low', 'medium', 'high', 'critical']),
-  "riskFactors": zod.array(zod.string()).optional().describe('Field 13: General obstetric risk factors'),
-  "pregnancyRiskFactors": zod.array(zod.string()).optional().describe('Field 14: Pregnancy-related or current health risk factors'),
-  "medicalConditions": zod.array(zod.string()).optional().describe('Field 15: General medical conditions'),
-  "medications": zod.string().nullish().describe('Field 16: Contraindicated medications (Warfarin, isotretinoin, etc.)'),
-  "isVteHighRisk": zod.boolean().optional(),
-  "enoxaparinPrescribed": zod.boolean().optional(),
-  "referralExplained": zod.boolean().nullish().describe('Field 19: Did doctor explain referral to patient?'),
-  "doctorName": zod.string().nullish(),
-  "referralRecommendation": zod.enum(['follow_at_center', 'follow_at_hospital', 'transfer_kfch']),
-  "referredHospitalId": zod.number().nullish(),
-  "referredHospitalNameAr": zod.string().nullish(),
-  "appointmentDate": zod.string().nullish(),
-  "compliance": zod.enum(['compliant', 'non_compliant', 'pending']).describe('compliant: <=2 working days, non_compliant: >2, pending: no appointment yet'),
-  "workingDaysToAppointment": zod.number().nullish(),
-  "notes": zod.string().nullish(),
-  "followUpNotes": zod.string().nullish().describe('Field 27: Follow-up contact responses \/ notes'),
-  "coordinatorClassification": zod.string().nullish(),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string().optional()
-})
-
+  id: zod.number(),
+  patientId: zod.number(),
+  patientNameAr: zod.string().nullish(),
+  patientNationalId: zod.string().nullish(),
+  visitDate: zod.string(),
+  lmpDate: zod.string().nullish(),
+  gestationalAge: zod.number().nullable().describe("Gestational age in weeks"),
+  riskLevel: zod.enum(["low", "medium", "high", "critical"]),
+  riskFactors: zod
+    .array(zod.string())
+    .optional()
+    .describe("Field 13: General obstetric risk factors"),
+  pregnancyRiskFactors: zod
+    .array(zod.string())
+    .optional()
+    .describe("Field 14: Pregnancy-related or current health risk factors"),
+  medicalConditions: zod
+    .array(zod.string())
+    .optional()
+    .describe("Field 15: General medical conditions"),
+  medications: zod
+    .string()
+    .nullish()
+    .describe("Field 16: Contraindicated medications (Warfarin, isotretinoin, etc.)"),
+  isVteHighRisk: zod.boolean().optional(),
+  enoxaparinPrescribed: zod.boolean().optional(),
+  referralExplained: zod
+    .boolean()
+    .nullish()
+    .describe("Field 19: Did doctor explain referral to patient?"),
+  doctorName: zod.string().nullish(),
+  referralRecommendation: zod.enum(["follow_at_center", "follow_at_hospital", "transfer_kfch"]),
+  referredHospitalId: zod.number().nullish(),
+  referredHospitalNameAr: zod.string().nullish(),
+  appointmentDate: zod.string().nullish(),
+  compliance: zod
+    .enum(["compliant", "non_compliant", "pending"])
+    .describe("compliant: <=2 working days, non_compliant: >2, pending: no appointment yet"),
+  workingDaysToAppointment: zod.number().nullish(),
+  notes: zod.string().nullish(),
+  followUpNotes: zod.string().nullish().describe("Field 27: Follow-up contact responses \/ notes"),
+  coordinatorClassification: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string().optional(),
+});
 
 /**
  * @summary List appointments
  */
 export const ListAppointmentsQueryParams = zod.object({
-  "pregnancyId": zod.coerce.number().optional(),
-  "hospitalId": zod.coerce.number().optional(),
-  "attended": zod.coerce.boolean().optional()
-})
+  pregnancyId: zod.coerce.number().optional(),
+  hospitalId: zod.coerce.number().optional(),
+  attended: zod.coerce.boolean().optional(),
+});
 
 export const ListAppointmentsResponseItem = zod.object({
-  "id": zod.number(),
-  "pregnancyId": zod.number(),
-  "hospitalId": zod.number(),
-  "hospitalNameAr": zod.string().nullish(),
-  "appointmentDate": zod.string(),
-  "attended": zod.boolean().nullable().describe('null = not yet, true = attended, false = missed'),
-  "attendanceNote": zod.string().nullish(),
-  "createdAt": zod.string(),
-  "patientNameAr": zod.string().nullish(),
-  "patientNationalId": zod.string().nullish(),
-  "sectorId": zod.number().nullish(),
-  "sectorNameAr": zod.string().nullish(),
-  "riskLevel": zod.union([zod.literal('low'),zod.literal('medium'),zod.literal('high'),zod.literal('critical'),zod.literal(null)]).nullish().describe('Risk level of the associated pregnancy')
-})
-export const ListAppointmentsResponse = zod.array(ListAppointmentsResponseItem)
-
+  id: zod.number(),
+  pregnancyId: zod.number(),
+  hospitalId: zod.number(),
+  hospitalNameAr: zod.string().nullish(),
+  appointmentDate: zod.string(),
+  attended: zod.boolean().nullable().describe("null = not yet, true = attended, false = missed"),
+  attendanceNote: zod.string().nullish(),
+  createdAt: zod.string(),
+  patientNameAr: zod.string().nullish(),
+  patientNationalId: zod.string().nullish(),
+  sectorId: zod.number().nullish(),
+  sectorNameAr: zod.string().nullish(),
+  riskLevel: zod
+    .union([
+      zod.literal("low"),
+      zod.literal("medium"),
+      zod.literal("high"),
+      zod.literal("critical"),
+      zod.literal(null),
+    ])
+    .nullish()
+    .describe("Risk level of the associated pregnancy"),
+});
+export const ListAppointmentsResponse = zod.array(ListAppointmentsResponseItem);
 
 /**
  * @summary Book an appointment
  */
 export const CreateAppointmentBody = zod.object({
-  "pregnancyId": zod.number(),
-  "hospitalId": zod.number(),
-  "appointmentDate": zod.string(),
-  "attendanceNote": zod.string().nullish()
-})
-
+  pregnancyId: zod.number(),
+  hospitalId: zod.number(),
+  appointmentDate: zod.string(),
+  attendanceNote: zod.string().nullish(),
+});
 
 /**
  * @summary Update appointment (attendance, reschedule)
  */
 export const UpdateAppointmentParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const UpdateAppointmentBody = zod.object({
-  "appointmentDate": zod.string().optional(),
-  "hospitalId": zod.number().optional(),
-  "attended": zod.boolean().nullish(),
-  "attendanceNote": zod.string().nullish()
-})
+  appointmentDate: zod.string().optional(),
+  hospitalId: zod.number().optional(),
+  attended: zod.boolean().nullish(),
+  attendanceNote: zod.string().nullish(),
+});
 
 export const UpdateAppointmentResponse = zod.object({
-  "id": zod.number(),
-  "pregnancyId": zod.number(),
-  "hospitalId": zod.number(),
-  "hospitalNameAr": zod.string().nullish(),
-  "appointmentDate": zod.string(),
-  "attended": zod.boolean().nullable().describe('null = not yet, true = attended, false = missed'),
-  "attendanceNote": zod.string().nullish(),
-  "createdAt": zod.string(),
-  "patientNameAr": zod.string().nullish(),
-  "patientNationalId": zod.string().nullish(),
-  "sectorId": zod.number().nullish(),
-  "sectorNameAr": zod.string().nullish(),
-  "riskLevel": zod.union([zod.literal('low'),zod.literal('medium'),zod.literal('high'),zod.literal('critical'),zod.literal(null)]).nullish().describe('Risk level of the associated pregnancy')
-})
-
+  id: zod.number(),
+  pregnancyId: zod.number(),
+  hospitalId: zod.number(),
+  hospitalNameAr: zod.string().nullish(),
+  appointmentDate: zod.string(),
+  attended: zod.boolean().nullable().describe("null = not yet, true = attended, false = missed"),
+  attendanceNote: zod.string().nullish(),
+  createdAt: zod.string(),
+  patientNameAr: zod.string().nullish(),
+  patientNationalId: zod.string().nullish(),
+  sectorId: zod.number().nullish(),
+  sectorNameAr: zod.string().nullish(),
+  riskLevel: zod
+    .union([
+      zod.literal("low"),
+      zod.literal("medium"),
+      zod.literal("high"),
+      zod.literal("critical"),
+      zod.literal(null),
+    ])
+    .nullish()
+    .describe("Risk level of the associated pregnancy"),
+});
 
 /**
  * @summary Delete (cancel) an appointment
  */
 export const DeleteAppointmentParams = zod.object({
-  "id": zod.coerce.number()
-})
-
+  id: zod.coerce.number(),
+});
 
 /**
  * @summary Overall KPI summary
  */
 export const GetDashboardSummaryResponse = zod.object({
-  "totalPatients": zod.number(),
-  "totalPregnancies": zod.number(),
-  "totalCritical": zod.number(),
-  "totalHighRisk": zod.number(),
-  "totalVteHighRisk": zod.number(),
-  "vteWithoutEnoxaparin": zod.number().describe('VTE high-risk cases without Enoxaparin prescribed'),
-  "bookingComplianceRate": zod.number().describe('Percentage of cases booked within 2 working days'),
-  "attendanceRate": zod.number().describe('Percentage of appointments attended'),
-  "criticalWithoutAppointment": zod.number().describe('Critical cases with no appointment booked'),
-  "pendingAppointments": zod.number().describe('Cases awaiting appointment booking')
-})
-
+  totalPatients: zod.number(),
+  totalPregnancies: zod.number(),
+  totalCritical: zod.number(),
+  totalHighRisk: zod.number(),
+  totalVteHighRisk: zod.number(),
+  vteWithoutEnoxaparin: zod.number().describe("VTE high-risk cases without Enoxaparin prescribed"),
+  bookingComplianceRate: zod.number().describe("Percentage of cases booked within 2 working days"),
+  attendanceRate: zod.number().describe("Percentage of appointments attended"),
+  criticalWithoutAppointment: zod.number().describe("Critical cases with no appointment booked"),
+  pendingAppointments: zod.number().describe("Cases awaiting appointment booking"),
+});
 
 /**
  * @summary Case distribution by sector
  */
 export const GetDashboardBySectorResponseItem = zod.object({
-  "sectorId": zod.number(),
-  "sectorNameAr": zod.string(),
-  "sectorNameEn": zod.string().optional(),
-  "totalCases": zod.number(),
-  "criticalCases": zod.number(),
-  "highRiskCases": zod.number().optional(),
-  "complianceRate": zod.number()
-})
-export const GetDashboardBySectorResponse = zod.array(GetDashboardBySectorResponseItem)
-
+  sectorId: zod.number(),
+  sectorNameAr: zod.string(),
+  sectorNameEn: zod.string().optional(),
+  totalCases: zod.number(),
+  criticalCases: zod.number(),
+  highRiskCases: zod.number().optional(),
+  complianceRate: zod.number(),
+});
+export const GetDashboardBySectorResponse = zod.array(GetDashboardBySectorResponseItem);
 
 /**
  * @summary Case distribution by hospital
  */
 export const GetDashboardByHospitalResponseItem = zod.object({
-  "hospitalId": zod.number(),
-  "hospitalNameAr": zod.string(),
-  "hospitalNameEn": zod.string().optional(),
-  "isKfch": zod.boolean().optional(),
-  "totalReferrals": zod.number(),
-  "attendedAppointments": zod.number().optional(),
-  "missedAppointments": zod.number().optional(),
-  "attendanceRate": zod.number()
-})
-export const GetDashboardByHospitalResponse = zod.array(GetDashboardByHospitalResponseItem)
-
+  hospitalId: zod.number(),
+  hospitalNameAr: zod.string(),
+  hospitalNameEn: zod.string().optional(),
+  isKfch: zod.boolean().optional(),
+  totalReferrals: zod.number(),
+  attendedAppointments: zod.number().optional(),
+  missedAppointments: zod.number().optional(),
+  attendanceRate: zod.number(),
+});
+export const GetDashboardByHospitalResponse = zod.array(GetDashboardByHospitalResponseItem);
 
 /**
  * @summary Case distribution by risk level
  */
 export const GetDashboardByRiskLevelResponseItem = zod.object({
-  "riskLevel": zod.enum(['low', 'medium', 'high', 'critical']),
-  "count": zod.number(),
-  "percentage": zod.number()
-})
-export const GetDashboardByRiskLevelResponse = zod.array(GetDashboardByRiskLevelResponseItem)
-
+  riskLevel: zod.enum(["low", "medium", "high", "critical"]),
+  count: zod.number(),
+  percentage: zod.number(),
+});
+export const GetDashboardByRiskLevelResponse = zod.array(GetDashboardByRiskLevelResponseItem);
 
 /**
  * @summary Booking compliance KPIs
  */
 export const GetDashboardComplianceResponse = zod.object({
-  "compliant": zod.number().describe('Cases booked within 2 working days'),
-  "nonCompliant": zod.number().describe('Cases booked after 2 working days'),
-  "pending": zod.number().describe('Cases without appointment yet'),
-  "totalWithAppointment": zod.number(),
-  "complianceRate": zod.number(),
-  "attendanceRate": zod.number().optional()
-})
-
+  compliant: zod.number().describe("Cases booked within 2 working days"),
+  nonCompliant: zod.number().describe("Cases booked after 2 working days"),
+  pending: zod.number().describe("Cases without appointment yet"),
+  totalWithAppointment: zod.number(),
+  complianceRate: zod.number(),
+  attendanceRate: zod.number().optional(),
+});
 
 /**
  * @summary Get active alerts (VTE without Enoxaparin, critical without appointments)
  */
 export const ListAlertsResponse = zod.object({
-  "alerts": zod.array(zod.object({
-  "type": zod.enum(['vte_without_enoxaparin', 'critical_without_appointment', 'missed_appointment', 'overdue_critical']),
-  "pregnancyId": zod.number(),
-  "patientId": zod.number().optional(),
-  "patientNameAr": zod.string(),
-  "patientNationalId": zod.string(),
-  "riskLevel": zod.string().optional(),
-  "severity": zod.enum(['warning', 'critical']),
-  "message": zod.string().optional(),
-  "createdAt": zod.string().optional()
-})),
-  "totalCount": zod.number(),
-  "criticalCount": zod.number()
-})
-
-
+  alerts: zod.array(
+    zod.object({
+      type: zod.enum([
+        "vte_without_enoxaparin",
+        "critical_without_appointment",
+        "missed_appointment",
+        "overdue_critical",
+      ]),
+      pregnancyId: zod.number(),
+      patientId: zod.number().optional(),
+      patientNameAr: zod.string(),
+      patientNationalId: zod.string(),
+      riskLevel: zod.string().optional(),
+      severity: zod.enum(["warning", "critical"]),
+      message: zod.string().optional(),
+      createdAt: zod.string().optional(),
+    }),
+  ),
+  totalCount: zod.number(),
+  criticalCount: zod.number(),
+});

@@ -8,16 +8,20 @@
     "build": "pnpm run check:codegen && pnpm run typecheck && pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run check:codegen && pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
-    "check:codegen": "pnpm --filter @workspace/scripts run check:codegen"
+    "check:codegen": "pnpm --filter @workspace/scripts run check:codegen",
+    "lint": "eslint artifacts/ lib/ scripts/ && prettier --check \"artifacts/**/*.{ts,tsx}\" \"lib/**/*.{ts,tsx}\" \"scripts/**/*.{ts,tsx}\" --ignore-path .gitignore"
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm run check:codegen"
   },
+  "type": "module",
   "private": true,
   "devDependencies": {
+    "eslint": "^10.4.0",
     "prettier": "^3.8.3",
     "simple-git-hooks": "^2.11.1",
-    "typescript": "~5.9.3"
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.59.3"
   },
   "dependencies": {
     "xlsx": "^0.18.5"
