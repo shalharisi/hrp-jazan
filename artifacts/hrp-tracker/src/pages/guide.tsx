@@ -504,6 +504,11 @@ export default function UserGuide() {
                           {t("guide.elapsed").replace("{n}", String(elapsedSeconds))}
                         </p>
                       )}
+                      {elapsedSeconds !== null && (
+                        <p className="text-xs text-muted-foreground font-mono">
+                          {t("guide.remaining").replace("{n}", String(Math.max(0, 20 - elapsedSeconds)))}
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
