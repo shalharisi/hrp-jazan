@@ -1137,6 +1137,7 @@ export default function UserGuide() {
 
   const [showJumpMenu, setShowJumpMenu] = useState(false);
   const jumpMenuRef = useRef<HTMLDivElement>(null);
+  const activeItemRef = useRef<HTMLButtonElement>(null);
   const [hasSavedPosition, setHasSavedPosition] = useState(() => {
     try { return !!localStorage.getItem(GUIDE_POSITION_KEY); } catch { return false; }
   });
@@ -1452,6 +1453,13 @@ export default function UserGuide() {
     };
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
+  }, [showJumpMenu]);
+
+  // When the dropdown opens, scroll the active item into view inside the panel
+  useEffect(() => {
+    if (showJumpMenu && activeItemRef.current) {
+      activeItemRef.current.scrollIntoView({ block: "nearest" });
+    }
   }, [showJumpMenu]);
 
   // Inject a portrait @page override while the guide is mounted so both the
@@ -2054,6 +2062,7 @@ export default function UserGuide() {
                 return (
                   <div key={section.id} className="border-b border-border/50 last:border-b-0">
                     <button
+                      ref={isActive ? activeItemRef : null}
                       onClick={() => {
                         scrollTo(section.id);
                         setShowJumpMenu(false);
