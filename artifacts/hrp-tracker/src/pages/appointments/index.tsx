@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { useI18n } from "@/lib/i18n-context";
 import { useAuth } from "@/lib/auth-context";
@@ -238,6 +238,10 @@ type AttendanceDialogState = {
 const DEFAULT_URGENT_THRESHOLD = 5;
 const URGENT_THRESHOLD_KEY = "hrp_urgent_threshold";
 
+const DATE_FILTER_KEY = "hrp_appt_date_filter";
+const CUSTOM_START_KEY = "hrp_appt_custom_start";
+const CUSTOM_END_KEY = "hrp_appt_custom_end";
+
 function getUrgentThreshold(): number {
   const stored = localStorage.getItem(URGENT_THRESHOLD_KEY);
   if (stored !== null) {
@@ -260,11 +264,34 @@ export default function AppointmentsPage() {
     return "all";
   }, []);
 
-  const [dateFilter, setDateFilter] = useState<DateFilter>(
-    initialStatus === "needs_action" ? "all" : "week"
-  );
-  const [customStart, setCustomStart] = useState<string>("");
-  const [customEnd, setCustomEnd] = useState<string>("");
+  const dateFilterUrlForced = useRef(initialStatus === "needs_action");
+
+  const [dateFilter, setDateFilter] = useState<DateFilter>(() => {
+    if (initialStatus === "needs_action") return "all";
+    try {
+      const stored = localStorage.getItem(DATE_FILTER_KEY);
+      if (stored === "today" || stored === "week" || stored === "all" || stored === "custom") {
+        return stored;
+      }
+    } catch {
+      // ignore
+    }
+    return "week";
+  });
+  const [customStart, setCustomStart] = useState<string>(() => {
+    try {
+      return localStorage.getItem(CUSTOM_START_KEY) ?? "";
+    } catch {
+      return "";
+    }
+  });
+  const [customEnd, setCustomEnd] = useState<string>(() => {
+    try {
+      return localStorage.getItem(CUSTOM_END_KEY) ?? "";
+    } catch {
+      return "";
+    }
+  });
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialStatus);
   const [sectorFilter, setSectorFilter] = useState<string>("all");
   const [riskFilter, setRiskFilter] = useState<RiskFilter>("all");
@@ -314,6 +341,42 @@ export default function AppointmentsPage() {
     }
     setDismissedCount(count);
   };
+
+  useEffect(() => {
+    if (dateFilterUrlForced.current) {
+      dateFilterUrlForced.current = false;
+      return;
+    }
+    try {
+      localStorage.setItem(DATE_FILTER_KEY, dateFilter);
+    } catch {
+      // ignore
+    }
+  }, [dateFilter]);
+
+  useEffect(() => {
+    try {
+      if (customStart) {
+        localStorage.setItem(CUSTOM_START_KEY, customStart);
+      } else {
+        localStorage.removeItem(CUSTOM_START_KEY);
+      }
+    } catch {
+      // ignore
+    }
+  }, [customStart]);
+
+  useEffect(() => {
+    try {
+      if (customEnd) {
+        localStorage.setItem(CUSTOM_END_KEY, customEnd);
+      } else {
+        localStorage.removeItem(CUSTOM_END_KEY);
+      }
+    } catch {
+      // ignore
+    }
+  }, [customEnd]);
 
   const { data: appointments, isLoading } = useListAppointments();
   const { data: sectors } = useListSectors();
