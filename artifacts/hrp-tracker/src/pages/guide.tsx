@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useI18n } from "@/lib/i18n-context";
 import { useAuth } from "@/lib/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -134,6 +134,8 @@ export default function UserGuide() {
   const [checking, setChecking] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [generateResult, setGenerateResult] = useState<"success" | "error" | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState<number | null>(null);
+  const startTimeRef = useRef<number | null>(null);
 
   const fetchStatus = () => {
     setChecking(true);
@@ -152,9 +154,13 @@ export default function UserGuide() {
   const handleGenerate = async () => {
     setGenerating(true);
     setGenerateResult(null);
+    setElapsedSeconds(null);
+    startTimeRef.current = Date.now();
     try {
       const res = await fetch(`${API}/downloads/user-guide/generate`, { method: "POST" });
       if (res.ok) {
+        const elapsed = Math.max(1, Math.round((Date.now() - (startTimeRef.current ?? Date.now())) / 1000));
+        setElapsedSeconds(elapsed);
         setGenerateResult("success");
         fetchStatus();
       } else {
@@ -240,7 +246,11 @@ export default function UserGuide() {
                 </pre>
                 {generateResult === "success" && (
                   <Alert className="border-green-200 bg-green-50 text-green-800">
-                    <AlertDescription>{t("guide.generateSuccess")}</AlertDescription>
+                    <AlertDescription>
+                      {elapsedSeconds !== null
+                        ? t("guide.generateSuccessTime").replace("{n}", String(elapsedSeconds))
+                        : t("guide.generateSuccess")}
+                    </AlertDescription>
                   </Alert>
                 )}
                 {generateResult === "error" && (
