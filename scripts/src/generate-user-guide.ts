@@ -2146,6 +2146,7 @@ async function captureScreenshots(
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 (async () => {
+  const startTime = Date.now();
   const args = process.argv.slice(2);
 
   const generatePdf = !args.includes("--no-pdf");
@@ -2222,5 +2223,6 @@ async function captureScreenshots(
       : pdfStatus === "skipped"
         ? `PDF ⚠️ skipped — no browser`
         : `PDF ⏭️ disabled (--no-pdf)`;
-  console.log(`\nالملخص: Word ✅ ${sizeKB} KB (${wordFile})  ${pdfSummary}`);
+  const elapsedSec = Math.round((Date.now() - startTime) / 1000);
+  console.log(`\nالملخص: Word ✅ ${sizeKB} KB (${wordFile})  ${pdfSummary}  (${elapsedSec}s)`);
 })();
