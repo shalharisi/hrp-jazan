@@ -13,33 +13,39 @@ const API = `${BASE}/api`;
 const GUIDE_DURATION_KEY = "guideExpectedDuration";
 const FALLBACK_DURATION_S = 20;
 const MAX_GUIDE_DURATION_S = 120;
+const GUIDE_DURATION_HISTORY_SIZE = 5;
 const GUIDE_BC_CHANNEL = "hrp-guide-generation";
 const GUIDE_LS_SIGNAL_KEY = "hrp-guide-generation-signal";
 
-function getExpectedDuration(): number {
+function readDurationHistory(): number[] {
   try {
     const stored = localStorage.getItem(GUIDE_DURATION_KEY);
     if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) {
+        const valid = parsed.filter((n): n is number => typeof n === "number" && Number.isFinite(n) && n > 0);
+        if (valid.length > 0) return valid;
+      }
+      // backward-compat: old single-number value
       const n = Number(stored);
-      if (Number.isFinite(n) && n > 0) return Math.min(n, MAX_GUIDE_DURATION_S);
+      if (Number.isFinite(n) && n > 0) return [n];
     }
   } catch {
     // ignore
   }
-  return FALLBACK_DURATION_S;
+  return [];
+}
+
+function getExpectedDuration(): number {
+  const history = readDurationHistory();
+  if (history.length === 0) return FALLBACK_DURATION_S;
+  const mean = history.reduce((a, b) => a + b, 0) / history.length;
+  return Math.min(Math.round(mean), MAX_GUIDE_DURATION_S);
 }
 
 function getLastStoredDuration(): number | null {
-  try {
-    const stored = localStorage.getItem(GUIDE_DURATION_KEY);
-    if (stored) {
-      const n = Number(stored);
-      if (Number.isFinite(n) && n > 0) return n;
-    }
-  } catch {
-    // ignore
-  }
-  return null;
+  const history = readDurationHistory();
+  return history.length > 0 ? history[history.length - 1] : null;
 }
 
 type FileStatus = { docx: boolean; pdf: boolean; docxMtime?: string | null; pdfMtime?: string | null; generating?: boolean } | null;
@@ -1313,7 +1319,11 @@ export default function UserGuide() {
 
       const saveDuration = (elapsed: number) => {
         try {
-          localStorage.setItem(GUIDE_DURATION_KEY, String(Math.min(elapsed, MAX_GUIDE_DURATION_S)));
+          const clamped = Math.min(elapsed, MAX_GUIDE_DURATION_S);
+          const history = readDurationHistory();
+          history.push(clamped);
+          const trimmed = history.slice(-GUIDE_DURATION_HISTORY_SIZE);
+          localStorage.setItem(GUIDE_DURATION_KEY, JSON.stringify(trimmed));
         } catch {
         }
       };
