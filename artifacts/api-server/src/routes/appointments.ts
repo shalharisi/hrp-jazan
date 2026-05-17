@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, appointmentsTable, hospitalsTable, pregnanciesTable, patientsTable, healthCentersTable } from "@workspace/db";
+import { db, appointmentsTable, hospitalsTable, pregnanciesTable, patientsTable, healthCentersTable, sectorsTable } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import {
   ListAppointmentsQueryParams,
@@ -15,7 +15,9 @@ const router: IRouter = Router();
 
 function serializeAppointment(
   a: typeof appointmentsTable.$inferSelect,
-  hospital: typeof hospitalsTable.$inferSelect | undefined
+  hospital: typeof hospitalsTable.$inferSelect | undefined,
+  patient?: { nameAr: string; nationalId: string } | undefined,
+  sector?: { id: number; nameAr: string } | undefined,
 ) {
   return {
     id: a.id,
@@ -26,6 +28,10 @@ function serializeAppointment(
     attended: a.attended ?? null,
     attendanceNote: a.attendanceNote ?? null,
     createdAt: a.createdAt.toISOString(),
+    patientNameAr: patient?.nameAr ?? null,
+    patientNationalId: patient?.nationalId ?? null,
+    sectorId: sector?.id ?? null,
+    sectorNameAr: sector?.nameAr ?? null,
   };
 }
 
@@ -81,7 +87,42 @@ router.get("/appointments", async (req, res): Promise<void> => {
     : [];
   const hospitalMap = new Map(hospitals.map((h) => [h.id, h]));
 
-  res.json(appointments.map((a) => serializeAppointment(a, hospitalMap.get(a.hospitalId))));
+  // Enrich with patient and sector info
+  const pregnancyIds = [...new Set(appointments.map((a) => a.pregnancyId))];
+  let patientMap = new Map<number, { nameAr: string; nationalId: string; sectorId: number | null; sectorNameAr: string | null }>();
+  if (pregnancyIds.length > 0) {
+    const rows = await db
+      .select({
+        pregnancyId: pregnanciesTable.id,
+        patientNameAr: patientsTable.nameAr,
+        patientNationalId: patientsTable.nationalId,
+        sectorId: sectorsTable.id,
+        sectorNameAr: sectorsTable.nameAr,
+      })
+      .from(pregnanciesTable)
+      .innerJoin(patientsTable, eq(pregnanciesTable.patientId, patientsTable.id))
+      .leftJoin(healthCentersTable, eq(patientsTable.healthCenterId, healthCentersTable.id))
+      .leftJoin(sectorsTable, eq(healthCentersTable.sectorId, sectorsTable.id))
+      .where(sql`${pregnanciesTable.id} = ANY(ARRAY[${sql.join(pregnancyIds.map(id => sql`${id}`), sql`, `)}]::integer[])`);
+    for (const row of rows) {
+      patientMap.set(row.pregnancyId, {
+        nameAr: row.patientNameAr,
+        nationalId: row.patientNationalId,
+        sectorId: row.sectorId ?? null,
+        sectorNameAr: row.sectorNameAr ?? null,
+      });
+    }
+  }
+
+  res.json(appointments.map((a) => {
+    const info = patientMap.get(a.pregnancyId);
+    return serializeAppointment(
+      a,
+      hospitalMap.get(a.hospitalId),
+      info ? { nameAr: info.nameAr, nationalId: info.nationalId } : undefined,
+      info?.sectorId ? { id: info.sectorId, nameAr: info.sectorNameAr ?? "" } : undefined,
+    );
+  }));
 });
 
 // POST /appointments — requires write access (not viewer)

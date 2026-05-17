@@ -523,7 +523,11 @@ export const GetPregnancyResponse = zod.object({
   "appointmentDate": zod.string(),
   "attended": zod.boolean().nullable().describe('null = not yet, true = attended, false = missed'),
   "attendanceNote": zod.string().nullish(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "patientNameAr": zod.string().nullish(),
+  "patientNationalId": zod.string().nullish(),
+  "sectorId": zod.number().nullish(),
+  "sectorNameAr": zod.string().nullish()
 }))
 })
 
@@ -604,7 +608,11 @@ export const ListAppointmentsResponseItem = zod.object({
   "appointmentDate": zod.string(),
   "attended": zod.boolean().nullable().describe('null = not yet, true = attended, false = missed'),
   "attendanceNote": zod.string().nullish(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "patientNameAr": zod.string().nullish(),
+  "patientNationalId": zod.string().nullish(),
+  "sectorId": zod.number().nullish(),
+  "sectorNameAr": zod.string().nullish()
 })
 export const ListAppointmentsResponse = zod.array(ListAppointmentsResponseItem)
 
@@ -641,7 +649,11 @@ export const UpdateAppointmentResponse = zod.object({
   "appointmentDate": zod.string(),
   "attended": zod.boolean().nullable().describe('null = not yet, true = attended, false = missed'),
   "attendanceNote": zod.string().nullish(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "patientNameAr": zod.string().nullish(),
+  "patientNationalId": zod.string().nullish(),
+  "sectorId": zod.number().nullish(),
+  "sectorNameAr": zod.string().nullish()
 })
 
 

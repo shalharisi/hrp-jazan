@@ -156,6 +156,27 @@ export const translations = {
     "filter.allCenters": "كل المراكز",
     "filter.clearAll": "مسح الفلاتر",
     "filter.results": "نتيجة",
+
+    // Appointments page
+    "nav.appointments": "المواعيد",
+    "appointments.title": "جدول المواعيد",
+    "appointments.subtitle": "عرض كل المواعيد القادمة والفائتة عبر جميع الحالات",
+    "appointments.filterDate": "الفترة الزمنية",
+    "appointments.filterStatus": "حالة الحضور",
+    "appointments.dateToday": "اليوم",
+    "appointments.dateWeek": "هذا الأسبوع",
+    "appointments.dateAll": "كل المواعيد",
+    "appointments.statusAll": "كل الحالات",
+    "appointments.colPatient": "الحامل",
+    "appointments.colNationalId": "الهوية الوطنية",
+    "appointments.colHospital": "المستشفى",
+    "appointments.colSector": "القطاع",
+    "appointments.colDate": "تاريخ الموعد",
+    "appointments.colStatus": "حالة الحضور",
+    "appointments.colActions": "الإجراءات",
+    "appointments.noData": "لا توجد مواعيد تطابق الفلاتر المحددة",
+    "appointments.viewCase": "عرض الحالة",
+    "appointments.totalCount": "إجمالي المواعيد",
   },
   en: {
     // Navigation
@@ -314,6 +335,27 @@ export const translations = {
     "filter.allCenters": "All Centers",
     "filter.clearAll": "Clear Filters",
     "filter.results": "result(s)",
+
+    // Appointments page
+    "nav.appointments": "Appointments",
+    "appointments.title": "Appointments Schedule",
+    "appointments.subtitle": "View all upcoming and missed appointments across all cases",
+    "appointments.filterDate": "Date Range",
+    "appointments.filterStatus": "Attendance Status",
+    "appointments.dateToday": "Today",
+    "appointments.dateWeek": "This Week",
+    "appointments.dateAll": "All Appointments",
+    "appointments.statusAll": "All Statuses",
+    "appointments.colPatient": "Patient",
+    "appointments.colNationalId": "National ID",
+    "appointments.colHospital": "Hospital",
+    "appointments.colSector": "Sector",
+    "appointments.colDate": "Appointment Date",
+    "appointments.colStatus": "Status",
+    "appointments.colActions": "Actions",
+    "appointments.noData": "No appointments match the selected filters",
+    "appointments.viewCase": "View Case",
+    "appointments.totalCount": "Total Appointments",
   }
 } as const;
 

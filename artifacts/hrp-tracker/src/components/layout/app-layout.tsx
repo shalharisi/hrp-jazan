@@ -33,6 +33,7 @@ import {
   ChevronUp,
   FileDown,
   Database,
+  CalendarDays,
 } from "lucide-react";
 import logoPath from "../../assets/branding.jpg";
 
@@ -45,6 +46,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: "/", icon: LayoutDashboard, label: t("nav.dashboard") },
     { href: "/patients", icon: Users, label: t("nav.patients") },
     { href: "/pregnancies", icon: Activity, label: t("nav.pregnancies") },
+    { href: "/appointments", icon: CalendarDays, label: t("nav.appointments") },
     { href: "/alerts", icon: Bell, label: t("nav.alerts") },
     { href: "/reports", icon: FileDown, label: t("nav.reports") },
     { href: "/guide", icon: BookOpen, label: t("nav.guide") },

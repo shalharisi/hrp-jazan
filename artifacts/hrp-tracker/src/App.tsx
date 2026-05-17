@@ -16,6 +16,7 @@ import PregnanciesList from "@/pages/pregnancies/index";
 import PregnancyNew from "@/pages/pregnancies/new";
 import PregnancyDetail from "@/pages/pregnancies/detail";
 import AlertsList from "@/pages/alerts";
+import AppointmentsPage from "@/pages/appointments";
 import UserGuide from "@/pages/guide";
 import LoginPage from "@/pages/login";
 import PrivacyPage from "@/pages/privacy";
@@ -63,6 +64,7 @@ function ProtectedApp() {
           <Route path="/pregnancies/new" component={PregnancyNew} />
           <Route path="/pregnancies/:id" component={PregnancyDetail} />
           <Route path="/alerts" component={AlertsList} />
+          <Route path="/appointments" component={AppointmentsPage} />
           <Route path="/guide" component={UserGuide} />
           <Route path="/privacy" component={PrivacyPage} />
           <Route path="/users" component={UsersPage} />

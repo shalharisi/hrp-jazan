@@ -411,6 +411,14 @@ export interface Appointment {
   /** @nullable */
   attendanceNote?: string | null;
   createdAt: string;
+  /** @nullable */
+  patientNameAr?: string | null;
+  /** @nullable */
+  patientNationalId?: string | null;
+  /** @nullable */
+  sectorId?: number | null;
+  /** @nullable */
+  sectorNameAr?: string | null;
 }
 
 export interface PregnancyDetail {

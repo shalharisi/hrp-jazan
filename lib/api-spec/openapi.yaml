@@ -1243,6 +1243,14 @@ components:
           type: ["string", "null"]
         createdAt:
           type: string
+        patientNameAr:
+          type: ["string", "null"]
+        patientNationalId:
+          type: ["string", "null"]
+        sectorId:
+          type: ["integer", "null"]
+        sectorNameAr:
+          type: ["string", "null"]
 
     AppointmentInput:
       type: object
