@@ -1128,6 +1128,7 @@ export default function UserGuide() {
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [activeSubsection, setActiveSubsection] = useState<string | null>(null);
   // Tracks whether the current generating state was triggered by the button (SSE stream
   // is active) vs detected from the server's status response (startup auto-generation).
   const buttonGeneratingRef = useRef(false);
@@ -1219,25 +1220,43 @@ export default function UserGuide() {
 
   useEffect(() => {
     const sectionIds = allSections.map((s) => s.id);
+    const subsectionIds = allSections.flatMap((s) =>
+      s.subsections.map((_, idx) => `${s.id}-${idx}`),
+    );
+    const allIds = [...sectionIds, ...subsectionIds];
     const visibleSections = new Set<string>();
+    const visibleSubsections = new Set<string>();
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
+          const id = entry.target.id;
+          const isSection = sectionIds.includes(id);
           if (entry.isIntersecting) {
-            visibleSections.add(entry.target.id);
-            localStorage.setItem(GUIDE_POSITION_KEY, entry.target.id);
-            setHasSavedPosition(true);
+            if (isSection) {
+              visibleSections.add(id);
+              localStorage.setItem(GUIDE_POSITION_KEY, id);
+              setHasSavedPosition(true);
+            } else {
+              visibleSubsections.add(id);
+            }
           } else {
-            visibleSections.delete(entry.target.id);
+            if (isSection) {
+              visibleSections.delete(id);
+            } else {
+              visibleSubsections.delete(id);
+            }
           }
         }
         // Pick the topmost visible section (first in document order)
         const top = sectionIds.find((id) => visibleSections.has(id)) ?? null;
         setActiveSection(top);
+        // Pick the topmost visible subsection (first in document order)
+        const topSub = subsectionIds.find((id) => visibleSubsections.has(id)) ?? null;
+        setActiveSubsection(topSub);
       },
       { threshold: 0.1, rootMargin: "-80px 0px -55% 0px" },
     );
-    for (const id of sectionIds) {
+    for (const id of allIds) {
       const el = document.getElementById(id);
       if (el) observer.observe(el);
     }
@@ -1951,16 +1970,25 @@ export default function UserGuide() {
                   {lang === "ar" ? section.ar : section.en}
                 </button>
                 <ul className="space-y-0.5 ps-5 mt-1">
-                  {section.subsections.map((sub, idx) => (
-                    <li key={idx}>
-                      <button
-                        onClick={() => scrollTo(`${section.id}-${idx}`)}
-                        className="text-sm text-muted-foreground hover:text-foreground hover:underline text-start"
-                      >
-                        {lang === "ar" ? sub.ar : sub.en}
-                      </button>
-                    </li>
-                  ))}
+                  {section.subsections.map((sub, idx) => {
+                    const subId = `${section.id}-${idx}`;
+                    const isActiveSub = activeSubsection === subId;
+                    return (
+                      <li key={idx}>
+                        <button
+                          onClick={() => scrollTo(subId)}
+                          className={[
+                            "text-sm text-start transition-colors",
+                            isActiveSub
+                              ? "text-emerald-700 underline underline-offset-2 font-semibold"
+                              : "text-muted-foreground hover:text-foreground hover:underline",
+                          ].join(" ")}
+                        >
+                          {lang === "ar" ? sub.ar : sub.en}
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
               </li>
             ))}
