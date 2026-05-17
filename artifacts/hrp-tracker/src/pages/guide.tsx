@@ -1102,6 +1102,9 @@ export default function UserGuide() {
   const startTimeRef = useRef<number | null>(null);
   const [currentStep, setCurrentStep] = useState<string | null>(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
+  // Tracks whether the current generating state was triggered by the button (SSE stream
+  // is active) vs detected from the server's status response (startup auto-generation).
+  const buttonGeneratingRef = useRef(false);
 
   useEffect(() => {
     const onScroll = () => setShowBackToTop(window.scrollY > 400);
@@ -1119,7 +1122,14 @@ export default function UserGuide() {
   const fetchStatus = () => {
     fetch(`${API}/downloads/user-guide/status`)
       .then((res) => res.json())
-      .then((data: FileStatus) => setStatus(data))
+      .then((data: FileStatus) => {
+        setStatus(data);
+        // If the server is already generating (e.g. startup auto-regen) and we haven't
+        // triggered it ourselves via the button, reflect that state in the UI.
+        if (data?.generating && !buttonGeneratingRef.current) {
+          setGenerating(true);
+        }
+      })
       .catch(() => setStatus({ docx: false, pdf: false, docxMtime: null, pdfMtime: null }))
       .finally(() => setChecking(false));
   };
@@ -1137,6 +1147,25 @@ export default function UserGuide() {
     return () => clearInterval(id);
   }, [status?.generating, generating]);
 
+  // Poll the status endpoint every 3 s while server-side startup generation is running
+  // so the UI clears automatically once the background job finishes.
+  useEffect(() => {
+    if (!generating || buttonGeneratingRef.current) return;
+    const interval = setInterval(() => {
+      fetch(`${API}/downloads/user-guide/status`)
+        .then((res) => res.json())
+        .then((data: FileStatus) => {
+          setStatus(data);
+          if (!data?.generating) {
+            setGenerating(false);
+            setGenerateResult("success");
+          }
+        })
+        .catch(() => {});
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [generating]);
+
   useEffect(() => {
     if (!generating) return;
     setElapsedSeconds(0);
@@ -1152,6 +1181,7 @@ export default function UserGuide() {
   }, [generating]);
 
   const handleGenerate = async () => {
+    buttonGeneratingRef.current = true;
     setGenerating(true);
     setGenerateResult(null);
     setCurrentStep(null);
@@ -1228,6 +1258,7 @@ export default function UserGuide() {
     } catch {
       setGenerateResult("error");
     } finally {
+      buttonGeneratingRef.current = false;
       setGenerating(false);
       setCurrentStep(null);
     }

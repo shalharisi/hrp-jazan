@@ -4,6 +4,7 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 import { spawn } from "child_process";
 import { requireRole } from "../lib/auth.js";
+import { logger } from "../lib/logger.js";
 
 // When built with esbuild, import.meta.url resolves to the bundle file
 // (dist/index.mjs), so __dirname = artifacts/api-server/dist/.
@@ -18,6 +19,64 @@ const router: IRouter = Router();
 
 // In-process lock: prevents concurrent guide generation runs.
 let guideGenerating = false;
+
+/**
+ * Starts background guide generation if the files are absent or if
+ * REGEN_GUIDE_ON_START=true is set. Safe to call multiple times — the
+ * guideGenerating lock prevents concurrent runs.
+ */
+export function scheduleStartupGuideGeneration(): void {
+  const forceRegen = process.env["REGEN_GUIDE_ON_START"] === "true";
+  const filesAbsent = !fs.existsSync(DOCX_PATH) || !fs.existsSync(PDF_PATH);
+
+  if (!forceRegen && !filesAbsent) {
+    logger.info("User guide files present; skipping startup generation");
+    return;
+  }
+
+  if (guideGenerating) {
+    logger.info("Guide generation already in progress; skipping startup trigger");
+    return;
+  }
+
+  const reason = forceRegen ? "REGEN_GUIDE_ON_START=true" : "guide files absent";
+  logger.info({ reason }, "Starting user guide generation on server startup");
+
+  guideGenerating = true;
+
+  const child = spawn("pnpm", ["--filter", "@workspace/scripts", "run", "generate-guide"], {
+    cwd: WORKSPACE_ROOT,
+    stdio: "pipe",
+  });
+
+  child.stdout?.on("data", (chunk: Buffer) => {
+    const lines = chunk.toString().split("\n");
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith("PROGRESS:")) {
+        logger.info({ step: trimmed.slice("PROGRESS:".length).trim() }, "Guide generation step");
+      }
+    }
+  });
+
+  child.stderr?.on("data", (chunk: Buffer) => {
+    logger.debug({ stderr: chunk.toString() }, "Guide generation stderr");
+  });
+
+  child.on("close", (code) => {
+    guideGenerating = false;
+    if (code === 0) {
+      logger.info("User guide generated successfully on startup");
+    } else {
+      logger.error({ code }, "Startup guide generation script exited with non-zero code");
+    }
+  });
+
+  child.on("error", (err) => {
+    guideGenerating = false;
+    logger.error({ err }, "Failed to spawn guide generation script on startup");
+  });
+}
 
 // GET /api/downloads/user-guide.docx — all authenticated users
 // Auth is enforced globally in routes/index.ts; no per-route middleware needed.

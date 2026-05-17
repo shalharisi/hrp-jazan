@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { scheduleStartupGuideGeneration } from "./routes/downloads.js";
 
 const rawPort = process.env["PORT"];
 
@@ -20,4 +21,7 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+
+  // Regenerate the user guide if files are absent or REGEN_GUIDE_ON_START=true.
+  scheduleStartupGuideGeneration();
 });
