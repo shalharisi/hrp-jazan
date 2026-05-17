@@ -131,6 +131,7 @@ function buildExportFilename(
   dateFilter: DateFilter,
   statusFilter: StatusFilter,
   sectorName: string | null,
+  riskFilter: RiskFilter,
   customStart?: string,
   customEnd?: string
 ): string {
@@ -142,6 +143,7 @@ function buildExportFilename(
     parts.push(dateFilter);
   }
   if (statusFilter !== "all") parts.push(statusFilter.replace(/_/g, "-"));
+  if (riskFilter !== "all") parts.push(riskFilter);
   if (sectorName) parts.push("sector", sectorName.replace(/\s+/g, "-"));
   parts.push(today);
   return `${parts.join("-")}.csv`;
@@ -154,6 +156,7 @@ function exportAppointmentsToCsv(
   dateFilter: DateFilter,
   statusFilter: StatusFilter,
   sectorName: string | null,
+  riskFilter: RiskFilter,
   customStart?: string,
   customEnd?: string,
   filterLabels?: {
@@ -163,6 +166,8 @@ function exportAppointmentsToCsv(
     statusValue: string;
     sectorFieldLabel: string;
     sectorValue: string;
+    riskFieldLabel: string;
+    riskValue: string;
   }
 ) {
   const cols = [
@@ -196,6 +201,7 @@ function exportAppointmentsToCsv(
           `${filterLabels.dateFieldLabel}: ${filterLabels.dateValue}`,
           `${filterLabels.statusFieldLabel}: ${filterLabels.statusValue}`,
           `${filterLabels.sectorFieldLabel}: ${filterLabels.sectorValue}`,
+          `${filterLabels.riskFieldLabel}: ${filterLabels.riskValue}`,
         ]
       : [];
     const summaryLine = filterParts.length > 0 ? `${base} | ${filterParts.join(" | ")}` : base;
@@ -223,7 +229,7 @@ function exportAppointmentsToCsv(
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = buildExportFilename(dateFilter, statusFilter, sectorName, customStart, customEnd);
+  link.download = buildExportFilename(dateFilter, statusFilter, sectorName, riskFilter, customStart, customEnd);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -566,6 +572,7 @@ export default function AppointmentsPage() {
                   "all",
                   "needs_action",
                   bannerSectorName,
+                  "all",
                   undefined,
                   undefined,
                   {
@@ -575,6 +582,8 @@ export default function AppointmentsPage() {
                     statusValue: t("appointments.statusNeedsAction"),
                     sectorFieldLabel: t("appointments.printFilterSector"),
                     sectorValue: sectorFilterLabel,
+                    riskFieldLabel: t("appointments.printFilterRisk"),
+                    riskValue: t("appointments.printAll"),
                   }
                 );
               }}
@@ -825,6 +834,7 @@ export default function AppointmentsPage() {
                 dateFilter,
                 statusFilter,
                 activeSectorName,
+                riskFilter,
                 customStart || undefined,
                 customEnd || undefined,
                 {
@@ -834,6 +844,8 @@ export default function AppointmentsPage() {
                   statusValue: statusFilterLabel,
                   sectorFieldLabel: t("appointments.printFilterSector"),
                   sectorValue: sectorFilterLabel,
+                  riskFieldLabel: t("appointments.printFilterRisk"),
+                  riskValue: riskFilterLabel,
                 }
               );
             }}
