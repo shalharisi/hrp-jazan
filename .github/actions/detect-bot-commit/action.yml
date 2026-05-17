@@ -15,7 +15,7 @@ description: >
 outputs:
   proceed:
     description: "'true' to run CI, 'false' to skip all downstream jobs."
-    value: ${{ steps.detect.outputs.proceed }}
+    value: ${{ steps.detect.outputs.proceed || 'true' }}
 
 runs:
   using: composite
