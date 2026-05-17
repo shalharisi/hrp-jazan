@@ -247,6 +247,11 @@
     overflow: visible !important;
   }
 
+  /* Show print-only columns (table cells need table-cell, not block) */
+  table .print-only {
+    display: table-cell !important;
+  }
+
   /* Keep badge colours */
   .bg-green-100, .bg-red-100, .bg-yellow-100 {
     -webkit-print-color-adjust: exact;

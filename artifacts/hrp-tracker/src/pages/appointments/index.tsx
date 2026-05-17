@@ -558,6 +558,7 @@ export default function AppointmentsPage() {
                     <TableHead>{t("appointments.colHospital")}</TableHead>
                     <TableHead>{t("appointments.colDate")}</TableHead>
                     <TableHead>{t("appointments.colStatus")}</TableHead>
+                    <TableHead className="print-only">{t("appointments.colAttendanceNote")}</TableHead>
                     <TableHead className="text-center no-print">{t("appointments.colActions")}</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -587,6 +588,9 @@ export default function AppointmentsPage() {
                         </TableCell>
                         <TableCell>
                           <StatusBadge attended={appt.attended} />
+                        </TableCell>
+                        <TableCell className="print-only text-sm text-gray-700">
+                          {appt.attendanceNote ?? ""}
                         </TableCell>
                         <TableCell className="no-print">
                           <div className="flex items-center justify-center gap-2 flex-wrap">
