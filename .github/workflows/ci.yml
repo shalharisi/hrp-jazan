@@ -103,32 +103,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - uses: actions/setup-node@v4
         with:
           node-version: 24
 
       - name: Verify ui/ stubs
-        run: node --input-type=module <<'EOF'
-            import { readdirSync, readFileSync } from 'fs';
-            import { join, relative } from 'path';
-            const STUB_RE = /^export\s+(\*|\{[^}]+\})\s+from\s+["']@workspace\/ui["'];?$/;
-            const dirs = ['artifacts/hrp-tracker/src/components/ui', 'artifacts/mockup-sandbox/src/components/ui'];
-            let failed = false;
-            for (const dir of dirs) {
-              let files;
-              try { files = readdirSync(dir); } catch { continue; }
-              for (const f of files) {
-                if (!f.endsWith('.tsx') && !f.endsWith('.ts')) continue;
-                const content = readFileSync(join(dir, f), 'utf8').trim();
-                if (!STUB_RE.test(content)) {
-                  console.error(`ERROR: ${relative('.', join(dir, f))} is not a re-export stub.`);
-                  failed = true;
-                }
-              }
-            }
-            if (failed) process.exit(1);
-            console.log('All artifact ui/ stubs are valid.');
-          EOF
+        run: pnpm run check:ui-stubs
 
   lint:
     name: Lint (ESLint + Prettier)
