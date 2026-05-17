@@ -22,6 +22,23 @@ name: Suggest CODEOWNERS Updates
 # clearly states it is in dry-run mode and lists the pending changes.  A human
 # reviewer must apply the changes manually (or remove the dry-run trigger) and
 # push before merging.
+#
+# ── Require-approval mode ─────────────────────────────────────────────────────
+# For teams that always want a human sign-off before the bot auto-commits, set:
+#
+#   Repository variable  (Settings → Variables → Actions):
+#     CODEOWNERS_BOT_REQUIRE_APPROVAL = true
+#
+# When this variable is true the bot will:
+#   • Post a dry-run preview comment on every PR push until a maintainer
+#     approves the change via one of these two mechanisms:
+#       – Submit a GitHub review with "Approved" state on the PR, OR
+#       – React with :+1: to the bot's own comment.
+#   • Once either approval signal is detected the bot will auto-commit on the
+#     next workflow run (next push to the branch).
+#
+# This variable is independent of CODEOWNERS_BOT_DRY_RUN.  If both are set to
+# true, dry-run mode always wins regardless of approval state.
 # ─────────────────────────────────────────────────────────────────────────────
 
 on:
@@ -30,7 +47,8 @@ on:
 
 permissions:
   contents: write         # for checkout + git diff + pushing the auto-fix commit
-  pull-requests: write    # for posting review comments
+  pull-requests: write    # for posting review comments and reading PR reviews
+  issues: read            # for reading reactions on bot comments
 
 jobs:
   suggest-codeowners-updates:
@@ -55,6 +73,8 @@ jobs:
           HEAD_BRANCH: ${{ github.head_ref }}
           # Dry-run via repository variable (true/false string)
           DRY_RUN_VAR: ${{ vars.CODEOWNERS_BOT_DRY_RUN }}
+          # Require-approval via repository variable (true/false string)
+          REQUIRE_APPROVAL_VAR: ${{ vars.CODEOWNERS_BOT_REQUIRE_APPROVAL }}
           # PR labels as a JSON array for label-based dry-run detection
           PR_LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
         run: |
@@ -75,6 +95,113 @@ jobs:
           if echo "${PR_LABELS}" | grep -qi '"codeowners-dry-run"'; then
             DRY_RUN=true
             echo "Dry-run enabled via PR label 'codeowners-dry-run'."
+          fi
+
+          # ── 0a. Resolve require-approval mode ────────────────────────────
+          # When CODEOWNERS_BOT_REQUIRE_APPROVAL=true the bot stays in dry-run
+          # until a maintainer either approves the PR via a GitHub review or
+          # reacts with :+1: on the bot's own comment.
+          #
+          # This check is skipped entirely if dry-run mode is already active via
+          # the DRY_RUN_VAR or PR label — those take unconditional precedence.
+          APPROVAL_REQUIRED=false
+
+          if [[ "${REQUIRE_APPROVAL_VAR,,}" == "true" && "$DRY_RUN" == "false" ]]; then
+            echo "CODEOWNERS_BOT_REQUIRE_APPROVAL=true — checking for approval before auto-committing."
+
+            APPROVED=false
+            MARKER="<!-- codeowners-rename-bot -->"
+
+            # Check for a GitHub review approval from a maintainer on this PR.
+            # Steps:
+            #   1. Take the latest review per reviewer (so a later CHANGES_REQUESTED
+            #      supersedes an earlier APPROVED from the same person).
+            #   2. Filter to those whose net state is APPROVED.
+            #   3. For each such reviewer, check their repo permission via the
+            #      collaborator API and only accept write/maintain/admin.
+            mapfile -t approved_reviewer_logins < <(
+              gh api "repos/$REPO/pulls/$PR_NUMBER/reviews" \
+                --jq '
+                  group_by(.user.login) |
+                  map(sort_by(.submitted_at) | last) |
+                  map(select(.state == "APPROVED")) |
+                  .[].user.login
+                ' \
+                2>/dev/null || true
+            )
+
+            for login in "${approved_reviewer_logins[@]}"; do
+              perm=$(
+                gh api "repos/$REPO/collaborators/$login/permission" \
+                  --jq '.permission' \
+                  2>/dev/null || echo "none"
+              )
+              case "$perm" in
+                write|maintain|admin)
+                  APPROVED=true
+                  echo "Approval detected: maintainer '$login' approved via GitHub review (permission: $perm)."
+                  break
+                  ;;
+                *)
+                  echo "Ignoring review approval from '$login' — insufficient permission ($perm)."
+                  ;;
+              esac
+            done
+
+            # If no review approval yet, check for a :+1: reaction on the most
+            # recent bot comment (if one has already been posted).
+            # Security: only count reactions from users with write/maintain/admin
+            # permission to prevent non-maintainers from unlocking auto-commit.
+            if [[ "$APPROVED" == "false" ]]; then
+              # Look up the most recent comment posted by github-actions[bot]
+              # that carries the bot marker — verify both marker AND author to
+              # prevent a spoofed marker comment from being used as the target.
+              existing_comment_id=$(
+                gh api "repos/$REPO/issues/$PR_NUMBER/comments" \
+                  --jq ".[] | select(
+                    (.body | startswith(\"$MARKER\")) and
+                    (.user.login == \"github-actions[bot]\")
+                  ) | .id" \
+                  2>/dev/null | tail -1 || true
+              )
+
+              if [[ -n "$existing_comment_id" ]]; then
+                # Collect logins of all users who reacted with :+1:
+                mapfile -t reactor_logins < <(
+                  gh api "repos/$REPO/issues/comments/$existing_comment_id/reactions" \
+                    --jq '.[] | select(.content == "+1") | .user.login' \
+                    2>/dev/null || true
+                )
+
+                for login in "${reactor_logins[@]}"; do
+                  # Accept the reaction only if the user has at least write
+                  # (push) permission on the repository.
+                  perm=$(
+                    gh api "repos/$REPO/collaborators/$login/permission" \
+                      --jq '.permission' \
+                      2>/dev/null || echo "none"
+                  )
+                  case "$perm" in
+                    write|maintain|admin)
+                      APPROVED=true
+                      echo "Approval detected: maintainer '$login' reacted with :+1: (permission: $perm)."
+                      break
+                      ;;
+                    *)
+                      echo "Ignoring :+1: from '$login' — insufficient permission ($perm)."
+                      ;;
+                  esac
+                done
+              fi
+            fi
+
+            if [[ "$APPROVED" == "false" ]]; then
+              DRY_RUN=true
+              APPROVAL_REQUIRED=true
+              echo "No maintainer approval detected — forcing dry-run mode until a maintainer approves."
+            else
+              echo "Approval confirmed — proceeding with auto-commit mode."
+            fi
           fi
 
           if [[ "$DRY_RUN" == "true" ]]; then
@@ -300,23 +427,57 @@ jobs:
           if [[ "$DRY_RUN" == "true" ]]; then
             # ── Dry-run comment ───────────────────────────────────────────────
             # Explain why no commit was made and what changes are pending.
-            # Check whether dry-run was triggered by label, variable, or both.
-            dry_run_reason=""
-            if [[ "${DRY_RUN_VAR,,}" == "true" ]] && echo "${PR_LABELS}" | grep -qi '"codeowners-dry-run"'; then
-              dry_run_reason="the repository variable \`CODEOWNERS_BOT_DRY_RUN\` is set to \`true\` **and** the PR carries the \`codeowners-dry-run\` label"
-            elif [[ "${DRY_RUN_VAR,,}" == "true" ]]; then
-              dry_run_reason="the repository variable \`CODEOWNERS_BOT_DRY_RUN\` is set to \`true\`"
-            else
-              dry_run_reason="the PR carries the \`codeowners-dry-run\` label"
-            fi
 
-            table_rows=""
-            for row in "${unique_suggestions[@]}"; do
-              table_rows="${table_rows}
+            if [[ "$APPROVAL_REQUIRED" == "true" ]]; then
+              # ── Approval-gate variant ─────────────────────────────────────
+              # The bot is waiting for a maintainer sign-off before committing.
+              table_rows=""
+              for row in "${unique_suggestions[@]}"; do
+                table_rows="${table_rows}
           ${row}"
-            done
+              done
 
-            body="${MARKER}
+              body="${MARKER}
+          ## :mag: CODEOWNERS — pending approval before auto-commit
+
+          This PR renames one or more directories that are tracked in \`.github/CODEOWNERS\`.
+          The repository is configured with \`CODEOWNERS_BOT_REQUIRE_APPROVAL=true\`, so the
+          bot will **not** commit the fix automatically until a maintainer approves.
+
+          The table below shows the changes that will be applied once approved:
+
+          | Current pattern | Suggested pattern | Owners |
+          |---|---|---|${table_rows}
+
+          **To approve and allow the bot to commit on the next push:**
+          - Submit a GitHub **review approval** on this PR (the green _Approve_ button), **or**
+          - React to **this comment** with :+1:.
+
+          The bot will detect the approval and auto-commit the fix on the next push to this branch.
+
+          > _This preview was generated automatically by the \`suggest-codeowners-updates\` workflow._
+          > _If the rename is intentional and the CODEOWNERS rule is no longer needed, simply_
+          > _remove the old entry instead of updating it._"
+
+            else
+              # ── Standard dry-run variant (label / variable) ───────────────
+              # Check whether dry-run was triggered by label, variable, or both.
+              dry_run_reason=""
+              if [[ "${DRY_RUN_VAR,,}" == "true" ]] && echo "${PR_LABELS}" | grep -qi '"codeowners-dry-run"'; then
+                dry_run_reason="the repository variable \`CODEOWNERS_BOT_DRY_RUN\` is set to \`true\` **and** the PR carries the \`codeowners-dry-run\` label"
+              elif [[ "${DRY_RUN_VAR,,}" == "true" ]]; then
+                dry_run_reason="the repository variable \`CODEOWNERS_BOT_DRY_RUN\` is set to \`true\`"
+              else
+                dry_run_reason="the PR carries the \`codeowners-dry-run\` label"
+              fi
+
+              table_rows=""
+              for row in "${unique_suggestions[@]}"; do
+                table_rows="${table_rows}
+          ${row}"
+              done
+
+              body="${MARKER}
           ## :mag: CODEOWNERS — dry-run preview (no changes committed)
 
           This PR renames one or more directories that are tracked in \`.github/CODEOWNERS\`.
@@ -337,6 +498,7 @@ jobs:
           > _This preview was generated automatically by the \`suggest-codeowners-updates\` workflow._
           > _If the rename is intentional and the CODEOWNERS rule is no longer needed, simply_
           > _remove the old entry instead of updating it._"
+            fi
 
           elif [[ "$PUSHED" == "true" ]]; then
             # ── Auto-commit comment ───────────────────────────────────────────
@@ -420,7 +582,9 @@ jobs:
               done
             else
               echo ""
-              if [[ "$DRY_RUN" == "true" ]]; then
+              if [[ "$APPROVAL_REQUIRED" == "true" ]]; then
+                echo "Done. Approval-gate comment posted with ${#unique_suggestions[@]} pending change(s) — waiting for maintainer approval."
+              elif [[ "$DRY_RUN" == "true" ]]; then
                 echo "Done. Dry-run comment posted with ${#unique_suggestions[@]} pending change(s) — no commit was pushed."
               elif [[ "$PUSHED" == "true" ]]; then
                 echo "Done. CODEOWNERS auto-updated and comment posted with ${#unique_suggestions[@]} change(s)."
