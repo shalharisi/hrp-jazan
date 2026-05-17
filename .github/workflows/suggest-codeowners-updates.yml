@@ -221,13 +221,28 @@ jobs:
           # (e.g. insufficient permissions on a fork PR) is logged as a warning
           # rather than treated as an error.
           delete_bot_comment() {
-            local existing_id
-            existing_id=$(
-              gh api "repos/$REPO/issues/$PR_NUMBER/comments" \
-                --jq ".[] | select(.body | startswith(\"${MARKER}\")) | .id" \
-                2>/dev/null | head -1 || true
-            )
-            if [[ -n "$existing_id" ]]; then
+            local existing_id _raw _attempt
+            existing_id=""
+            local lookup_ok=false
+            for _attempt in 1 2 3; do
+              # Use an `if` conditional so `set -e` does not abort the script
+              # when `gh api` exits non-zero on a transient failure.
+              if _raw=$(
+                   gh api "repos/$REPO/issues/$PR_NUMBER/comments" \
+                     --jq ".[] | select(.body | startswith(\"${MARKER}\")) | .id" \
+                     2>/dev/null | head -1
+                 ); then
+                existing_id="$_raw"
+                lookup_ok=true
+                break
+              fi
+              echo "WARNING: delete-lookup attempt ${_attempt}/3 failed; retrying in 5 s …"
+              sleep 5
+            done
+
+            if [[ "$lookup_ok" == "false" ]]; then
+              echo "WARNING: Could not reliably list PR comments after 3 attempts — skipping delete to avoid accidental data loss."
+            elif [[ -n "$existing_id" ]]; then
               echo "CODEOWNERS is already in sync — removing stale bot comment #${existing_id} …"
               if gh api "repos/$REPO/issues/comments/${existing_id}" \
                    --method DELETE 2>/dev/null; then
@@ -553,14 +568,39 @@ jobs:
           > _remove the old entry instead of updating it._"
           fi
 
-          # Look for an existing bot comment to avoid spamming on every push
-          existing_id=$(
-            gh api "repos/$REPO/issues/$PR_NUMBER/comments" \
-              --jq ".[] | select(.body | startswith(\"$MARKER\")) | .id" \
-              2>/dev/null | head -1 || true
-          )
+          # Look for an existing bot comment to avoid spamming on every push.
+          # Retry up to 3 times with a short back-off to handle transient API
+          # failures (network blips, rate-limit bursts).  We track whether the
+          # lookup actually succeeded so we never fall through to POST when the
+          # list call itself errored — that would create a duplicate comment.
+          existing_id=""
+          lookup_ok=false
+          for _attempt in 1 2 3; do
+            # Use an `if` conditional so `set -e` does not abort the script
+            # when `gh api` exits non-zero on a transient failure.
+            # The gh api call succeeds (and _raw may be empty) when no bot
+            # comment exists yet — that is the normal "first run" case.
+            if _raw=$(
+                 gh api "repos/$REPO/issues/$PR_NUMBER/comments" \
+                   --jq ".[] | select(.body | startswith(\"$MARKER\")) | .id" \
+                   2>/dev/null | head -1
+               ); then
+              existing_id="$_raw"
+              lookup_ok=true
+              break
+            fi
+            echo "WARNING: comment-lookup attempt ${_attempt}/3 failed; retrying in 5 s …"
+            sleep 5
+          done
 
-          if [[ -n "$existing_id" ]]; then
+          if [[ "$lookup_ok" == "false" ]]; then
+            echo "WARNING: Could not reliably list PR comments after 3 attempts."
+            echo "Skipping POST to avoid creating a duplicate comment."
+            echo "Suggested CODEOWNERS updates (apply these manually before merging):"
+            for row in "${unique_suggestions[@]}"; do
+              echo "  $row"
+            done
+          elif [[ -n "$existing_id" ]]; then
             echo "Updating existing bot comment #$existing_id …"
             if ! gh api "repos/$REPO/issues/comments/$existing_id" \
               --method PATCH \
