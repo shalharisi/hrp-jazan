@@ -11,6 +11,7 @@ import usersRouter from "./users";
 import auditLogsRouter from "./audit-logs";
 import exportRouter from "./export";
 import downloadsRouter from "./downloads";
+import guideRouter from "./guide";
 import { requireAuth } from "../lib/auth";
 
 const router: IRouter = Router();
@@ -26,6 +27,7 @@ router.use(requireAuth);
 router.use(referenceRouter);
 router.use(dashboardRouter);
 router.use(alertsRouter);
+router.use(guideRouter);
 
 // Patient / pregnancy / appointment routers —
 // Each router enforces write-access and audit logging internally.
