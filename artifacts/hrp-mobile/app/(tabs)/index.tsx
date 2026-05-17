@@ -5,8 +5,9 @@ import {
   useListAlerts,
   useListAppointments,
 } from "@workspace/api-client-react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useFocusEffect } from "expo-router";
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -18,6 +19,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BANNER_KEY_PREFIX, useAuth } from "@/context/AuthContext";
 import { useI18n } from "@/context/I18nContext";
 import { useColors } from "@/hooks/useColors";
 
@@ -41,6 +43,7 @@ export default function DashboardScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL } = useI18n();
+  const { user } = useAuth();
 
   const summary = useGetDashboardSummary();
   const riskStats = useGetDashboardByRiskLevel();
@@ -52,6 +55,40 @@ export default function DashboardScreen() {
   const { refetch: refetchAppointments } = appointments;
 
   const [bannerDismissed, setBannerDismissed] = useState(false);
+
+  const bannerKey = user ? `${BANNER_KEY_PREFIX}${user.id}` : null;
+
+  useEffect(() => {
+    if (!bannerKey) return;
+    const load = async () => {
+      try {
+        let stored: string | null;
+        if (Platform.OS === "web") {
+          stored = localStorage.getItem(bannerKey);
+        } else {
+          stored = await AsyncStorage.getItem(bannerKey);
+        }
+        if (stored === "1") setBannerDismissed(true);
+      } catch {
+        // ignore
+      }
+    };
+    void load();
+  }, [bannerKey]);
+
+  const dismissBanner = async () => {
+    setBannerDismissed(true);
+    if (!bannerKey) return;
+    try {
+      if (Platform.OS === "web") {
+        localStorage.setItem(bannerKey, "1");
+      } else {
+        await AsyncStorage.setItem(bannerKey, "1");
+      }
+    } catch {
+      // ignore
+    }
+  };
 
   const topWebPadding = Platform.OS === "web" ? 67 : 0;
 
@@ -206,7 +243,7 @@ export default function DashboardScreen() {
               style={styles.urgentBannerDismiss}
               onPress={(e) => {
                 e.stopPropagation?.();
-                setBannerDismissed(true);
+                void dismissBanner();
               }}
               hitSlop={8}
               accessibilityLabel={t("general.cancel")}
