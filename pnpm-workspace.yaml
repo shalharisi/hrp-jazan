@@ -41,6 +41,7 @@ onlyBuiltDependencies:
   - esbuild
   - msw
   - puppeteer
+  - simple-git-hooks
   - unrs-resolver
 
 overrides:
