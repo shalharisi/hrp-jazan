@@ -16,6 +16,7 @@ const MAX_GUIDE_DURATION_S = 120;
 const GUIDE_DURATION_HISTORY_SIZE = 5;
 const GUIDE_BC_CHANNEL = "hrp-guide-generation";
 const GUIDE_LS_SIGNAL_KEY = "hrp-guide-generation-signal";
+const GUIDE_POSITION_KEY = "guide-last-section";
 
 function readDurationHistory(): number[] {
   try {
@@ -1130,9 +1131,11 @@ export default function UserGuide() {
   // is active) vs detected from the server's status response (startup auto-generation).
   const buttonGeneratingRef = useRef(false);
 
-  const GUIDE_SESSION_KEY = "guide-last-section";
   const [showJumpMenu, setShowJumpMenu] = useState(false);
   const jumpMenuRef = useRef<HTMLDivElement>(null);
+  const [hasSavedPosition, setHasSavedPosition] = useState(() => {
+    try { return !!localStorage.getItem(GUIDE_POSITION_KEY); } catch { return false; }
+  });
 
   const bcRef = useRef<BroadcastChannel | null>(null);
 
@@ -1196,7 +1199,7 @@ export default function UserGuide() {
   }, []);
 
   useEffect(() => {
-    const savedId = sessionStorage.getItem(GUIDE_SESSION_KEY);
+    const savedId = localStorage.getItem(GUIDE_POSITION_KEY);
     if (!savedId) return;
     // Pre-seed the active highlight so the dropdown shows the right section
     // immediately on page load/restore before the observer fires.
@@ -1216,7 +1219,8 @@ export default function UserGuide() {
         for (const entry of entries) {
           if (entry.isIntersecting) {
             visibleSections.add(entry.target.id);
-            sessionStorage.setItem(GUIDE_SESSION_KEY, entry.target.id);
+            localStorage.setItem(GUIDE_POSITION_KEY, entry.target.id);
+            setHasSavedPosition(true);
           } else {
             visibleSections.delete(entry.target.id);
           }
@@ -1764,10 +1768,25 @@ export default function UserGuide() {
 
       <div className="flex items-center justify-between gap-4 flex-wrap no-print">
         <h1 className="text-3xl font-bold">{t("nav.guide")}</h1>
-        <Button variant="outline" onClick={handlePrint} className="gap-2 shrink-0">
-          <Printer className="h-4 w-4" />
-          {lang === "ar" ? "طباعة الدليل" : "Print Guide"}
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          {hasSavedPosition && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                localStorage.removeItem(GUIDE_POSITION_KEY);
+                setHasSavedPosition(false);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+            >
+              {lang === "ar" ? "البدء من أول الدليل" : "Start from beginning"}
+            </Button>
+          )}
+          <Button variant="outline" onClick={handlePrint} className="gap-2">
+            <Printer className="h-4 w-4" />
+            {lang === "ar" ? "طباعة الدليل" : "Print Guide"}
+          </Button>
+        </div>
       </div>
 
       {/* Download card */}
