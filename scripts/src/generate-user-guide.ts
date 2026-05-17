@@ -1873,6 +1873,130 @@ function sanitizeScreenshotFilename(key: string): string {
 }
 
 // ── Screenshot capture via Puppeteer ──────────────────────────────────────────
+const DEMO_NATIONAL_ID = "9000000001";
+
+interface DemoSeedResult {
+  patientId: string;
+  pregnancyId: string;
+  cleanup: () => Promise<void>;
+}
+
+/**
+ * Seeds a demo patient + pregnancy for screenshot capture, then returns a
+ * cleanup function that removes the inserted rows. If the demo patient already
+ * exists (from a previous interrupted run), it is reused rather than duplicated.
+ */
+async function seedDemoData(): Promise<DemoSeedResult> {
+  // Lazily import DB modules so that non-screenshot runs (plain Word/PDF
+  // generation) do not require DATABASE_URL to be set.
+  const { db, patientsTable, pregnanciesTable, healthCentersTable } =
+    await import("@workspace/db");
+  const { eq } = await import("drizzle-orm");
+
+  // Find or create the demo patient
+  let patientId: number;
+  const [existing] = await db
+    .select({ id: patientsTable.id })
+    .from(patientsTable)
+    .where(eq(patientsTable.nationalId, DEMO_NATIONAL_ID))
+    .limit(1);
+
+  // Track whether this run actually created the rows (vs. reusing pre-existing ones)
+  let createdPatient = false;
+  let createdPregnancyId: number | null = null;
+
+  if (existing) {
+    patientId = existing.id;
+    console.log(`  ♻ مريضة تجريبية موجودة مسبقًا (id=${patientId})`);
+  } else {
+    // Pick the first available health center
+    const [hc] = await db
+      .select({ id: healthCentersTable.id })
+      .from(healthCentersTable)
+      .limit(1);
+    const healthCenterId = hc?.id ?? 1;
+
+    const [inserted] = await db
+      .insert(patientsTable)
+      .values({
+        nationalId: DEMO_NATIONAL_ID,
+        nameAr: "فاطمة علي الزهراني (تجريبي)",
+        nameEn: "Fatima Ali Al-Zahrani (demo)",
+        dateOfBirth: "1990-05-15",
+        phone: "0500000001",
+        healthCenterId,
+      })
+      .returning({ id: patientsTable.id });
+    patientId = inserted.id;
+    createdPatient = true;
+    console.log(`  ✓ مريضة تجريبية أُنشئت (id=${patientId})`);
+  }
+
+  // Find or create the demo pregnancy
+  let pregnancyId: number;
+  const [existingPreg] = await db
+    .select({ id: pregnanciesTable.id })
+    .from(pregnanciesTable)
+    .where(eq(pregnanciesTable.patientId, patientId))
+    .limit(1);
+
+  if (existingPreg) {
+    pregnancyId = existingPreg.id;
+    console.log(`  ♻ حالة حمل تجريبية موجودة مسبقًا (id=${pregnancyId})`);
+  } else {
+    const [insertedPreg] = await db
+      .insert(pregnanciesTable)
+      .values({
+        patientId,
+        visitDate: "2026-05-01",
+        lmpDate: "2026-01-15",
+        gestationalAge: 16,
+        riskLevel: "high",
+        riskFactors: ["previous_csection", "advanced_age"],
+        pregnancyRiskFactors: [],
+        medicalConditions: [],
+        isVteHighRisk: false,
+        enoxaparinPrescribed: false,
+        referralRecommendation: "follow_at_hospital",
+        appointmentDate: "2026-05-10",
+        compliance: "compliant",
+        workingDaysToAppointment: 2,
+        notes: "حالة تجريبية لأغراض التوثيق",
+      })
+      .returning({ id: pregnanciesTable.id });
+    pregnancyId = insertedPreg.id;
+    createdPregnancyId = pregnancyId;
+    console.log(`  ✓ حالة حمل تجريبية أُنشئت (id=${pregnancyId})`);
+  }
+
+  console.log(
+    `  📋 IDs للقطات الشاشة: patient=${patientId} pregnancy=${pregnancyId} ` +
+    `(أُنشئ في هذه الجلسة: مريضة=${createdPatient} حمل=${createdPregnancyId !== null})`
+  );
+
+  const cleanup = async (): Promise<void> => {
+    // Only delete rows that this run actually created, to avoid removing
+    // pre-existing data if the demo national ID happened to already exist.
+    if (createdPregnancyId !== null) {
+      await db
+        .delete(pregnanciesTable)
+        .where(eq(pregnanciesTable.id, createdPregnancyId));
+      console.log(`  🗑 حُذفت حالة الحمل التجريبية (id=${createdPregnancyId})`);
+    }
+    if (createdPatient) {
+      await db
+        .delete(patientsTable)
+        .where(eq(patientsTable.id, patientId));
+      console.log(`  🗑 حُذفت المريضة التجريبية (id=${patientId})`);
+    }
+    if (!createdPatient && createdPregnancyId === null) {
+      console.log(`  ℹ البيانات كانت موجودة مسبقًا – لم يُحذف شيء`);
+    }
+  };
+
+  return { patientId: String(patientId), pregnancyId: String(pregnancyId), cleanup };
+}
+
 async function captureScreenshots(
   baseUrl: string,
   outputDir?: string,
@@ -1901,6 +2025,8 @@ async function captureScreenshots(
 
   const page = await browser.newPage();
   await page.setViewport({ width: 1280, height: 800 });
+
+  let demoCleanup: (() => Promise<void>) | null = null;
 
   const snap = async (key: string): Promise<void> => {
     try {
@@ -1996,7 +2122,20 @@ async function captureScreenshots(
         if (allPreg?.data?.[0]?.id) firstPregnancyId = String(allPreg.data[0].id);
       }
     } catch {
-      // API fetch failed – continue without detail pages
+      // API fetch failed – fall through to seeding below
+    }
+
+    // ── Seed demo data if no real patient/pregnancy found ───────────────────
+    if (!firstPatientId || !firstPregnancyId) {
+      console.log("  📋 لم يُعثر على بيانات مرضى – جارٍ إنشاء بيانات تجريبية للقطات الشاشة...");
+      try {
+        const seeded = await seedDemoData();
+        if (!firstPatientId) firstPatientId = seeded.patientId;
+        if (!firstPregnancyId) firstPregnancyId = seeded.pregnancyId;
+        demoCleanup = seeded.cleanup;
+      } catch (seedErr) {
+        console.warn("  ⚠ فشل إنشاء البيانات التجريبية:", seedErr);
+      }
     }
 
     // ── Patient detail ──────────────────────────────────────────────────────
@@ -2137,6 +2276,13 @@ async function captureScreenshots(
     }
   } finally {
     await browser.close();
+    if (demoCleanup) {
+      try {
+        await demoCleanup();
+      } catch (cleanupErr) {
+        console.warn("  ⚠ فشل حذف البيانات التجريبية:", cleanupErr);
+      }
+    }
   }
 
   const captured = [...screenshots.values()].filter((b) => b.length > 0).length;
