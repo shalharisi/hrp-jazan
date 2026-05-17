@@ -30,8 +30,20 @@ interface AuthContextValue extends AuthState {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 const TOKEN_KEY = "hrp_access_token";
+const BANNER_KEY_PREFIX = "hrp_urgent_banner_dismissed_count_";
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 const API = `${BASE}/api`;
+
+function cleanUpStaleBannerKeys(currentUserId: number) {
+  const keysToRemove: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key?.startsWith(BANNER_KEY_PREFIX) && key !== `${BANNER_KEY_PREFIX}${currentUserId}`) {
+      keysToRemove.push(key);
+    }
+  }
+  keysToRemove.forEach(k => localStorage.removeItem(k));
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({
@@ -95,6 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const user = await fetchMe(token);
       if (user) {
+        cleanUpStaleBannerKeys(user.id);
         setState({ user, accessToken: token, loading: false });
       } else {
         // Token expired, try refresh
@@ -102,6 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (refreshed) {
           const newToken = localStorage.getItem(TOKEN_KEY)!;
           const freshUser = await fetchMe(newToken);
+          if (freshUser) cleanUpStaleBannerKeys(freshUser.id);
           setState({ user: freshUser, accessToken: newToken, loading: false });
         } else {
           localStorage.removeItem(TOKEN_KEY);
@@ -127,6 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const data = await res.json() as { accessToken: string; user: AuthUser };
     localStorage.setItem(TOKEN_KEY, data.accessToken);
+    cleanUpStaleBannerKeys(data.user.id);
     setState({ user: data.user, accessToken: data.accessToken, loading: false });
   }, []);
 
