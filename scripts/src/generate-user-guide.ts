@@ -25,13 +25,34 @@ import puppeteer from "puppeteer";
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { execFileSync } from "child_process";
+import { execFileSync, spawn } from "child_process";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WORKSPACE_ROOT = path.resolve(__dirname, "../../");
 const OUTPUT_PATH = path.resolve(WORKSPACE_ROOT, "دليل_المستخدم_منظومة_جازان.docx");
 const PDF_OUTPUT_PATH = path.resolve(WORKSPACE_ROOT, "دليل_المستخدم_منظومة_جازان.pdf");
 const LOGO_PATH = path.resolve(__dirname, "../../artifacts/hrp-tracker/src/assets/logo.jpg");
+
+// ── Open file with the OS default application ────────────────────────────────
+function openDocument(filePath: string): void {
+  let cmd: string;
+  let args: string[];
+  if (process.platform === "darwin") {
+    cmd = "open";
+    args = [filePath];
+  } else if (process.platform === "win32") {
+    cmd = "cmd";
+    args = ["/c", "start", "", filePath];
+  } else {
+    cmd = "xdg-open";
+    args = [filePath];
+  }
+  const child = spawn(cmd, args, { detached: true, stdio: "ignore" });
+  child.on("error", (err) => {
+    console.warn(`⚠  تعذّر فتح الملف تلقائياً (${cmd}): ${err.message}`);
+  });
+  child.unref();
+}
 
 // ── Color palette ────────────────────────────────────────────────────────────
 const GREEN_LIGHT = "E8F5EE";
@@ -2860,6 +2881,7 @@ if (_isMain)(async () => {
   const args = process.argv.slice(2);
 
   const generatePdf = !args.includes("--no-pdf");
+  const openAfterBuild = args.includes("--open");
   const useScreenshots = args.includes("--screenshots");
   const screenshotsOnly = args.includes("--screenshots-only");
   const baseUrl =
@@ -2949,4 +2971,10 @@ if (_isMain)(async () => {
         : `PDF ⏭️ disabled (--no-pdf)`;
   const elapsedSec = Math.round((Date.now() - startTime) / 1000);
   console.log(`\nالملخص: Word ✅ ${sizeKB} KB (${wordFile})  ${pdfSummary}  (${elapsedSec}s)`);
+
+  if (openAfterBuild) {
+    const fileToOpen = generatePdf && pdfStatus === "produced" ? PDF_OUTPUT_PATH : OUTPUT_PATH;
+    console.log(`\n📂 فتح الملف: ${path.basename(fileToOpen)}`);
+    openDocument(fileToOpen);
+  }
 })();

@@ -10,6 +10,7 @@
     "fix-health-centers": "tsx ./src/fix-health-centers.ts",
     "delete-test-data": "tsx ./src/delete-test-data.ts",
     "generate-guide": "tsx ./src/generate-user-guide.ts",
+    "generate-guide:open": "tsx ./src/generate-user-guide.ts --open",
     "check:codegen": "tsx ./src/check-codegen.ts",
     "watch:codegen": "tsx ./src/watch-codegen.ts",
     "generate-guide-with-screenshots": "tsx ./src/generate-user-guide.ts --screenshots --output-screenshots-dir=screenshots",
