@@ -70,9 +70,9 @@ export default function AppointmentsScreen() {
 
   const params = useLocalSearchParams<{ filter?: string }>();
 
-  const [dateFilter, setDateFilter] = useState<DateFilter>(initialDateFilter);
+  const [dateFilter, setDateFilter] = useState<DateFilter>("today");
   const [attendanceFilter, setAttendanceFilter] =
-    useState<AttendanceFilter>(initialAttendanceFilter);
+    useState<AttendanceFilter>("all");
   const [riskFilter, setRiskFilter] = useState<RiskFilter>("all");
 
   useEffect(() => {

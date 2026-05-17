@@ -6,7 +6,7 @@ import {
   useListAppointments,
 } from "@workspace/api-client-react";
 import { router } from "expo-router";
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -28,6 +28,15 @@ const RISK_COLORS: Record<string, string> = {
   critical: "#ef4444",
 };
 
+const URGENT_THRESHOLD = 5;
+
+function localDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 export default function DashboardScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -38,7 +47,20 @@ export default function DashboardScreen() {
   const alerts = useListAlerts();
   const appointments = useListAppointments();
 
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+
   const topWebPadding = Platform.OS === "web" ? 67 : 0;
+
+  const today = localDateStr(new Date());
+
+  const needsActionCount = useMemo(() => {
+    const all = appointments.data ?? [];
+    return all.filter(
+      (a) => a.appointmentDate.slice(0, 10) < today && a.attended === null
+    ).length;
+  }, [appointments.data, today]);
+
+  const showUrgentBanner = !bannerDismissed && needsActionCount > URGENT_THRESHOLD;
 
   const isLoading = summary.isLoading;
   const refetch = () => {
@@ -149,6 +171,49 @@ export default function DashboardScreen() {
           <Ionicons name="pulse" size={20} color={colors.primary} />
         </View>
       </View>
+
+      {showUrgentBanner && (
+        <Pressable
+          style={[styles.urgentBanner, isRTL && styles.rowReverse]}
+          onPress={() =>
+            router.push({
+              pathname: "/(tabs)/appointments",
+              params: { filter: "needs_action" },
+            })
+          }
+          accessibilityRole="button"
+        >
+          <View style={[styles.urgentBannerLeft, isRTL && styles.rowReverse]}>
+            <Ionicons name="alert-circle" size={22} color="#c2410c" />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.urgentBannerCount, isRTL && styles.rtlText]}>
+                {needsActionCount} {t("appointments.needsAction")}
+              </Text>
+              <Text style={[styles.urgentBannerSub, isRTL && styles.rtlText]}>
+                {t("appointments.needsActionBanner")}
+              </Text>
+            </View>
+          </View>
+          <View style={[styles.urgentBannerActions, isRTL && styles.rowReverse]}>
+            <Ionicons
+              name={isRTL ? "chevron-back" : "chevron-forward"}
+              size={16}
+              color="#c2410c"
+            />
+            <Pressable
+              style={styles.urgentBannerDismiss}
+              onPress={(e) => {
+                e.stopPropagation?.();
+                setBannerDismissed(true);
+              }}
+              hitSlop={8}
+              accessibilityLabel={t("general.cancel")}
+            >
+              <Ionicons name="close" size={16} color="#9a3412" />
+            </Pressable>
+          </View>
+        </Pressable>
+      )}
 
       {isLoading && !s ? (
         <View style={styles.loadingWrap}>
@@ -479,6 +544,44 @@ function makeStyles(colors: ReturnType<typeof useColors>, isRTL: boolean) {
       fontFamily: "Tajawal_400Regular",
       color: colors.mutedForeground,
       marginTop: 2,
+    },
+    urgentBanner: {
+      flexDirection: isRTL ? "row-reverse" : "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      backgroundColor: "#fff7ed",
+      borderWidth: 1,
+      borderColor: "#fed7aa",
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      marginBottom: 16,
+      gap: 8,
+    },
+    urgentBannerLeft: {
+      flexDirection: isRTL ? "row-reverse" : "row",
+      alignItems: "center",
+      gap: 10,
+      flex: 1,
+    },
+    urgentBannerCount: {
+      fontSize: 14,
+      fontFamily: "Tajawal_700Bold",
+      color: "#c2410c",
+    },
+    urgentBannerSub: {
+      fontSize: 12,
+      fontFamily: "Tajawal_400Regular",
+      color: "#9a3412",
+      marginTop: 1,
+    },
+    urgentBannerActions: {
+      flexDirection: isRTL ? "row-reverse" : "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    urgentBannerDismiss: {
+      padding: 2,
     },
   });
 }
