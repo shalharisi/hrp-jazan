@@ -20,6 +20,16 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     document.documentElement.lang = lang;
   }, [lang]);
 
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "app-lang" && (e.newValue === "ar" || e.newValue === "en")) {
+        setLangState(e.newValue);
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
   const setLang = (newLang: Language) => {
     setLangState(newLang);
     localStorage.setItem("app-lang", newLang);
