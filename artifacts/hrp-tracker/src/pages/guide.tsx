@@ -10,7 +10,21 @@ import { type TranslationKey } from "@/i18n";
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 const API = `${BASE}/api`;
 
-const EXPECTED_DURATION_S = 20;
+const GUIDE_DURATION_KEY = "guideExpectedDuration";
+const FALLBACK_DURATION_S = 20;
+
+function getExpectedDuration(): number {
+  try {
+    const stored = localStorage.getItem(GUIDE_DURATION_KEY);
+    if (stored) {
+      const n = Number(stored);
+      if (Number.isFinite(n) && n > 0) return n;
+    }
+  } catch {
+    // ignore
+  }
+  return FALLBACK_DURATION_S;
+}
 
 type FileStatus = { docx: boolean; pdf: boolean; docxMtime?: string | null; pdfMtime?: string | null; generating?: boolean } | null;
 
@@ -1130,7 +1144,7 @@ export default function UserGuide() {
     const interval = setInterval(() => {
       setElapsedSeconds((s) => {
         const next = (s ?? 0) + 1;
-        setProgressPct(Math.min(90, (next / EXPECTED_DURATION_S) * 90));
+        setProgressPct(Math.min(90, (next / getExpectedDuration()) * 90));
         return next;
       });
     }, 1000);
@@ -1153,8 +1167,14 @@ export default function UserGuide() {
         Math.max(1, Math.round((Date.now() - (startTimeRef.current ?? Date.now())) / 1000));
 
       const finishSuccess = async () => {
-        setElapsedSeconds(computeElapsed());
+        const elapsed = computeElapsed();
+        setElapsedSeconds(elapsed);
         setProgressPct(100);
+        try {
+          localStorage.setItem(GUIDE_DURATION_KEY, String(elapsed));
+        } catch {
+          // ignore
+        }
         await new Promise<void>((resolve) => setTimeout(resolve, 600));
         setGenerateResult("success");
         fetchStatus();
@@ -1369,7 +1389,7 @@ export default function UserGuide() {
                         <span>{t("guide.elapsed").replace("{n}", String(elapsedSeconds))}</span>
                       )}
                       {elapsedSeconds !== null && progressPct < 100 && (
-                        <span>{t("guide.remaining").replace("{n}", String(Math.max(0, EXPECTED_DURATION_S - elapsedSeconds)))}</span>
+                        <span>{t("guide.remaining").replace("{n}", String(Math.max(0, getExpectedDuration() - elapsedSeconds)))}</span>
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground">
