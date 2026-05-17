@@ -1119,6 +1119,7 @@ export default function UserGuide() {
   const [currentStep, setCurrentStep] = useState<string | null>(null);
   const [lastDuration, setLastDuration] = useState<number | null>(() => getLastStoredDuration());
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [activeSection, setActiveSection] = useState<string | null>(null);
   // Tracks whether the current generating state was triggered by the button (SSE stream
   // is active) vs detected from the server's status response (startup auto-generation).
   const buttonGeneratingRef = useRef(false);
@@ -1126,7 +1127,6 @@ export default function UserGuide() {
   const GUIDE_SESSION_KEY = "guide-last-section";
   const [showJumpMenu, setShowJumpMenu] = useState(false);
   const jumpMenuRef = useRef<HTMLDivElement>(null);
-  const [activeSection, setActiveSection] = useState<string | null>(null);
 
   const bcRef = useRef<BroadcastChannel | null>(null);
 
@@ -1906,7 +1906,12 @@ export default function UserGuide() {
               <li key={section.id}>
                 <button
                   onClick={() => scrollTo(section.id)}
-                  className="font-semibold text-base text-primary hover:underline text-start w-full"
+                  className={[
+                    "font-semibold text-base text-start w-full transition-colors",
+                    activeSection === section.id
+                      ? "text-emerald-700 underline underline-offset-2 font-bold"
+                      : "text-primary hover:underline",
+                  ].join(" ")}
                 >
                   {lang === "ar" ? section.ar : section.en}
                 </button>
