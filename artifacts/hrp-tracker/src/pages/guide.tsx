@@ -1599,6 +1599,140 @@ export default function UserGuide() {
         </ol>
       </div>
 
+      {/* Print-only quick-reference summary — one full page after the index */}
+      <div className="print-only guide-print-summary" aria-hidden="true">
+        <div className="guide-print-summary-title">
+          {lang === "ar" ? "بطاقة المرجع السريع" : "Quick-Reference Summary"}
+        </div>
+
+        {/* Risk levels */}
+        <div className="guide-print-summary-section">
+          <div className="guide-print-summary-section-title">
+            {lang === "ar" ? "مستويات تصنيف الخطورة" : "Risk Classification Levels"}
+          </div>
+          <table className="guide-print-summary-table">
+            <thead>
+              <tr>
+                <th>{lang === "ar" ? "المستوى" : "Level"}</th>
+                <th>{lang === "ar" ? "التعريف والإجراء المطلوب" : "Definition & Required Action"}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="guide-print-summary-level guide-print-summary-low">
+                  {lang === "ar" ? "منخفض" : "Low"}
+                </td>
+                <td>
+                  {lang === "ar"
+                    ? "لا توجد عوامل خطر مؤثرة – متابعة روتينية في المركز الصحي"
+                    : "No significant risk factors — routine follow-up at the health center"}
+                </td>
+              </tr>
+              <tr>
+                <td className="guide-print-summary-level guide-print-summary-medium">
+                  {lang === "ar" ? "متوسط" : "Medium"}
+                </td>
+                <td>
+                  {lang === "ar"
+                    ? "عوامل خطر محدودة – متابعة مكثفة في المركز الصحي"
+                    : "Limited risk factors — intensive follow-up at the health center"}
+                </td>
+              </tr>
+              <tr>
+                <td className="guide-print-summary-level guide-print-summary-high">
+                  {lang === "ar" ? "عالٍ" : "High"}
+                </td>
+                <td>
+                  {lang === "ar"
+                    ? "عوامل خطر متعددة أو حادة – إحالة للمستشفى"
+                    : "Multiple or severe risk factors — referral to hospital"}
+                </td>
+              </tr>
+              <tr>
+                <td className="guide-print-summary-level guide-print-summary-critical">
+                  {lang === "ar" ? "حرج" : "Critical"}
+                </td>
+                <td>
+                  {lang === "ar"
+                    ? "حالة طارئة تستدعي تدخلًا فوريًا – إحالة لـ KFCH أو أقرب مستشفى"
+                    : "Emergency case requiring immediate intervention — transfer to KFCH or nearest hospital"}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Compliance threshold */}
+        <div className="guide-print-summary-section">
+          <div className="guide-print-summary-section-title">
+            {lang === "ar" ? "معيار الالتزام بالمواعيد" : "Booking Compliance Threshold"}
+          </div>
+          <table className="guide-print-summary-table">
+            <tbody>
+              <tr>
+                <td className="guide-print-summary-label">
+                  ✅ {lang === "ar" ? "ملتزم" : "Compliant"}
+                </td>
+                <td>
+                  {lang === "ar"
+                    ? "حُجز الموعد خلال ≤ 2 يوم عمل من تاريخ الزيارة (الجمعة والسبت مستثنيان)"
+                    : "Appointment booked within ≤ 2 working days of the visit date (Fri & Sat excluded)"}
+                </td>
+              </tr>
+              <tr>
+                <td className="guide-print-summary-label">
+                  ❌ {lang === "ar" ? "غير ملتزم" : "Non-compliant"}
+                </td>
+                <td>
+                  {lang === "ar"
+                    ? "تأخر الحجز أكثر من يومَي عمل"
+                    : "Appointment booked more than 2 working days after the visit date"}
+                </td>
+              </tr>
+              <tr>
+                <td className="guide-print-summary-label">
+                  ⏳ {lang === "ar" ? "معلق" : "Pending"}
+                </td>
+                <td>
+                  {lang === "ar"
+                    ? "لم يُحجز موعد بعد"
+                    : "No appointment booked yet"}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Key-steps checklist */}
+        <div className="guide-print-summary-section">
+          <div className="guide-print-summary-section-title">
+            {lang === "ar" ? "قائمة الخطوات الأساسية" : "Key-Steps Checklist"}
+          </div>
+          <ol className="guide-print-summary-checklist">
+            {(lang === "ar"
+              ? [
+                  "سجِّلي المريضة برقم الهوية الوطنية (10 أرقام) – لكل مريضة سجل واحد فقط",
+                  "أضيفي حالة الحمل وحدِّدي مستوى الخطورة وعوامل الخطر المنطبقة",
+                  "احجزي موعدًا خلال يومَي عمل من تاريخ الزيارة (الجمعة والسبت لا تُحسبان)",
+                  "سجِّلي الحضور وأي ملاحظات طبية بعد الزيارة",
+                  "راجعي التنبيهات يوميًا: حالات VTE بدون إينوكساباريـن، وحالات حرجة بدون مواعيد",
+                  "صدِّري تقارير CSV دورية ومراجعة لوحة المعلومات لمتابعة الأداء",
+                ]
+              : [
+                  "Register the patient with her National ID (10 digits) — one record per patient",
+                  "Add the pregnancy case, set the risk level and applicable risk factors",
+                  "Book an appointment within 2 working days of the visit date (Fri & Sat excluded)",
+                  "Record attendance and any clinical notes after the visit",
+                  "Check alerts daily: VTE cases without Enoxaparin, critical cases without appointments",
+                  "Export periodic CSV reports and review the dashboard to track performance",
+                ]
+            ).map((step, i) => (
+              <li key={i}>{step}</li>
+            ))}
+          </ol>
+        </div>
+      </div>
+
       <div className="flex items-center justify-between gap-4 flex-wrap no-print">
         <h1 className="text-3xl font-bold">{t("nav.guide")}</h1>
         <Button variant="outline" onClick={handlePrint} className="gap-2 shrink-0">

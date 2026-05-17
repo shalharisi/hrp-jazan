@@ -366,6 +366,102 @@
     margin-inline-end: 4pt;
   }
 
+  /* Print-only quick-reference summary cheat-sheet */
+  .guide-print-summary {
+    break-before: page;
+    break-after: page;
+    padding: 14pt;
+    border: 2px solid #005a2e;
+    background: #fff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .guide-print-summary-title {
+    font-size: 13pt;
+    font-weight: bold;
+    color: #005a2e !important;
+    text-align: center;
+    margin-bottom: 10pt;
+    padding-bottom: 6pt;
+    border-bottom: 2px solid #005a2e;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .guide-print-summary-section {
+    margin-bottom: 10pt;
+  }
+  .guide-print-summary-section-title {
+    font-size: 10pt;
+    font-weight: bold;
+    color: #005a2e !important;
+    background: #e8f5e9 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    padding: 3pt 6pt;
+    margin-bottom: 4pt;
+  }
+  .guide-print-summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9pt;
+  }
+  .guide-print-summary-table td,
+  .guide-print-summary-table th {
+    border: 1px solid #ccc;
+    padding: 3pt 6pt;
+    vertical-align: top;
+  }
+  .guide-print-summary-table th {
+    background: #005a2e !important;
+    color: white !important;
+    font-weight: bold;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .guide-print-summary-level {
+    font-weight: bold;
+    white-space: nowrap;
+    width: 55pt;
+  }
+  .guide-print-summary-low {
+    color: #166534 !important;
+    background: #dcfce7 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .guide-print-summary-medium {
+    color: #854d0e !important;
+    background: #fef9c3 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .guide-print-summary-high {
+    color: #9a3412 !important;
+    background: #ffedd5 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .guide-print-summary-critical {
+    color: #991b1b !important;
+    background: #fee2e2 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .guide-print-summary-label {
+    font-weight: bold;
+    white-space: nowrap;
+    width: 70pt;
+  }
+  .guide-print-summary-checklist {
+    margin: 0;
+    padding-inline-start: 16pt;
+    font-size: 9pt;
+  }
+  .guide-print-summary-checklist li {
+    padding: 2pt 0;
+    color: #111 !important;
+  }
+
   /* Alternating table rows */
   .guide-page .bg-emerald-50 {
     background: #f0faf4 !important;
