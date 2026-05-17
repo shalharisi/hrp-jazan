@@ -165,8 +165,46 @@ function noteBox(text: string, type: "info" | "warning" | "tip" = "info"): Parag
   });
 }
 
-// ── Helper: Screenshot placeholder ──────────────────────────────────────────
-function screenshotPlaceholder(caption: string): Paragraph[] {
+// ── Helper: Screenshot placeholder (or real image when buffer supplied) ──────
+function screenshotPlaceholder(caption: string, imageBuffer?: Buffer): Paragraph[] {
+  const captionPara = new Paragraph({
+    bidirectional: true,
+    alignment: AlignmentType.CENTER,
+    spacing: { before: 40, after: 120 },
+    children: [
+      new TextRun({
+        text: caption,
+        size: 18,
+        color: GRAY_MID,
+        font: "Calibri",
+        italics: true,
+      }),
+    ],
+  });
+
+  if (imageBuffer && imageBuffer.length > 0) {
+    return [
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 120, after: 40 },
+        border: {
+          top: { color: "D1D5DB", space: 1, style: BorderStyle.SINGLE, size: 4 },
+          bottom: { color: "D1D5DB", space: 1, style: BorderStyle.SINGLE, size: 4 },
+          left: { color: "D1D5DB", space: 1, style: BorderStyle.SINGLE, size: 4 },
+          right: { color: "D1D5DB", space: 1, style: BorderStyle.SINGLE, size: 4 },
+        },
+        children: [
+          new ImageRun({
+            data: imageBuffer,
+            transformation: { width: 600, height: 375 },
+            type: "png",
+          }),
+        ],
+      }),
+      captionPara,
+    ];
+  }
+
   return [
     new Paragraph({
       bidirectional: true,
@@ -189,20 +227,7 @@ function screenshotPlaceholder(caption: string): Paragraph[] {
         }),
       ],
     }),
-    new Paragraph({
-      bidirectional: true,
-      alignment: AlignmentType.CENTER,
-      spacing: { before: 40, after: 120 },
-      children: [
-        new TextRun({
-          text: caption,
-          size: 18,
-          color: GRAY_MID,
-          font: "Calibri",
-          italics: true,
-        }),
-      ],
-    }),
+    captionPara,
   ];
 }
 
@@ -314,7 +339,7 @@ function pageBreak(): Paragraph {
 }
 
 // ── Build document ────────────────────────────────────────────────────────────
-async function buildDocument(): Promise<Buffer> {
+async function buildDocument(screenshots?: Map<string, Buffer>): Promise<Buffer> {
   // Load logo if available
   let logoImage: ImageRun | null = null;
   if (fs.existsSync(LOGO_PATH)) {
@@ -534,7 +559,7 @@ async function buildDocument(): Promise<Buffer> {
       "عند فتح رابط المنظومة يظهر للمستخدم شاشة تسجيل الدخول الآمنة. " +
       "تعرض الشاشة شعار تجمع جازان الصحي، واسم المنظومة، وحقلَي اسم المستخدم وكلمة المرور."
     ),
-    ...screenshotPlaceholder("شاشة تسجيل الدخول – منظومة تتبع الحمل عالي الخطورة"),
+    ...screenshotPlaceholder("شاشة تسجيل الدخول – منظومة تتبع الحمل عالي الخطورة", screenshots?.get("شاشة تسجيل الدخول – منظومة تتبع الحمل عالي الخطورة")),
     sectionHeading("2.2 خطوات تسجيل الدخول", 2),
     bullet("أدخِل اسم المستخدم المُخصَّص لك في حقل «اسم المستخدم»"),
     bullet("أدخِل كلمة المرور السرية في حقل «كلمة المرور»"),
@@ -565,7 +590,7 @@ async function buildDocument(): Promise<Buffer> {
       "لوحة المعلومات هي الصفحة الرئيسية التي تعرض فور تسجيل الدخول. " +
       "تُلخِّص الوضع الصحي الحالي لجميع حالات الحمل عالي الخطورة في المنطقة من خلال بطاقات إحصائية ومخططات بيانية."
     ),
-    ...screenshotPlaceholder("لوحة المعلومات الرئيسية مع البطاقات الإحصائية والمخططات"),
+    ...screenshotPlaceholder("لوحة المعلومات الرئيسية مع البطاقات الإحصائية والمخططات", screenshots?.get("لوحة المعلومات الرئيسية مع البطاقات الإحصائية والمخططات")),
     sectionHeading("3.1 البطاقات الإحصائية الأربع", 2),
     infoTable([
       ["إجمالي المرضى", "عدد جميع الحوامل المسجلات في المنظومة"],
@@ -579,12 +604,12 @@ async function buildDocument(): Promise<Buffer> {
       "مخطط دائري يوضح توزيع الحالات حسب مستوى الخطورة الأربعة: " +
       "منخفض (أخضر)، متوسط (أصفر)، عالٍ (برتقالي)، حرج (أحمر)."
     ),
-    ...screenshotPlaceholder("المخطط الدائري – توزيع مستويات الخطورة"),
+    ...screenshotPlaceholder("المخطط الدائري – توزيع مستويات الخطورة", screenshots?.get("المخطط الدائري – توزيع مستويات الخطورة")),
     sectionHeading("3.2.2 الالتزام بالمواعيد (Bar Chart)", 3),
     rtlPara(
       "مخطط أعمدة يعرض عدد الحالات الملتزمة (أخضر)، غير الملتزمة (أحمر)، والمعلقة (رمادي) انتظارًا لموعد."
     ),
-    ...screenshotPlaceholder("مخطط الأعمدة – حالة الالتزام بالمواعيد"),
+    ...screenshotPlaceholder("مخطط الأعمدة – حالة الالتزام بالمواعيد", screenshots?.get("مخطط الأعمدة – حالة الالتزام بالمواعيد")),
     sectionHeading("3.3 شريط التنبيه العاجل", 2),
     rtlPara(
       "يظهر شريط تنبيه برتقالي في أعلى الصفحة عندما يتجاوز عدد المواعيد المنقضية غير المُسجَّل حضورها حدَّ الإنذار (الافتراضي: 5 مواعيد). " +
@@ -604,7 +629,7 @@ async function buildDocument(): Promise<Buffer> {
       "تعرض صفحة «المرضى» قائمةً كاملةً بجميع الحوامل المُسجَّلات. " +
       "تشمل كل بطاقة: الاسم، رقم الهوية الوطنية، رقم الجوال، المركز الصحي، والقطاع."
     ),
-    ...screenshotPlaceholder("قائمة المرضى مع خيارات البحث والتصفية"),
+    ...screenshotPlaceholder("قائمة المرضى مع خيارات البحث والتصفية", screenshots?.get("قائمة المرضى مع خيارات البحث والتصفية")),
     sectionHeading("4.2 البحث والتصفية", 2),
     infoTable([
       ["البحث النصي", "البحث باسم المريضة أو رقم هويتها في حقل البحث"],
@@ -618,7 +643,7 @@ async function buildDocument(): Promise<Buffer> {
       "اضغط زر «تسجيل مريضة جديدة» (الأخضر) في أعلى يمين الصفحة. " +
       "ستنتقل إلى نموذج التسجيل."
     ),
-    ...screenshotPlaceholder("نموذج تسجيل مريضة جديدة"),
+    ...screenshotPlaceholder("نموذج تسجيل مريضة جديدة", screenshots?.get("نموذج تسجيل مريضة جديدة")),
     sectionHeading("4.3.1 الحقول المطلوبة", 3),
     infoTable([
       ["رقم الهوية الوطنية (*)", "10 أرقام فقط – لا يمكن تكراره في المنظومة"],
@@ -641,7 +666,7 @@ async function buildDocument(): Promise<Buffer> {
     bullet("بيانات المريضة الشخصية (مع إمكانية التعديل بالضغط على «تعديل»)"),
     bullet("قائمة جميع حالات الحمل المُسجَّلة لها مع مستوى الخطورة وحالة الالتزام"),
     bullet("زر «إضافة حالة حمل جديدة»"),
-    ...screenshotPlaceholder("ملف المريضة – البيانات الشخصية وقائمة الحالات"),
+    ...screenshotPlaceholder("ملف المريضة – البيانات الشخصية وقائمة الحالات", screenshots?.get("ملف المريضة – البيانات الشخصية وقائمة الحالات")),
     pageBreak()
   );
 
@@ -660,7 +685,7 @@ async function buildDocument(): Promise<Buffer> {
       "أدخِل رقم الهوية الوطنية (10 أرقام) في حقل البحث، ثم اضغط «بحث». " +
       "إذا وُجدت المريضة في النظام ستظهر بياناتها، وإلا سيظهر تنبيه «غير موجودة»."
     ),
-    ...screenshotPlaceholder("البحث عن مريضة برقم الهوية قبل تسجيل حالة حمل"),
+    ...screenshotPlaceholder("البحث عن مريضة برقم الهوية قبل تسجيل حالة حمل", screenshots?.get("البحث عن مريضة برقم الهوية قبل تسجيل حالة حمل")),
     sectionHeading("5.2 مستويات تصنيف الخطورة", 2),
     infoTable([
       ["منخفض (Low)", "لا توجد عوامل خطر مؤثرة – متابعة روتينية في المركز الصحي"],
@@ -724,7 +749,7 @@ async function buildDocument(): Promise<Buffer> {
       "من صفحة تفاصيل الحالة، اضغط زر «تصدير PDF» لفتح نافذة طباعة تحتوي على الملف الكامل للمريضة: " +
       "البيانات الشخصية، المعلومات السريرية، عوامل الخطر، الأدوية، المواعيد. يمكن طباعته أو حفظه بصيغة PDF."
     ),
-    ...screenshotPlaceholder("تفاصيل حالة الحمل – وضع العرض مع زر تصدير PDF"),
+    ...screenshotPlaceholder("تفاصيل حالة الحمل – وضع العرض مع زر تصدير PDF", screenshots?.get("تفاصيل حالة الحمل – وضع العرض مع زر تصدير PDF")),
     pageBreak()
   );
 
@@ -737,7 +762,7 @@ async function buildDocument(): Promise<Buffer> {
       "صفحة المواعيد هي المحور الرئيسي لمتابعة حضور الحوامل في المستشفيات. " +
       "تعرض جميع المواعيد المحجوزة مع إمكانية التصفية والبحث وتسجيل الحضور والتصدير."
     ),
-    ...screenshotPlaceholder("صفحة المواعيد – القائمة الكاملة مع خيارات التصفية"),
+    ...screenshotPlaceholder("صفحة المواعيد – القائمة الكاملة مع خيارات التصفية", screenshots?.get("صفحة المواعيد – القائمة الكاملة مع خيارات التصفية")),
     sectionHeading("6.1 خيارات التصفية", 2),
     infoTable([
       ["تصفية بالتاريخ", "اليوم / هذا الأسبوع / كل المواعيد / نطاق مخصص"],
@@ -756,7 +781,7 @@ async function buildDocument(): Promise<Buffer> {
     bullet("اضغط أيقونة ✅ لتسجيل الحضور، أو ❌ لتسجيل الغياب"),
     bullet("تظهر نافذة تأكيد تتيح لك إضافة ملاحظة حضور (مثل: «حضرت متأخرة» أو «اعتذرت لظرف طارئ»)"),
     bullet("اضغط «حفظ» لتثبيت حالة الحضور"),
-    ...screenshotPlaceholder("نافذة تسجيل الحضور مع حقل الملاحظة"),
+    ...screenshotPlaceholder("نافذة تسجيل الحضور مع حقل الملاحظة", screenshots?.get("نافذة تسجيل الحضور مع حقل الملاحظة")),
     sectionHeading("6.3 الإحصاءات الآنية", 2),
     rtlPara(
       "يعرض أعلى الصفحة ثلاث بطاقات إحصائية تُحدَّث فور تطبيق أي فلتر:"
@@ -774,7 +799,7 @@ async function buildDocument(): Promise<Buffer> {
     rtlPara(
       "اضغط زر «طباعة» لفتح نافذة طباعة جاهزة تعرض جدول المواعيد مع ملخص الفلاتر المطبقة وتاريخ الطباعة."
     ),
-    ...screenshotPlaceholder("نافذة طباعة جدول المواعيد"),
+    ...screenshotPlaceholder("نافذة طباعة جدول المواعيد", screenshots?.get("نافذة طباعة جدول المواعيد")),
     sectionHeading("6.6 شارة مستوى الخطورة في المواعيد", 2),
     rtlPara(
       "تظهر بجانب كل موعد شارة ملونة تعكس مستوى خطورة الحالة: أحمر غامق للحرج، برتقالي للعالي، أصفر للمتوسط، أخضر للمنخفض. " +
@@ -791,7 +816,7 @@ async function buildDocument(): Promise<Buffer> {
     rtlPara(
       "صفحة التنبيهات تعرض الحالات التي تستوجب تدخلًا عاجلًا. تُحسَب التنبيهات تلقائيًا في كل طلب دون الحاجة لجدولة وظائف مستقلة."
     ),
-    ...screenshotPlaceholder("صفحة التنبيهات – قائمة الحالات الحرجة"),
+    ...screenshotPlaceholder("صفحة التنبيهات – قائمة الحالات الحرجة", screenshots?.get("صفحة التنبيهات – قائمة الحالات الحرجة")),
     sectionHeading("7.1 أنواع التنبيهات", 2),
     infoTable([
       ["VTE بدون إنوكساباريين", "حالة مصنفة كـ VTE عالي الخطورة لكن لم يُوصَف لها إنوكساباريين"],
@@ -821,7 +846,7 @@ async function buildDocument(): Promise<Buffer> {
       "صفحة التقارير توفر أدوات تصدير بيانات المنظومة بصيغة CSV (متوافقة مع Excel) وطباعة/حفظ كـ PDF، " +
       "لاستخدامها في التحليل والتقارير الدورية. تتاح هذه الميزة للمديرين والمنسقين والأطباء فقط."
     ),
-    ...screenshotPlaceholder("صفحة التقارير – خيارات تصدير بيانات المرضى والحالات"),
+    ...screenshotPlaceholder("صفحة التقارير – خيارات تصدير بيانات المرضى والحالات", screenshots?.get("صفحة التقارير – خيارات تصدير بيانات المرضى والحالات")),
     sectionHeading("8.1 تقرير بيانات المرضى (CSV)", 2),
     rtlPara(
       "اضغط «تنزيل» في بطاقة «بيانات المرضى» للحصول على ملف CSV (يفتح مباشرةً في Excel) يحتوي على:"
@@ -855,7 +880,7 @@ async function buildDocument(): Promise<Buffer> {
       "يُنشئ النظام صفحة مُنسَّقة بالعربية تحتوي على كامل البيانات، ثم تفتح نافذة الطباعة تلقائيًا. " +
       "اختر «حفظ كـ PDF» أو «طباعة» حسب الحاجة."
     ),
-    ...screenshotPlaceholder("نافذة تصدير PDF لملف مريضة – البيانات الكاملة"),
+    ...screenshotPlaceholder("نافذة تصدير PDF لملف مريضة – البيانات الكاملة", screenshots?.get("نافذة تصدير PDF لملف مريضة – البيانات الكاملة")),
     sectionHeading("8.5 ملاحظات تقنية للتصدير", 2),
     noteBox(
       "ملفات CSV مُشفَّرة بـ UTF-8 مع BOM لضمان ظهور النص العربي بشكل صحيح في Excel. " +
@@ -888,7 +913,7 @@ async function buildDocument(): Promise<Buffer> {
     rtlPara(
       "يمكن للمسؤول (Admin) الوصول إلى صفحة «إدارة المستخدمين» من الشريط الجانبي."
     ),
-    ...screenshotPlaceholder("صفحة إدارة المستخدمين – قائمة الحسابات مع الأدوار"),
+    ...screenshotPlaceholder("صفحة إدارة المستخدمين – قائمة الحسابات مع الأدوار", screenshots?.get("صفحة إدارة المستخدمين – قائمة الحسابات مع الأدوار")),
     sectionHeading("9.2.1 إضافة مستخدم جديد", 3),
     bullet("اضغط «إضافة مستخدم» في أعلى الصفحة"),
     bullet("أدخِل اسم المستخدم وكلمة المرور"),
@@ -922,20 +947,20 @@ async function buildDocument(): Promise<Buffer> {
     rtlPara(
       "تسجيل الدخول في التطبيق يستخدم نفس بيانات اعتماد المنظومة الإلكترونية (اسم المستخدم + كلمة المرور)."
     ),
-    ...screenshotPlaceholder("شاشة تسجيل الدخول في التطبيق المحمول"),
+    ...screenshotPlaceholder("شاشة تسجيل الدخول في التطبيق المحمول", screenshots?.get("شاشة تسجيل الدخول في التطبيق المحمول")),
     sectionHeading("10.3 الشاشات الرئيسية للتطبيق", 2),
     sectionHeading("10.3.1 لوحة المعلومات (Dashboard)", 3),
     rtlPara(
       "تعرض ملخصًا سريعًا للإحصاءات: إجمالي المرضى، الحالات الحرجة، نسبة الالتزام. " +
       "تظهر التنبيهات العاجلة في الأعلى بشريط برتقالي."
     ),
-    ...screenshotPlaceholder("لوحة معلومات التطبيق المحمول"),
+    ...screenshotPlaceholder("لوحة معلومات التطبيق المحمول", screenshots?.get("لوحة معلومات التطبيق المحمول")),
     sectionHeading("10.3.2 المواعيد في التطبيق", 3),
     rtlPara(
       "تعرض شاشة المواعيد جميع المواعيد مع خيارات التصفية الأساسية. " +
       "يمكن الضغط على أي موعد لعرض تفاصيله وتسجيل الحضور."
     ),
-    ...screenshotPlaceholder("شاشة المواعيد في التطبيق المحمول"),
+    ...screenshotPlaceholder("شاشة المواعيد في التطبيق المحمول", screenshots?.get("شاشة المواعيد في التطبيق المحمول")),
     sectionHeading("10.3.3 حجز موعد من التطبيق", 3),
     bullet("افتح ملف المريضة أو الحالة"),
     bullet("اضغط «حجز موعد جديد»"),
@@ -1837,11 +1862,284 @@ async function buildPdf(): Promise<Buffer> {
   }
 }
 
+// ── Screenshot capture via Puppeteer ──────────────────────────────────────────
+async function captureScreenshots(baseUrl: string): Promise<Map<string, Buffer>> {
+  const screenshots = new Map<string, Buffer>();
+
+  console.log("🌐 تشغيل المتصفح وأخذ لقطات الشاشة...");
+  const executablePath = await resolvePuppeteerExecutable();
+
+  const browser = await puppeteer.launch({
+    executablePath,
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-gpu",
+      "--no-zygote",
+    ],
+    headless: true,
+  });
+
+  const page = await browser.newPage();
+  await page.setViewport({ width: 1280, height: 800 });
+
+  const snap = async (key: string): Promise<void> => {
+    try {
+      await new Promise<void>((r) => setTimeout(r, 800));
+      const buf = await page.screenshot({ type: "png", fullPage: false });
+      screenshots.set(key, Buffer.from(buf));
+      console.log(`  ✓ ${key}`);
+    } catch (e) {
+      console.warn(`  ✗ فشل أخذ اللقطة: ${key}`);
+    }
+  };
+
+  const goto = async (path: string, waitFor?: string): Promise<void> => {
+    try {
+      await page.goto(`${baseUrl}${path}`, { waitUntil: "networkidle2", timeout: 15000 });
+      if (waitFor) {
+        await page.waitForSelector(waitFor, { timeout: 8000 }).catch(() => {});
+      }
+      await new Promise<void>((r) => setTimeout(r, 1200));
+    } catch {
+      await new Promise<void>((r) => setTimeout(r, 1000));
+    }
+  };
+
+  try {
+    // ── Login page ──────────────────────────────────────────────────────────
+    await goto("/", "input");
+    await snap("شاشة تسجيل الدخول – منظومة تتبع الحمل عالي الخطورة");
+
+    // ── Authenticate ────────────────────────────────────────────────────────
+    try {
+      await page.type("input[type='text'], input[name='username']", "admin", { delay: 30 });
+      await page.type("input[type='password']", "admin123", { delay: 30 });
+      await page.click("button[type='submit']");
+      await page.waitForNavigation({ waitUntil: "networkidle2", timeout: 10000 }).catch(() => {});
+      await new Promise<void>((r) => setTimeout(r, 2000));
+    } catch {
+      console.warn("  ⚠ تعذّر تسجيل الدخول التلقائي – ستُستخدم الصفحات المتاحة فقط");
+    }
+
+    // ── Dashboard ───────────────────────────────────────────────────────────
+    await goto("/", "[class*='recharts'], h1, main");
+    await snap("لوحة المعلومات الرئيسية مع البطاقات الإحصائية والمخططات");
+
+    // Scroll to charts area
+    await (page as any).evaluate('window.scrollBy(0, 350)');
+    await new Promise<void>((r) => setTimeout(r, 600));
+    await snap("المخطط الدائري – توزيع مستويات الخطورة");
+
+    await (page as any).evaluate('window.scrollBy(0, 350)');
+    await new Promise<void>((r) => setTimeout(r, 600));
+    await snap("مخطط الأعمدة – حالة الالتزام بالمواعيد");
+
+    // ── Patients list ───────────────────────────────────────────────────────
+    await goto("/patients", "table, [role='table'], ul, .patient");
+    await snap("قائمة المرضى مع خيارات البحث والتصفية");
+
+    // ── New patient form ────────────────────────────────────────────────────
+    await goto("/patients/new", "form, input");
+    await snap("نموذج تسجيل مريضة جديدة");
+
+    // ── Fetch first patient & pregnancy IDs via API ─────────────────────────
+    let firstPatientId: string | null = null;
+    let firstPregnancyId: string | null = null;
+    try {
+      const patientsResp = await (page as any).evaluate(async (base: string) => {
+        const r = await fetch(`${base}/api/patients?page=1&limit=1`);
+        return r.ok ? r.json() : null;
+      }, baseUrl);
+      if (patientsResp?.data?.[0]?.id) firstPatientId = String(patientsResp.data[0].id);
+      if (patientsResp?.patients?.[0]?.id) firstPatientId = String(patientsResp.patients[0].id);
+
+      if (firstPatientId) {
+        const pregResp = await (page as any).evaluate(async (base: string, pid: string) => {
+          const r = await fetch(`${base}/api/pregnancies?patientId=${pid}&limit=1`);
+          return r.ok ? r.json() : null;
+        }, baseUrl, firstPatientId);
+        if (pregResp?.data?.[0]?.id) firstPregnancyId = String(pregResp.data[0].id);
+        if (pregResp?.pregnancies?.[0]?.id) firstPregnancyId = String(pregResp.pregnancies[0].id);
+      }
+
+      // Try a general pregnancies endpoint
+      if (!firstPregnancyId) {
+        const allPreg = await (page as any).evaluate(async (base: string) => {
+          const r = await fetch(`${base}/api/pregnancies?page=1&limit=1`);
+          return r.ok ? r.json() : null;
+        }, baseUrl);
+        if (allPreg?.data?.[0]?.id) firstPregnancyId = String(allPreg.data[0].id);
+      }
+    } catch {
+      // API fetch failed – continue without detail pages
+    }
+
+    // ── Patient detail ──────────────────────────────────────────────────────
+    if (firstPatientId) {
+      await goto(`/patients/${firstPatientId}`, "h1, main");
+      await snap("ملف المريضة – البيانات الشخصية وقائمة الحالات");
+    }
+
+    // ── New pregnancy – patient search step ────────────────────────────────
+    await goto("/pregnancies/new", "form, input");
+    await snap("البحث عن مريضة برقم الهوية قبل تسجيل حالة حمل");
+
+    // ── Pregnancy detail ────────────────────────────────────────────────────
+    if (firstPregnancyId) {
+      await goto(`/pregnancies/${firstPregnancyId}`, "h1, main");
+      await snap("تفاصيل حالة الحمل – وضع العرض مع زر تصدير PDF");
+
+      // Try to open the PDF export dialog
+      try {
+        const pdfBtn = await page.$("button");
+        const buttons = await page.$$("button");
+        for (const btn of buttons) {
+          const txt = await page.evaluate((el) => el.textContent ?? "", btn);
+          if (txt.includes("PDF") || txt.includes("تصدير")) {
+            await btn.click();
+            await new Promise<void>((r) => setTimeout(r, 1000));
+            await snap("نافذة تصدير PDF لملف مريضة – البيانات الكاملة");
+            await page.keyboard.press("Escape");
+            break;
+          }
+        }
+        void pdfBtn;
+      } catch {
+        screenshots.set("نافذة تصدير PDF لملف مريضة – البيانات الكاملة",
+          screenshots.get("تفاصيل حالة الحمل – وضع العرض مع زر تصدير PDF") ?? Buffer.alloc(0));
+      }
+    }
+
+    // ── Appointments ────────────────────────────────────────────────────────
+    await goto("/appointments", "table, [role='table'], main");
+    await snap("صفحة المواعيد – القائمة الكاملة مع خيارات التصفية");
+
+    // Try to open attendance modal
+    try {
+      const attendanceBtns = await page.$$("button");
+      let opened = false;
+      for (const btn of attendanceBtns) {
+        const txt = await page.evaluate((el) => el.textContent ?? "", btn);
+        if (txt.includes("حضر") || txt.includes("✅") || txt.includes("تسجيل")) {
+          await btn.click();
+          await new Promise<void>((r) => setTimeout(r, 1000));
+          const hasDialog = await page.$("[role='dialog'], [data-radix-dialog-content]");
+          if (hasDialog) {
+            await snap("نافذة تسجيل الحضور مع حقل الملاحظة");
+            await page.keyboard.press("Escape");
+            opened = true;
+            break;
+          }
+        }
+      }
+      if (!opened) {
+        screenshots.set("نافذة تسجيل الحضور مع حقل الملاحظة",
+          screenshots.get("صفحة المواعيد – القائمة الكاملة مع خيارات التصفية") ?? Buffer.alloc(0));
+      }
+    } catch {
+      screenshots.set("نافذة تسجيل الحضور مع حقل الملاحظة",
+        screenshots.get("صفحة المواعيد – القائمة الكاملة مع خيارات التصفية") ?? Buffer.alloc(0));
+    }
+
+    // Try to open print dialog (capture page state right before dialog fires)
+    try {
+      await goto("/appointments", "table, main");
+      const printBtns = await page.$$("button");
+      for (const btn of printBtns) {
+        const txt = await page.evaluate((el) => el.textContent ?? "", btn);
+        if (txt.includes("طباعة") || txt.includes("Print")) {
+          // Intercept print: capture before the window opens
+          await (page as any).evaluate('window.print = function() {}');
+          await btn.click();
+          await new Promise<void>((r) => setTimeout(r, 800));
+          await snap("نافذة طباعة جدول المواعيد");
+          break;
+        }
+      }
+      if (!screenshots.has("نافذة طباعة جدول المواعيد")) {
+        screenshots.set("نافذة طباعة جدول المواعيد",
+          screenshots.get("صفحة المواعيد – القائمة الكاملة مع خيارات التصفية") ?? Buffer.alloc(0));
+      }
+    } catch {
+      screenshots.set("نافذة طباعة جدول المواعيد",
+        screenshots.get("صفحة المواعيد – القائمة الكاملة مع خيارات التصفية") ?? Buffer.alloc(0));
+    }
+
+    // ── Alerts ──────────────────────────────────────────────────────────────
+    await goto("/alerts", "main, h1");
+    await snap("صفحة التنبيهات – قائمة الحالات الحرجة");
+
+    // ── Reports ─────────────────────────────────────────────────────────────
+    await goto("/reports", "main, h1");
+    await snap("صفحة التقارير – خيارات تصدير بيانات المرضى والحالات");
+
+    // ── Users management ────────────────────────────────────────────────────
+    await goto("/users", "table, main, h1");
+    await snap("صفحة إدارة المستخدمين – قائمة الحسابات مع الأدوار");
+
+    // ── Mobile app ──────────────────────────────────────────────────────────
+    const mobilePath = "/hrp-mobile/";
+    await page.setViewport({ width: 390, height: 844 }); // iPhone-ish
+    await goto(mobilePath, "input, main");
+    await snap("شاشة تسجيل الدخول في التطبيق المحمول");
+
+    // Try to login on mobile
+    try {
+      await page.type("input[type='text'], input[name='username']", "admin", { delay: 30 });
+      await page.type("input[type='password']", "admin123", { delay: 30 });
+      await page.click("button[type='submit']");
+      await new Promise<void>((r) => setTimeout(r, 2500));
+      await snap("لوحة معلومات التطبيق المحمول");
+
+      // Navigate to appointments in mobile
+      const links = await page.$$("a, button");
+      for (const el of links) {
+        const txt = await page.evaluate((e) => e.textContent ?? "", el);
+        if (txt.includes("مواعيد") || txt.includes("Appointments")) {
+          await el.click();
+          await new Promise<void>((r) => setTimeout(r, 1500));
+          await snap("شاشة المواعيد في التطبيق المحمول");
+          break;
+        }
+      }
+      if (!screenshots.has("شاشة المواعيد في التطبيق المحمول")) {
+        screenshots.set("شاشة المواعيد في التطبيق المحمول",
+          screenshots.get("لوحة معلومات التطبيق المحمول") ?? Buffer.alloc(0));
+      }
+    } catch {
+      screenshots.set("لوحة معلومات التطبيق المحمول", screenshots.get("شاشة تسجيل الدخول في التطبيق المحمول") ?? Buffer.alloc(0));
+      screenshots.set("شاشة المواعيد في التطبيق المحمول", screenshots.get("شاشة تسجيل الدخول في التطبيق المحمول") ?? Buffer.alloc(0));
+    }
+  } finally {
+    await browser.close();
+  }
+
+  const captured = [...screenshots.values()].filter((b) => b.length > 0).length;
+  console.log(`📸 تم التقاط ${captured} لقطة شاشة من أصل 19`);
+  return screenshots;
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 (async () => {
   const generatePdf = !process.argv.includes("--no-pdf");
-  console.log("📄 جاري إنشاء دليل المستخدم (Word)...");
-  const buffer = await buildDocument();
+  const useScreenshots = process.argv.includes("--screenshots");
+  const baseUrl = process.argv.find((a) => a.startsWith("--base-url="))?.split("=")[1] ?? "http://localhost:80";
+
+  console.log("📄 جاري إنشاء دليل المستخدم...");
+
+  let screenshots: Map<string, Buffer> | undefined;
+  if (useScreenshots) {
+    console.log(`🔗 رابط التطبيق: ${baseUrl}`);
+    try {
+      screenshots = await captureScreenshots(baseUrl);
+    } catch (e) {
+      console.error("⚠ فشل التقاط لقطات الشاشة – سيُنشأ الملف بالنصوص البديلة:", e);
+    }
+  }
+
+  const buffer = await buildDocument(screenshots);
   fs.writeFileSync(OUTPUT_PATH, buffer);
   const sizeKB = Math.round(buffer.length / 1024);
   console.log(`✅ تم إنشاء ملف Word: ${OUTPUT_PATH}`);

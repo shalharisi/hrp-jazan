@@ -12,6 +12,7 @@
     "generate-guide": "tsx ./src/generate-user-guide.ts",
     "check:codegen": "tsx ./src/check-codegen.ts",
     "watch:codegen": "tsx ./src/watch-codegen.ts",
+    "generate-guide-with-screenshots": "tsx ./src/generate-user-guide.ts --screenshots",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
