@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2 } from "lucide-react";
+import { ChevronUp, Loader2 } from "lucide-react";
 import { type TranslationKey } from "@/i18n";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
@@ -1084,6 +1084,14 @@ export default function UserGuide() {
   const [elapsedSeconds, setElapsedSeconds] = useState<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
   const [currentStep, setCurrentStep] = useState<string | null>(null);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setShowBackToTop(window.scrollY > 400);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -1379,6 +1387,18 @@ export default function UserGuide() {
           </CardContent>
         </Card>
       ))}
+
+      {/* Back to top */}
+      {showBackToTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          aria-label={lang === "ar" ? "العودة إلى الأعلى" : "Back to top"}
+          className={`fixed bottom-6 z-50 flex items-center gap-1.5 rounded-full bg-emerald-700 px-4 py-2 text-sm font-medium text-white shadow-lg transition-opacity hover:bg-emerald-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${lang === "ar" ? "left-6" : "right-6"}`}
+        >
+          <ChevronUp className="h-4 w-4" />
+          {lang === "ar" ? "أعلى الصفحة" : "Back to top"}
+        </button>
+      )}
     </div>
   );
 }
