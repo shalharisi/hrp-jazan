@@ -7,9 +7,40 @@ on:
     branches: ["**"]
 
 jobs:
+  # Lightweight guard: reads the actual commit message from git so the check
+  # works for both `push` events (where github.event.head_commit is populated)
+  # and `pull_request` synchronize events (where it is not).
+  # All downstream jobs depend on this output and skip when proceed == 'false'.
+  should-run:
+    name: Detect bot CODEOWNERS commit
+    runs-on: ubuntu-latest
+    outputs:
+      proceed: ${{ steps.detect.outputs.proceed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - id: detect
+        name: Check commit message
+        env:
+          ACTOR: ${{ github.actor }}
+        run: |
+          msg=$(git log -1 --format="%s" "$GITHUB_SHA")
+          echo "Actor : $ACTOR"
+          echo "Commit: $msg"
+          if [[ "$ACTOR" == "github-actions[bot]" && "$msg" == *"auto-update CODEOWNERS"* ]]; then
+            echo "proceed=false" >> "$GITHUB_OUTPUT"
+            echo "Bot CODEOWNERS commit detected — downstream CI jobs will be skipped."
+          else
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+          fi
+
   check-codegen:
     name: Check API codegen is up to date
     runs-on: ubuntu-latest
+    needs: should-run
+    if: needs.should-run.outputs.proceed == 'true'
     steps:
       - uses: actions/checkout@v4
 
@@ -44,7 +75,8 @@ jobs:
   typecheck:
     name: TypeScript typecheck
     runs-on: ubuntu-latest
-    needs: check-codegen
+    needs: [should-run, check-codegen]
+    if: needs.should-run.outputs.proceed == 'true'
     steps:
       - uses: actions/checkout@v4
 
@@ -66,7 +98,8 @@ jobs:
   lint:
     name: Lint (ESLint + Prettier)
     runs-on: ubuntu-latest
-    needs: check-codegen
+    needs: [should-run, check-codegen]
+    if: needs.should-run.outputs.proceed == 'true'
     steps:
       - uses: actions/checkout@v4
 
