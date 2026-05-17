@@ -363,12 +363,12 @@ jobs:
           echo " rule with the exact same pattern is permanently dead.)"
           echo ""
 
-          # ── Collect (pattern → first line number, first owners, dup line numbers) ─
-          declare -A first_lineno    # pattern → line number of first occurrence
-          declare -A first_owners    # pattern → owners string of first occurrence
-          declare -A dup_lines       # pattern → space-separated list of subsequent line numbers
-          declare -A last_owners     # pattern → owners string of the most recent occurrence
-          declare -A owners_mismatch # pattern → "1" if ANY occurrence differs from the first
+          # ── Collect all occurrences per pattern ────────────────────────────────
+          # occurrences[$pattern] = newline-separated "lineno|owners" records in
+          # declaration order.  is_dup[$pattern] is set once a second occurrence
+          # is seen so we can iterate only over duplicated patterns at report time.
+          declare -A occurrences  # pattern → newline-separated "lineno|owners" entries
+          declare -A is_dup       # pattern → 1 when the pattern appears 2+ times
           lineno=0
           found_dupes=0
 
@@ -382,17 +382,11 @@ jobs:
             # Build a canonical owners string (space-separated, fields 1+)
             owners="${fields[*]:1}"
 
-            if [[ -z "${first_lineno[$pattern]+_}" ]]; then
-              first_lineno[$pattern]=$lineno
-              first_owners[$pattern]="$owners"
-              owners_mismatch[$pattern]=0
+            if [[ -z "${occurrences[$pattern]+_}" ]]; then
+              occurrences[$pattern]="$lineno|$owners"
             else
-              dup_lines[$pattern]="${dup_lines[$pattern]:-${first_lineno[$pattern]}} $lineno"
-              last_owners[$pattern]="$owners"
-              # Flag any occurrence whose owners differ from the very first
-              if [[ "$owners" != "${first_owners[$pattern]}" ]]; then
-                owners_mismatch[$pattern]=1
-              fi
+              occurrences[$pattern]+=$'\n'"$lineno|$owners"
+              is_dup[$pattern]=1
               found_dupes=1
             fi
           done < "$CODEOWNERS"
@@ -402,22 +396,58 @@ jobs:
             echo "ERROR: The following path patterns appear more than once."
             echo "       Only the LAST occurrence is active; all earlier ones are dead rules."
             echo ""
-            for pattern in "${!dup_lines[@]}"; do
-              lines="${dup_lines[$pattern]}"
-              owners_first="${first_owners[$pattern]}"
-              owners_last="${last_owners[$pattern]}"
+            for pattern in "${!is_dup[@]}"; do
               echo "  Pattern: $pattern"
-              echo "    Lines: $lines"
-              if [[ "${owners_mismatch[$pattern]}" == "0" ]]; then
-                echo "    Owners: identical on all occurrences ($owners_first)"
-                echo "    → The duplicate lines are redundant. Delete all but the last occurrence."
+
+              # Parse the ordered occurrence list for this pattern
+              occ_linenos=()
+              occ_owners=()
+              while IFS='|' read -r ln ow; do
+                occ_linenos+=("$ln")
+                occ_owners+=("$ow")
+              done <<< "${occurrences[$pattern]}"
+
+              # Print every occurrence with its line number and owners
+              total_occ=${#occ_linenos[@]}
+              for (( i=0; i<total_occ; i++ )); do
+                if (( i == total_occ - 1 )); then
+                  echo "    Line ${occ_linenos[$i]}: ${occ_owners[$i]}  ← active (last occurrence)"
+                else
+                  echo "    Line ${occ_linenos[$i]}: ${occ_owners[$i]}"
+                fi
+              done
+
+              # Check whether all occurrences share identical owners
+              first_ow="${occ_owners[0]}"
+              all_same=true
+              for ow in "${occ_owners[@]}"; do
+                if [[ "$ow" != "$first_ow" ]]; then
+                  all_same=false
+                  break
+                fi
+              done
+
+              if [[ "$all_same" == true ]]; then
+                echo "    → Owners are identical on all occurrences. Delete all but the last occurrence."
               else
-                echo "    First owners : $owners_first"
-                echo "    Last owners  : $owners_last"
-                echo "    → The occurrences list DIFFERENT owners. GitHub silently drops all but"
-                echo "      the last rule, so the first owner list will never be used."
+                # Build the unique owner set across ALL occurrences (preserving first-seen order)
+                unset seen_tokens
+                declare -A seen_tokens
+                unique_owners=""
+                for ow in "${occ_owners[@]}"; do
+                  for tok in $ow; do
+                    if [[ -z "${seen_tokens[$tok]+_}" ]]; then
+                      seen_tokens[$tok]=1
+                      unique_owners+=" $tok"
+                    fi
+                  done
+                done
+                unique_owners="${unique_owners# }"  # trim leading space
+
+                echo "    → Occurrences list DIFFERENT owners. GitHub silently drops all but"
+                echo "      the last rule, so earlier owner lists will never be used."
                 echo "      Consolidate all intended owners onto a single line, e.g.:"
-                echo "        $pattern $owners_first $owners_last"
+                echo "        $pattern $unique_owners"
               fi
               echo ""
             done
