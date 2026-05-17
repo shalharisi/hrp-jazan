@@ -4,6 +4,13 @@ import { useI18n } from "../../lib/i18n-context";
 import { useAuth } from "../../lib/auth-context";
 import { useGuideGenerationStatus } from "../../lib/use-guide-generation-status";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import type { TranslationKey } from "../../i18n";
+import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
@@ -42,7 +49,7 @@ import logoPath from "../../assets/branding.jpg";
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { lang, setLang, t } = useI18n();
   const { user, logout, isAdmin } = useAuth();
-  const guideGenerating = useGuideGenerationStatus();
+  const guideStatus = useGuideGenerationStatus();
   const [location] = useLocation();
 
   const navItems = [
@@ -190,16 +197,43 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <Shield className="w-3 h-3" aria-hidden="true" />
                 {lang === "ar" ? "نظام آمن ومشفّر" : "Secure & Encrypted"}
               </div>
-              {guideGenerating && (
-                <Link
-                  href="/guide"
-                  className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium text-amber-800 bg-amber-100 border border-amber-300 hover:bg-amber-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-1"
-                  role="status"
-                  aria-live="polite"
-                >
-                  <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" />
-                  {t("guide.generatingBadge")}
-                </Link>
+              {guideStatus.generating && (
+                <TooltipProvider delayDuration={300}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Link
+                        href="/guide"
+                        className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium text-amber-800 bg-amber-100 border border-amber-300 hover:bg-amber-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-1"
+                        role="status"
+                        aria-live="polite"
+                      >
+                        <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" />
+                        {t("guide.generatingBadge")}
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="bottom"
+                      className="flex flex-col gap-0.5 text-center max-w-[200px]"
+                    >
+                      <span>
+                        {(() => {
+                          if (!guideStatus.step) return t("guide.tooltipGenerating");
+                          const key = `guide.step.${guideStatus.step}` as TranslationKey;
+                          const label = t(key);
+                          return label !== key ? label : t("guide.tooltipGenerating");
+                        })()}
+                      </span>
+                      {guideStatus.elapsedSeconds !== null && (
+                        <span className="opacity-75">
+                          {t("guide.tooltipElapsed").replace(
+                            "{n}",
+                            String(guideStatus.elapsedSeconds),
+                          )}
+                        </span>
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
             </div>
 

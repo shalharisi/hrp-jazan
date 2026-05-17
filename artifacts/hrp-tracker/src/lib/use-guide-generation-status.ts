@@ -6,10 +6,20 @@ const STATUS_URL = `${BASE}/api/downloads/user-guide/status`;
 const POLL_FAST_MS = 3_000;
 const POLL_SLOW_MS = 15_000;
 
-export function useGuideGenerationStatus(): boolean {
-  const [generating, setGenerating] = useState(false);
-  const generatingRef = useRef(generating);
-  generatingRef.current = generating;
+export interface GuideGenerationStatus {
+  generating: boolean;
+  step: string | null;
+  elapsedSeconds: number | null;
+}
+
+export function useGuideGenerationStatus(): GuideGenerationStatus {
+  const [status, setStatus] = useState<GuideGenerationStatus>({
+    generating: false,
+    step: null,
+    elapsedSeconds: null,
+  });
+  const generatingRef = useRef(status.generating);
+  generatingRef.current = status.generating;
 
   useEffect(() => {
     let cancelled = false;
@@ -19,8 +29,16 @@ export function useGuideGenerationStatus(): boolean {
       try {
         const res = await fetch(STATUS_URL);
         if (!cancelled && res.ok) {
-          const data = (await res.json()) as { generating?: boolean };
-          setGenerating(data.generating === true);
+          const data = (await res.json()) as {
+            generating?: boolean;
+            step?: string | null;
+            elapsedSeconds?: number | null;
+          };
+          setStatus({
+            generating: data.generating === true,
+            step: data.step ?? null,
+            elapsedSeconds: data.elapsedSeconds ?? null,
+          });
         }
       } catch {
         // ignore transient errors
@@ -40,5 +58,5 @@ export function useGuideGenerationStatus(): boolean {
     };
   }, []);
 
-  return generating;
+  return status;
 }

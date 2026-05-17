@@ -19,6 +19,8 @@ const router: IRouter = Router();
 
 // In-process lock: prevents concurrent guide generation runs.
 let guideGenerating = false;
+let guideCurrentStep: string | null = null;
+let guideStartedAt: number | null = null;
 
 /**
  * Starts background guide generation if the files are absent or if
@@ -43,18 +45,24 @@ export function scheduleStartupGuideGeneration(): void {
   logger.info({ reason }, "Starting user guide generation on server startup");
 
   guideGenerating = true;
+  guideCurrentStep = null;
+  guideStartedAt = Date.now();
 
   const child = spawn("pnpm", ["--filter", "@workspace/scripts", "run", "generate-guide"], {
     cwd: WORKSPACE_ROOT,
     stdio: "pipe",
   });
 
+  let startupStdoutBuf = "";
   child.stdout?.on("data", (chunk: Buffer) => {
-    const lines = chunk.toString().split("\n");
+    startupStdoutBuf += chunk.toString();
+    const lines = startupStdoutBuf.split("\n");
+    startupStdoutBuf = lines.pop() ?? "";
     for (const line of lines) {
       const trimmed = line.trim();
       if (trimmed.startsWith("PROGRESS:")) {
-        logger.info({ step: trimmed.slice("PROGRESS:".length).trim() }, "Guide generation step");
+        guideCurrentStep = trimmed.slice("PROGRESS:".length).trim();
+        logger.info({ step: guideCurrentStep }, "Guide generation step");
       }
     }
   });
@@ -65,6 +73,8 @@ export function scheduleStartupGuideGeneration(): void {
 
   child.on("close", (code) => {
     guideGenerating = false;
+    guideCurrentStep = null;
+    guideStartedAt = null;
     if (code === 0) {
       logger.info("User guide generated successfully on startup");
     } else {
@@ -74,6 +84,8 @@ export function scheduleStartupGuideGeneration(): void {
 
   child.on("error", (err) => {
     guideGenerating = false;
+    guideCurrentStep = null;
+    guideStartedAt = null;
     logger.error({ err }, "Failed to spawn guide generation script on startup");
   });
 }
@@ -122,12 +134,18 @@ router.get("/downloads/user-guide.pdf", (req, res): void => {
 router.get("/downloads/user-guide/status", (req, res): void => {
   const docxExists = fs.existsSync(DOCX_PATH);
   const pdfExists = fs.existsSync(PDF_PATH);
+  const elapsedSeconds =
+    guideGenerating && guideStartedAt !== null
+      ? Math.floor((Date.now() - guideStartedAt) / 1000)
+      : null;
   res.json({
     docx: docxExists,
     pdf: pdfExists,
     docxMtime: docxExists ? fs.statSync(DOCX_PATH).mtime.toISOString() : null,
     pdfMtime: pdfExists ? fs.statSync(PDF_PATH).mtime.toISOString() : null,
     generating: guideGenerating,
+    step: guideGenerating ? guideCurrentStep : null,
+    elapsedSeconds,
   });
 });
 
@@ -146,6 +164,8 @@ router.post("/downloads/user-guide/generate", requireRole("admin"), (req, res): 
   }
 
   guideGenerating = true;
+  guideCurrentStep = null;
+  guideStartedAt = Date.now();
 
   // Set SSE headers so the client can read events as they arrive.
   res.setHeader("Content-Type", "text/event-stream");
@@ -171,7 +191,8 @@ router.post("/downloads/user-guide/generate", requireRole("admin"), (req, res): 
     for (const line of lines) {
       const trimmed = line.trim();
       if (trimmed.startsWith("PROGRESS:")) {
-        const step = trimmed.slice("PROGRESS:".length);
+        const step = trimmed.slice("PROGRESS:".length).trim();
+        guideCurrentStep = step;
         sendEvent({ step });
       }
     }
@@ -179,6 +200,8 @@ router.post("/downloads/user-guide/generate", requireRole("admin"), (req, res): 
 
   child.on("close", (code) => {
     guideGenerating = false;
+    guideCurrentStep = null;
+    guideStartedAt = null;
     if (code === 0) {
       req.log.info("User guide generated successfully via admin trigger");
       sendEvent({ done: true });
@@ -191,6 +214,8 @@ router.post("/downloads/user-guide/generate", requireRole("admin"), (req, res): 
 
   child.on("error", (err) => {
     guideGenerating = false;
+    guideCurrentStep = null;
+    guideStartedAt = null;
     req.log.error({ err }, "Failed to spawn guide generation script");
     sendEvent({ error: true, detail: err.message });
     res.end();

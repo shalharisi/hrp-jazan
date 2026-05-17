@@ -243,6 +243,8 @@ export const translations = {
     "guide.step.write_pdf": "جارٍ حفظ ملف PDF...",
     "guide.generatingElsewhere": "جارٍ إنشاء الدليل حاليًا في علامة تبويب أخرى. يرجى الانتظار حتى تكتمل العملية.",
     "guide.generatingBadge": "جارٍ إنشاء الدليل…",
+    "guide.tooltipGenerating": "جارٍ إنشاء الدليل",
+    "guide.tooltipElapsed": "• {n} ث",
     "guide.lastDuration": "آخر إنشاء استغرق {n} ثانية",
 
     // Change password (login page)
@@ -502,6 +504,8 @@ export const translations = {
     "guide.step.write_pdf": "Saving PDF file...",
     "guide.generatingElsewhere": "Guide generation is already in progress. Please wait for it to complete.",
     "guide.generatingBadge": "Generating guide…",
+    "guide.tooltipGenerating": "Generating guide",
+    "guide.tooltipElapsed": "• {n} s",
     "guide.lastDuration": "Last generation took {n} s",
 
     // Change password (login page)
