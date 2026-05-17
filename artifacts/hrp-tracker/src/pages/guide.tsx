@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ChevronUp, List, Loader2, Printer } from "lucide-react";
+import { ChevronUp, Download, List, Loader2, Printer } from "lucide-react";
 import { type TranslationKey } from "@/i18n";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
@@ -1807,6 +1807,14 @@ export default function UserGuide() {
               }}
             >
               {lang === "ar" ? "البدء من أول الدليل" : "Start from beginning"}
+            </Button>
+          )}
+          {status?.pdf && (
+            <Button asChild variant="default" className="gap-2">
+              <a href={`${API}/downloads/user-guide.pdf`} download>
+                <Download className="h-4 w-4" />
+                {lang === "ar" ? "تحميل الدليل" : "Download Guide"}
+              </a>
             </Button>
           )}
           <Button variant="outline" onClick={handlePrint} className="gap-2">
