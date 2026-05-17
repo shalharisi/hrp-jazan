@@ -117,10 +117,11 @@ function attendedLabel(attended: boolean | null | undefined, lang: string): stri
   return lang === "ar" ? "مجدول" : "Scheduled";
 }
 
-function buildExportFilename(dateFilter: DateFilter, sectorName: string | null): string {
+function buildExportFilename(dateFilter: DateFilter, statusFilter: StatusFilter, sectorName: string | null): string {
   const today = localDateStr(new Date());
   const parts: string[] = ["appointments"];
   if (dateFilter !== "all") parts.push(dateFilter);
+  if (statusFilter !== "all") parts.push(statusFilter);
   if (sectorName) parts.push("sector", sectorName.replace(/\s+/g, "-"));
   parts.push(today);
   return `${parts.join("-")}.csv`;
@@ -131,6 +132,7 @@ function exportAppointmentsToCsv(
   lang: string,
   headers: { patient: string; nationalId: string; sector: string; hospital: string; date: string; status: string; note: string },
   dateFilter: DateFilter,
+  statusFilter: StatusFilter,
   sectorName: string | null
 ) {
   const cols = [
@@ -172,7 +174,7 @@ function exportAppointmentsToCsv(
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = buildExportFilename(dateFilter, sectorName);
+  link.download = buildExportFilename(dateFilter, statusFilter, sectorName);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -422,6 +424,7 @@ export default function AppointmentsPage() {
                   note: t("appointments.colAttendanceNote"),
                 },
                 dateFilter,
+                statusFilter,
                 activeSectorName
               );
             }}
