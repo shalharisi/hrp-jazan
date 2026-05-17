@@ -134,14 +134,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Always call logout endpoint — it clears the httpOnly refresh cookie server-side.
     // Does not require a valid access token (endpoint accepts expired/missing tokens).
     const token = localStorage.getItem(TOKEN_KEY);
+    const userId = state.user?.id;
     await fetch(`${API}/auth/logout`, {
       method: "POST",
       credentials: "include",
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     }).catch(() => {});
     localStorage.removeItem(TOKEN_KEY);
+    if (userId !== undefined) {
+      localStorage.removeItem(`hrp_urgent_banner_dismissed_count_${userId}`);
+    }
     setState({ user: null, accessToken: null, loading: false });
-  }, []);
+  }, [state.user?.id]);
 
   const giveConsent = useCallback(async () => {
     const token = localStorage.getItem(TOKEN_KEY);

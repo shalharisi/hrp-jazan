@@ -201,7 +201,7 @@ function getUrgentThreshold(): number {
 
 export default function AppointmentsPage() {
   const { t, lang } = useI18n();
-  const { canWrite } = useAuth();
+  const { canWrite, user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -220,10 +220,13 @@ export default function AppointmentsPage() {
   const [dialogState, setDialogState] = useState<AttendanceDialogState>(null);
   const [attendanceNote, setAttendanceNote] = useState("");
 
-  const BANNER_STORAGE_KEY = "hrp_urgent_banner_dismissed_count";
+  const BANNER_STORAGE_KEY = user
+    ? `hrp_urgent_banner_dismissed_count_${user.id}`
+    : "hrp_urgent_banner_dismissed_count";
   const [dismissedCount, setDismissedCount] = useState<number>(() => {
+    if (!user) return 0;
     try {
-      const stored = localStorage.getItem(BANNER_STORAGE_KEY);
+      const stored = localStorage.getItem(`hrp_urgent_banner_dismissed_count_${user.id}`);
       if (!stored) return 0;
       const parsed = parseInt(stored, 10);
       return Number.isFinite(parsed) ? parsed : 0;
