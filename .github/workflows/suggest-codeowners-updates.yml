@@ -1,0 +1,206 @@
+name: Suggest CODEOWNERS Updates
+
+# Runs on every PR so it catches directory renames regardless of whether
+# CODEOWNERS itself was touched.  When no renames affect a tracked CODEOWNERS
+# path the job exits in a few seconds with no side-effects.
+
+on:
+  pull_request:
+    branches: ["**"]
+
+permissions:
+  contents: read          # for checkout + git diff
+  pull-requests: write    # for posting review comments
+
+jobs:
+  suggest-codeowners-updates:
+    name: Detect renamed directories and suggest CODEOWNERS updates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # needed to diff against the PR base branch
+
+      - name: Detect renames and post CODEOWNERS suggestions
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          CODEOWNERS=".github/CODEOWNERS"
+
+          # ── 1. Collect all file-level renames in this PR ─────────────────────
+          # Output format: R<score> TAB old-path TAB new-path
+          mapfile -t rename_lines < <(
+            git diff --diff-filter=R --name-status "$BASE_SHA" "$HEAD_SHA" 2>/dev/null || true
+          )
+
+          if [[ ${#rename_lines[@]} -eq 0 ]]; then
+            echo "No renamed files detected in this PR — nothing to check."
+            exit 0
+          fi
+
+          echo "Renamed files in this PR:"
+          for line in "${rename_lines[@]}"; do
+            echo "  $line"
+          done
+          echo ""
+
+          # ── 2. Infer directory renames from file renames ─────────────────────
+          # A directory rename shows up as many file renames sharing the same
+          # old-prefix → new-prefix transformation.  We collect unique prefix
+          # pairs where:
+          #   • both old and new path contain a '/' (i.e. they are inside a dir)
+          #   • the leading directory component changed
+
+          declare -A dir_renames  # old_dir -> new_dir
+
+          for line in "${rename_lines[@]}"; do
+            # Strip the similarity score prefix (R090, R100, …) to get two paths
+            old_path=$(echo "$line" | awk '{print $2}')
+            new_path=$(echo "$line" | awk '{print $3}')
+
+            old_dir=$(dirname "$old_path")
+            new_dir=$(dirname "$new_path")
+
+            # Skip files at repo root (dirname == ".")
+            [[ "$old_dir" == "." ]] && continue
+            [[ "$new_dir" == "." ]] && continue
+
+            [[ "$old_dir" == "$new_dir" ]] && continue  # same directory
+
+            # Walk up until we find the highest-level changed component.
+            # Strategy: keep stripping the trailing path segment from both dirs
+            # while the last segments differ, recording every unique pair.
+            a="$old_dir"
+            b="$new_dir"
+            while [[ "$a" != "." && "$b" != "." ]]; do
+              a_parent=$(dirname "$a")
+              b_parent=$(dirname "$b")
+              if [[ "$a_parent" == "$b_parent" ]]; then
+                # a and b share the same parent → this is the renamed segment
+                dir_renames["${a}/"]="${b}/"
+                break
+              fi
+              a="$a_parent"
+              b="$b_parent"
+            done
+          done
+
+          if [[ ${#dir_renames[@]} -eq 0 ]]; then
+            echo "No directory renames detected — nothing to check in CODEOWNERS."
+            exit 0
+          fi
+
+          echo "Inferred directory renames:"
+          for old in "${!dir_renames[@]}"; do
+            echo "  $old  →  ${dir_renames[$old]}"
+          done
+          echo ""
+
+          # ── 3. Scan CODEOWNERS for rules referencing the old paths ───────────
+          declare -a suggestions  # accumulate suggestion lines
+
+          while IFS= read -r line; do
+            # Skip comment-only lines and blank lines
+            [[ "$line" =~ ^[[:space:]]*# ]] && continue
+            [[ -z "${line//[[:space:]]/}" ]] && continue
+
+            read -r -a fields <<< "$line"
+            pattern="${fields[0]}"
+            # Strip leading slash for comparison
+            pattern_stripped="${pattern#/}"
+
+            for old_dir in "${!dir_renames[@]}"; do
+              new_dir="${dir_renames[$old_dir]}"
+
+              # Match if the pattern starts with (or equals) the old directory path
+              if [[ "$pattern_stripped" == "${old_dir}"* ]] || [[ "$pattern_stripped" == "${old_dir%/}" ]]; then
+                updated_pattern="${pattern/$old_dir/$new_dir}"
+                # Also handle the slash-prefixed variant
+                updated_pattern="${updated_pattern/${old_dir%/}/${new_dir%/}}"
+
+                owners="${fields[*]:1}"
+                suggestions+=("| \`$pattern\` | \`$updated_pattern\` | $owners |")
+                echo "Match: '$pattern' → '$updated_pattern'"
+              fi
+            done
+          done < "$CODEOWNERS"
+
+          if [[ ${#suggestions[@]} -eq 0 ]]; then
+            echo "No CODEOWNERS rules reference the renamed directories — no comment needed."
+            exit 0
+          fi
+
+          # ── 4. De-duplicate suggestion rows (edge case: same pattern matched
+          #        by multiple rename pairs) ────────────────────────────────────
+          declare -A seen_suggestions
+          declare -a unique_suggestions
+          for row in "${suggestions[@]}"; do
+            if [[ -z "${seen_suggestions[$row]+_}" ]]; then
+              seen_suggestions[$row]=1
+              unique_suggestions+=("$row")
+            fi
+          done
+
+          # ── 5. Post (or update) a PR comment with the suggestions ────────────
+          MARKER="<!-- codeowners-rename-bot -->"
+
+          table_rows=""
+          for row in "${unique_suggestions[@]}"; do
+            table_rows="${table_rows}
+          ${row}"
+          done
+
+          body="${MARKER}
+          ## CODEOWNERS may need updating
+
+          This PR renames one or more directories that are tracked in \`.github/CODEOWNERS\`.
+          GitHub silently ignores rules whose path no longer exists, so no review will be
+          requested for those paths until the file is updated.
+
+          **Suggested changes** — update \`.github/CODEOWNERS\` before merging:
+
+          | Current pattern | Suggested pattern | Owners |
+          |---|---|---|${table_rows}
+
+          > _This comment is posted automatically by the \`suggest-codeowners-updates\` workflow._
+          > _If the rename is intentional and the CODEOWNERS rule is no longer needed, simply_
+          > _remove the old entry instead of updating it._"
+
+          # Look for an existing bot comment to avoid spamming on every push
+          existing_id=$(
+            gh api "repos/$REPO/issues/$PR_NUMBER/comments" \
+              --jq ".[] | select(.body | startswith(\"$MARKER\")) | .id" \
+              2>/dev/null | head -1 || true
+          )
+
+          if [[ -n "$existing_id" ]]; then
+            echo "Updating existing bot comment #$existing_id …"
+            if ! gh api "repos/$REPO/issues/comments/$existing_id" \
+              --method PATCH \
+              --field body="$body" 2>/dev/null; then
+              echo "WARNING: Could not update the existing bot comment (insufficient permissions)."
+              echo "This is expected on PRs from forks. Suggestions are still visible in the log above."
+            fi
+          else
+            echo "Posting new bot comment on PR #$PR_NUMBER …"
+            if ! gh api "repos/$REPO/issues/$PR_NUMBER/comments" \
+              --method POST \
+              --field body="$body" 2>/dev/null; then
+              echo "WARNING: Could not post a PR comment (insufficient permissions)."
+              echo "This is expected on PRs from forks where GITHUB_TOKEN lacks write access."
+              echo ""
+              echo "Suggested CODEOWNERS updates (apply these manually before merging):"
+              for row in "${unique_suggestions[@]}"; do
+                echo "  $row"
+              done
+            else
+              echo ""
+              echo "Done. Review comment posted with ${#unique_suggestions[@]} suggestion(s)."
+            fi
+          fi
