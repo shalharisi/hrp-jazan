@@ -12,10 +12,14 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -26,6 +30,12 @@ import { NewAppointmentModal } from "@/components/NewAppointmentModal";
 type DateFilter = "today" | "week" | "all" | "custom";
 type AttendanceFilter = "all" | "pending" | "attended" | "missed" | "needs_action";
 type RiskFilter = "all" | "critical" | "high" | "medium" | "low";
+
+function isValidIsoDate(str: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(str)) return false;
+  const d = new Date(str + "T00:00:00");
+  return !isNaN(d.getTime());
+}
 
 function localDateStr(d: Date): string {
   const y = d.getFullYear();
@@ -99,6 +109,7 @@ export default function AppointmentsScreen() {
 
   const { data: hospitalsData } = useListHospitals();
 
+  const allHospitals = hospitalsData ?? [];
   const all = data ?? [];
 
   const today = isoToday();
@@ -1270,5 +1281,88 @@ function makeStyles(colors: ReturnType<typeof useColors>, isRTL: boolean) {
       color: "#fff",
     },
 
+    modalContainer: {
+      flex: 1,
+      backgroundColor: colors.background,
+      paddingHorizontal: 20,
+    },
+    modalHeader: {
+      flexDirection: isRTL ? "row-reverse" : "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 20,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontFamily: "Tajawal_700Bold",
+      color: colors.foreground,
+    },
+    closeBtn: {
+      padding: 4,
+    },
+    modalContent: {
+      gap: 12,
+      paddingBottom: 24,
+    },
+    sectionLabel: {
+      fontSize: 14,
+      fontFamily: "Tajawal_700Bold",
+      color: colors.foreground,
+      marginBottom: 6,
+    },
+    hospitalGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+    },
+    hospitalChip: {
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 10,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      minWidth: 80,
+      alignItems: "center",
+    },
+    hospitalChipActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    hospitalChipText: {
+      fontSize: 12,
+      fontFamily: "Tajawal_500Medium",
+      color: colors.foreground,
+      textAlign: "center",
+    },
+    hospitalChipTextActive: {
+      color: "#fff",
+    },
+    dateInput: {
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      fontSize: 15,
+      fontFamily: "Tajawal_400Regular",
+      color: colors.foreground,
+    },
+    submitBtn: {
+      backgroundColor: colors.primary,
+      borderRadius: 10,
+      paddingVertical: 13,
+      alignItems: "center",
+      marginTop: 8,
+    },
+    submitBtnDisabled: {
+      opacity: 0.45,
+    },
+    submitBtnText: {
+      color: "#fff",
+      fontSize: 15,
+      fontFamily: "Tajawal_700Bold",
+    },
   });
 }
