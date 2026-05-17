@@ -69,6 +69,15 @@ High-Risk Pregnancy Tracking Platform for Jazan Health Cluster 2026 — a biling
 - No emojis in UI labels (except compliance status indicators ✅/❌/⏳)
 - Logo: artifacts/hrp-tracker/src/assets/logo.jpg
 
+## Branch protection
+
+The `main` branch requires both CI jobs to pass before any PR can be merged:
+
+- `check-codegen` — verifies generated API client and Zod schemas match `openapi.yaml`
+- `typecheck` — full TypeScript typecheck across all workspace packages
+
+These rules are configured via `.github/workflows/setup-branch-protection.yml` (run it once from GitHub Actions → Run workflow). Manual setup instructions are in `CONTRIBUTING.md`.
+
 ## Pre-commit hook
 
 A `simple-git-hooks` pre-commit hook runs `pnpm run check:codegen` automatically before every commit. It exits non-zero if `openapi.yaml` has been modified without re-running codegen, blocking the commit until the generated files are brought back in sync.

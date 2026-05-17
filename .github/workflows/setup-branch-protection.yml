@@ -1,0 +1,74 @@
+name: Setup Branch Protection
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Branch to protect
+        required: false
+        default: main
+
+permissions:
+  administration: write
+
+jobs:
+  protect:
+    name: Apply required CI status checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add required status checks on ${{ inputs.branch }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const branch = "${{ inputs.branch }}";
+            const owner = context.repo.owner;
+            const repo  = context.repo.repo;
+
+            const requiredChecks = [
+              "Check API codegen is up to date",
+              "TypeScript typecheck"
+            ];
+
+            // Fetch current branch protection (may not exist yet)
+            let current = null;
+            try {
+              const { data } = await github.rest.repos.getBranchProtection({ owner, repo, branch });
+              current = data;
+            } catch (err) {
+              if (err.status !== 404) throw err;
+              console.log(`No existing branch protection found for '${branch}' — creating from scratch.`);
+            }
+
+            // Merge desired checks into existing ones (deduplicate)
+            const existingContexts = current?.required_status_checks?.contexts ?? [];
+            const mergedContexts = [...new Set([...existingContexts, ...requiredChecks])];
+
+            // Preserve all existing settings; only update required_status_checks
+            await github.rest.repos.updateBranchProtection({
+              owner,
+              repo,
+              branch,
+              required_status_checks: {
+                strict: current?.required_status_checks?.strict ?? true,
+                contexts: mergedContexts
+              },
+              // Preserve existing values; fall back to safe defaults when no rule existed yet.
+              // enforce_admins must be a boolean — default false (do not enforce on admins).
+              enforce_admins: current?.enforce_admins?.enabled ?? false,
+              // Pass required_pull_request_reviews through verbatim so no existing review
+              // setting (dismiss_stale_reviews, dismissal_restrictions, code-owner reviews,
+              // required_approving_review_count, bypass_pull_request_allowances, etc.) is lost.
+              required_pull_request_reviews: current?.required_pull_request_reviews ?? null,
+              restrictions: current?.restrictions
+                ? {
+                    users: current.restrictions.users.map(u => u.login),
+                    teams: current.restrictions.teams.map(t => t.slug),
+                    apps:  current.restrictions.apps.map(a => a.slug)
+                  }
+                : null
+            });
+
+            console.log(`Branch protection updated for '${branch}'.`);
+            console.log(`Required status checks (${mergedContexts.length} total):`);
+            mergedContexts.forEach(c => console.log(`  - ${c}`));
