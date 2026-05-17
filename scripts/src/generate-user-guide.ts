@@ -1794,6 +1794,19 @@ export async function buildDocument(screenshots?: Map<string, Buffer>, captureOr
     );
   }
 
+  // ============================================================
+  // APPENDIX W: QUICK-REFERENCE CARD (tear-out copy at the back)
+  // ============================================================
+  sections.push(
+    pageBreak(),
+    sectionHeading("ملحق و: بطاقة المرجع السريع", 1),
+    rtlPara(
+      "نسخة مرجعية سريعة قابلة للطباعة والاحتفاظ بها على المكتب. تحتوي على مستويات الخطورة، معيار الالتزام، وقائمة الخطوات الأساسية.",
+      { spacing: { before: 120, after: 160 } },
+    ),
+  );
+  sections.push(...buildQuickReferenceSummary());
+
   // ── Build final document ──────────────────────────────────────────────────
   const doc = new Document({
     creator: "تجمع جازان الصحي",
