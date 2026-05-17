@@ -199,7 +199,27 @@ export default function AppointmentsPage() {
   const [sectorFilter, setSectorFilter] = useState<string>("all");
   const [dialogState, setDialogState] = useState<AttendanceDialogState>(null);
   const [attendanceNote, setAttendanceNote] = useState("");
-  const [bannerDismissed, setBannerDismissed] = useState(false);
+
+  const BANNER_STORAGE_KEY = "hrp_urgent_banner_dismissed_count";
+  const [dismissedCount, setDismissedCount] = useState<number>(() => {
+    try {
+      const stored = localStorage.getItem(BANNER_STORAGE_KEY);
+      if (!stored) return 0;
+      const parsed = parseInt(stored, 10);
+      return Number.isFinite(parsed) ? parsed : 0;
+    } catch {
+      return 0;
+    }
+  });
+
+  const dismissBanner = (count: number) => {
+    try {
+      localStorage.setItem(BANNER_STORAGE_KEY, String(count));
+    } catch {
+      // ignore
+    }
+    setDismissedCount(count);
+  };
 
   const { data: appointments, isLoading } = useListAppointments();
   const { data: sectors } = useListSectors();
@@ -294,7 +314,7 @@ export default function AppointmentsPage() {
     day: "numeric",
   });
 
-  const showUrgentBanner = !bannerDismissed && !isLoading && statsNeedsAction > URGENT_THRESHOLD;
+  const showUrgentBanner = !isLoading && statsNeedsAction > URGENT_THRESHOLD && statsNeedsAction > dismissedCount;
 
   const urgentBannerText = t("appointments.urgentBanner").replace(
     "{count}",
@@ -336,7 +356,7 @@ export default function AppointmentsPage() {
               onClick={() => {
                 setStatusFilter("needs_action");
                 setDateFilter("all");
-                setBannerDismissed(true);
+                dismissBanner(statsNeedsAction);
               }}
             >
               {t("appointments.urgentBannerAction")}
@@ -345,7 +365,7 @@ export default function AppointmentsPage() {
               type="button"
               aria-label={t("appointments.urgentBannerDismiss")}
               className="rounded p-0.5 hover:bg-orange-100 transition-colors"
-              onClick={() => setBannerDismissed(true)}
+              onClick={() => dismissBanner(statsNeedsAction)}
             >
               <X className="w-4 h-4 text-orange-600" />
             </button>
