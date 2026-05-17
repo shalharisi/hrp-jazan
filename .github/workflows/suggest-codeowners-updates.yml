@@ -82,127 +82,24 @@ jobs:
 
           CODEOWNERS=".github/CODEOWNERS"
 
-          # ── 0. Resolve dry-run mode ───────────────────────────────────────
-          # Dry-run is active when the repository variable is "true" (case-
-          # insensitive) OR when the PR carries the "codeowners-dry-run" label.
-          DRY_RUN=false
+          # ── Load shared helpers ───────────────────────────────────────────────
+          # resolve_dry_run_mode, check_approval_gate, and delete_bot_comment
+          # live in a separate file so the unit-test suite can source the same
+          # definitions rather than maintaining copies.
+          MARKER="<!-- codeowners-rename-bot -->"
+          # shellcheck source=.github/scripts/codeowners-bot-helpers.sh
+          source ".github/scripts/codeowners-bot-helpers.sh"
 
-          if [[ "${DRY_RUN_VAR,,}" == "true" ]]; then
-            DRY_RUN=true
-            echo "Dry-run enabled via repository variable CODEOWNERS_BOT_DRY_RUN=true."
-          fi
+          # ── 0. Resolve dry-run mode ───────────────────────────────────────────
+          # DRY_RUN becomes true when CODEOWNERS_BOT_DRY_RUN=true (repo variable)
+          # or when the PR carries the "codeowners-dry-run" label.
+          resolve_dry_run_mode
 
-          if echo "${PR_LABELS}" | grep -qi '"codeowners-dry-run"'; then
-            DRY_RUN=true
-            echo "Dry-run enabled via PR label 'codeowners-dry-run'."
-          fi
-
-          # ── 0a. Resolve require-approval mode ────────────────────────────
+          # ── 0a. Resolve require-approval mode ────────────────────────────────
           # When CODEOWNERS_BOT_REQUIRE_APPROVAL=true the bot stays in dry-run
-          # until a maintainer either approves the PR via a GitHub review or
-          # reacts with :+1: on the bot's own comment.
-          #
-          # This check is skipped entirely if dry-run mode is already active via
-          # the DRY_RUN_VAR or PR label — those take unconditional precedence.
-          APPROVAL_REQUIRED=false
-
-          if [[ "${REQUIRE_APPROVAL_VAR,,}" == "true" && "$DRY_RUN" == "false" ]]; then
-            echo "CODEOWNERS_BOT_REQUIRE_APPROVAL=true — checking for approval before auto-committing."
-
-            APPROVED=false
-            MARKER="<!-- codeowners-rename-bot -->"
-
-            # Check for a GitHub review approval from a maintainer on this PR.
-            # Steps:
-            #   1. Take the latest review per reviewer (so a later CHANGES_REQUESTED
-            #      supersedes an earlier APPROVED from the same person).
-            #   2. Filter to those whose net state is APPROVED.
-            #   3. For each such reviewer, check their repo permission via the
-            #      collaborator API and only accept write/maintain/admin.
-            mapfile -t approved_reviewer_logins < <(
-              gh api "repos/$REPO/pulls/$PR_NUMBER/reviews" \
-                --jq '
-                  group_by(.user.login) |
-                  map(sort_by(.submitted_at) | last) |
-                  map(select(.state == "APPROVED")) |
-                  .[].user.login
-                ' \
-                2>/dev/null || true
-            )
-
-            for login in "${approved_reviewer_logins[@]}"; do
-              perm=$(
-                gh api "repos/$REPO/collaborators/$login/permission" \
-                  --jq '.permission' \
-                  2>/dev/null || echo "none"
-              )
-              case "$perm" in
-                write|maintain|admin)
-                  APPROVED=true
-                  echo "Approval detected: maintainer '$login' approved via GitHub review (permission: $perm)."
-                  break
-                  ;;
-                *)
-                  echo "Ignoring review approval from '$login' — insufficient permission ($perm)."
-                  ;;
-              esac
-            done
-
-            # If no review approval yet, check for a :+1: reaction on the most
-            # recent bot comment (if one has already been posted).
-            # Security: only count reactions from users with write/maintain/admin
-            # permission to prevent non-maintainers from unlocking auto-commit.
-            if [[ "$APPROVED" == "false" ]]; then
-              # Look up the most recent comment posted by github-actions[bot]
-              # that carries the bot marker — verify both marker AND author to
-              # prevent a spoofed marker comment from being used as the target.
-              existing_comment_id=$(
-                gh api "repos/$REPO/issues/$PR_NUMBER/comments" \
-                  --jq ".[] | select(
-                    (.body | startswith(\"$MARKER\")) and
-                    (.user.login == \"github-actions[bot]\")
-                  ) | .id" \
-                  2>/dev/null | tail -1 || true
-              )
-
-              if [[ -n "$existing_comment_id" ]]; then
-                # Collect logins of all users who reacted with :+1:
-                mapfile -t reactor_logins < <(
-                  gh api "repos/$REPO/issues/comments/$existing_comment_id/reactions" \
-                    --jq '.[] | select(.content == "+1") | .user.login' \
-                    2>/dev/null || true
-                )
-
-                for login in "${reactor_logins[@]}"; do
-                  # Accept the reaction only if the user has at least write
-                  # (push) permission on the repository.
-                  perm=$(
-                    gh api "repos/$REPO/collaborators/$login/permission" \
-                      --jq '.permission' \
-                      2>/dev/null || echo "none"
-                  )
-                  case "$perm" in
-                    write|maintain|admin)
-                      APPROVED=true
-                      echo "Approval detected: maintainer '$login' reacted with :+1: (permission: $perm)."
-                      break
-                      ;;
-                    *)
-                      echo "Ignoring :+1: from '$login' — insufficient permission ($perm)."
-                      ;;
-                  esac
-                done
-              fi
-            fi
-
-            if [[ "$APPROVED" == "false" ]]; then
-              DRY_RUN=true
-              APPROVAL_REQUIRED=true
-              echo "No maintainer approval detected — forcing dry-run mode until a maintainer approves."
-            else
-              echo "Approval confirmed — proceeding with auto-commit mode."
-            fi
-          fi
+          # until a maintainer approves via a GitHub review or :+1: reaction.
+          # Skipped entirely when DRY_RUN is already true (unconditional precedence).
+          check_approval_gate
 
           if [[ "$DRY_RUN" == "true" ]]; then
             echo "Running in DRY-RUN mode — no commits will be pushed."
@@ -210,17 +107,6 @@ jobs:
             echo "Running in AUTO-COMMIT mode — changes will be committed automatically."
           fi
           echo ""
-
-          # ── Shared marker & cleanup helper ───────────────────────────────────
-          # Define MARKER early so the helper below can reference it before the
-          # comment-posting block at step 6.
-          MARKER="<!-- codeowners-rename-bot -->"
-
-          # Load the shared helper (delete_bot_comment).  The script is kept
-          # in a separate file so the unit-test suite can source the same
-          # definition rather than maintaining a copy.
-          # shellcheck source=.github/scripts/codeowners-bot.sh
-          source ".github/scripts/codeowners-bot.sh"
 
           # ── 1. Collect all file-level renames in this PR ─────────────────────
           # Output format: R<score> TAB old-path TAB new-path

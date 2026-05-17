@@ -1,0 +1,35 @@
+name: Test – dry-run and approval-gate comment paths
+
+# Verifies the resolve_dry_run_mode and check_approval_gate helpers
+# introduced in task #298.  These helpers control whether the bot runs in
+# dry-run mode (no commit pushed) and whether it waits for a maintainer to
+# approve before auto-committing.
+#
+# Triggered on changes to the detection workflow itself, the helpers file,
+# or this test so regressions are caught immediately in CI.
+
+on:
+  push:
+    paths:
+      - ".github/workflows/suggest-codeowners-updates.yml"
+      - ".github/scripts/codeowners-bot-helpers.sh"
+      - ".github/scripts/test-codeowners-dry-run-and-approval.sh"
+      - ".github/workflows/test-codeowners-dry-run-and-approval.yml"
+  pull_request:
+    paths:
+      - ".github/workflows/suggest-codeowners-updates.yml"
+      - ".github/scripts/codeowners-bot-helpers.sh"
+      - ".github/scripts/test-codeowners-dry-run-and-approval.sh"
+      - ".github/workflows/test-codeowners-dry-run-and-approval.yml"
+  workflow_dispatch:
+
+jobs:
+  test-dry-run-and-approval:
+    name: Verify dry-run and approval-gate comment paths
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run dry-run and approval-gate unit tests
+        run: bash .github/scripts/test-codeowners-dry-run-and-approval.sh
