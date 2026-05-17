@@ -15,6 +15,7 @@
     "generate-guide-with-screenshots": "tsx ./src/generate-user-guide.ts --screenshots --output-screenshots-dir=screenshots",
     "capture-screenshots": "tsx ./src/generate-user-guide.ts --screenshots-only --output-screenshots-dir=screenshots",
     "watch-guide": "tsx ./src/watch-guide.ts",
+    "watch-guide:open": "tsx ./src/watch-guide.ts --open",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

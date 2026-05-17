@@ -1,5 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
+import { spawn } from "child_process";
 import { fileURLToPath } from "url";
 import { buildDocument, OUTPUT_PATH } from "./generate-user-guide.js";
 import type { CaptureEntry } from "./generate-user-guide.js";
@@ -9,8 +10,34 @@ const SCREENSHOTS_DIR = path.resolve(__dirname, "../screenshots");
 const INDEX_JSON = path.join(SCREENSHOTS_DIR, "index.json");
 const DEBOUNCE_MS = 500;
 
+const OPEN_FLAG = process.argv.includes("--open");
+
 function ts(): string {
   return new Date().toLocaleTimeString("ar-SA", { hour12: false });
+}
+
+function openDocument(filePath: string): void {
+  const platform = process.platform;
+  let cmd: string;
+  let args: string[];
+
+  if (platform === "darwin") {
+    cmd = "open";
+    args = [filePath];
+  } else if (platform === "win32") {
+    cmd = "cmd";
+    args = ["/c", "start", "", filePath];
+  } else {
+    cmd = "xdg-open";
+    args = [filePath];
+  }
+
+  const child = spawn(cmd, args, { detached: true, stdio: "ignore" });
+  child.on("error", (err) => {
+    console.warn(`${ts()} ⚠  تعذّر فتح الملف تلقائياً (${cmd}): ${err.message}`);
+  });
+  child.unref();
+  console.log(`${ts()} 📂 تم فتح الملف في المشاهد الافتراضي: ${path.basename(filePath)}`);
 }
 
 function loadScreenshots(): { screenshots: Map<string, Buffer>; captureOrder: CaptureEntry[] } {
@@ -60,6 +87,10 @@ async function rebuild(changed: string[]): Promise<void> {
     fs.writeFileSync(OUTPUT_PATH, buffer);
     const sizeKB = Math.round(buffer.length / 1024);
     console.log(`${ts()} ✅ تم تحديث ملف Word (${sizeKB} KB): ${path.basename(OUTPUT_PATH)}`);
+
+    if (OPEN_FLAG) {
+      openDocument(OUTPUT_PATH);
+    }
   } catch (err) {
     console.error(`${ts()} ❌ فشل إعادة البناء:`, err);
   }
@@ -88,7 +119,11 @@ function startWatcher(): void {
   }
 
   console.log(`👁  مراقبة التغييرات في: ${SCREENSHOTS_DIR}`);
-  console.log(`    (أي تغيير في ملفات PNG سيُعيد بناء المستند بعد ${DEBOUNCE_MS}ms)\n`);
+  console.log(`    (أي تغيير في ملفات PNG سيُعيد بناء المستند بعد ${DEBOUNCE_MS}ms)`);
+  if (OPEN_FLAG) {
+    console.log(`    (--open مُفعَّل: سيُفتح الملف تلقائياً بعد كل إعادة بناء ناجحة)`);
+  }
+  console.log();
 
   fs.watch(SCREENSHOTS_DIR, { persistent: true }, (eventType, filename) => {
     if (filename && filename.endsWith(".png")) {
