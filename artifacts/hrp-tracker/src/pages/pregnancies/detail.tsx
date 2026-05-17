@@ -490,7 +490,7 @@ export default function PregnancyDetail() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>المواعيد في المستشفى</CardTitle>
+            <CardTitle>{t("appt.appointmentsTitle")}</CardTitle>
             <Button
               size="sm"
               variant="outline"
@@ -615,7 +615,10 @@ export default function PregnancyDetail() {
                             title="إعادة تعيين"
                             onClick={() => updateAppointmentMutation.mutate(
                               { id: apt.id, data: { attended: null, attendanceNote: null } },
-                              { onSuccess: () => { toast({ title: t("appt.resetSuccess") }); refetch(); } }
+                              {
+                              onSuccess: () => { toast({ title: t("appt.resetSuccess") }); refetch(); },
+                              onError: () => toast({ title: "خطأ", description: t("general.saveError"), variant: "destructive" }),
+                            }
                             )}
                           >
                             <RotateCcw className="w-3.5 h-3.5" />
