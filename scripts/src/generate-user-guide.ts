@@ -64,6 +64,16 @@ const GRAY_LIGHT = "F9FAFB";
 const YELLOW_LIGHT = "FEF9C3";
 const BLUE_LIGHT = "DBEAFE";
 
+// Risk-level palette (quick-reference summary)
+const RISK_LOW_BG = "D1FAE5";
+const RISK_LOW_FG = "065F46";
+const RISK_MED_BG = "FEF3C7";
+const RISK_MED_FG = "92400E";
+const RISK_HIGH_BG = "FED7AA";
+const RISK_HIGH_FG = "9A3412";
+const RISK_CRIT_BG = "FEE2E2";
+const RISK_CRIT_FG = "991B1B";
+
 // ── Helper: Paragraph with RTL ────────────────────────────────────────────────
 function rtlPara(
   text: string,
@@ -361,6 +371,332 @@ function pageBreak(): Paragraph {
   });
 }
 
+// ── Helper: coloured table cell for risk levels ───────────────────────────
+function riskCell(text: string, bg: string, fg: string): TableCell {
+  return new TableCell({
+    width: { size: 20, type: WidthType.PERCENTAGE },
+    shading: { type: ShadingType.SOLID, color: bg, fill: bg },
+    borders: {
+      top: { style: BorderStyle.SINGLE, color: "E5E7EB", size: 2 },
+      bottom: { style: BorderStyle.SINGLE, color: "E5E7EB", size: 2 },
+      left: { style: BorderStyle.SINGLE, color: "E5E7EB", size: 2 },
+      right: { style: BorderStyle.SINGLE, color: "E5E7EB", size: 2 },
+    },
+    children: [
+      new Paragraph({
+        bidirectional: true,
+        alignment: AlignmentType.CENTER,
+        children: [
+          new TextRun({ text, bold: true, size: 22, color: fg, font: "Calibri" }),
+        ],
+      }),
+    ],
+  });
+}
+
+// ── Helper: plain table cell ──────────────────────────────────────────────
+function plainCell(text: string, widthPct = 80): TableCell {
+  return new TableCell({
+    width: { size: widthPct, type: WidthType.PERCENTAGE },
+    borders: {
+      top: { style: BorderStyle.SINGLE, color: "E5E7EB", size: 2 },
+      bottom: { style: BorderStyle.SINGLE, color: "E5E7EB", size: 2 },
+      left: { style: BorderStyle.SINGLE, color: "E5E7EB", size: 2 },
+      right: { style: BorderStyle.SINGLE, color: "E5E7EB", size: 2 },
+    },
+    children: [
+      new Paragraph({
+        bidirectional: true,
+        alignment: AlignmentType.RIGHT,
+        children: [new TextRun({ text, size: 20, color: GRAY_DARK, font: "Calibri" })],
+      }),
+    ],
+  });
+}
+
+// ── Helper: label cell (bold, green-light bg) ─────────────────────────────
+function labelCell(text: string): TableCell {
+  return new TableCell({
+    width: { size: 20, type: WidthType.PERCENTAGE },
+    shading: { type: ShadingType.SOLID, color: GREEN_LIGHT, fill: GREEN_LIGHT },
+    borders: {
+      top: { style: BorderStyle.SINGLE, color: "E5E7EB", size: 2 },
+      bottom: { style: BorderStyle.SINGLE, color: "E5E7EB", size: 2 },
+      left: { style: BorderStyle.SINGLE, color: "E5E7EB", size: 2 },
+      right: { style: BorderStyle.SINGLE, color: "E5E7EB", size: 2 },
+    },
+    children: [
+      new Paragraph({
+        bidirectional: true,
+        alignment: AlignmentType.CENTER,
+        children: [new TextRun({ text, bold: true, size: 20, color: GRAY_DARK, font: "Calibri" })],
+      }),
+    ],
+  });
+}
+
+// ── Quick-reference summary page ─────────────────────────────────────────
+function buildQuickReferenceSummary(): (Paragraph | Table)[] {
+  const items: (Paragraph | Table)[] = [];
+
+  // ── Title ────────────────────────────────────────────────────────────────
+  items.push(
+    new Paragraph({
+      bidirectional: true,
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 240, after: 200 },
+      shading: { type: ShadingType.SOLID, color: GREEN_MID, fill: GREEN_MID },
+      children: [
+        new TextRun({
+          text: "بطاقة المرجع السريع  /  Quick-Reference Summary",
+          bold: true,
+          size: 36,
+          color: WHITE,
+          font: "Calibri",
+        }),
+      ],
+    }),
+  );
+
+  // ── Section 1: Risk Classification Levels ────────────────────────────────
+  items.push(
+    new Paragraph({
+      bidirectional: true,
+      alignment: AlignmentType.RIGHT,
+      spacing: { before: 240, after: 120 },
+      children: [
+        new TextRun({
+          text: "مستويات تصنيف الخطورة  /  Risk Classification Levels",
+          bold: true,
+          size: 26,
+          color: GREEN_MID,
+          font: "Calibri",
+        }),
+      ],
+    }),
+  );
+
+  // Header row
+  const riskHeaderRow = new TableRow({
+    tableHeader: true,
+    children: [
+      new TableCell({
+        width: { size: 20, type: WidthType.PERCENTAGE },
+        shading: { type: ShadingType.SOLID, color: GREEN_MID, fill: GREEN_MID },
+        borders: {
+          top: { style: BorderStyle.SINGLE, color: "E5E7EB", size: 2 },
+          bottom: { style: BorderStyle.SINGLE, color: "E5E7EB", size: 2 },
+          left: { style: BorderStyle.SINGLE, color: "E5E7EB", size: 2 },
+          right: { style: BorderStyle.SINGLE, color: "E5E7EB", size: 2 },
+        },
+        children: [
+          new Paragraph({
+            bidirectional: true,
+            alignment: AlignmentType.CENTER,
+            children: [new TextRun({ text: "المستوى  /  Level", bold: true, size: 20, color: WHITE, font: "Calibri" })],
+          }),
+        ],
+      }),
+      new TableCell({
+        width: { size: 80, type: WidthType.PERCENTAGE },
+        shading: { type: ShadingType.SOLID, color: GREEN_MID, fill: GREEN_MID },
+        borders: {
+          top: { style: BorderStyle.SINGLE, color: "E5E7EB", size: 2 },
+          bottom: { style: BorderStyle.SINGLE, color: "E5E7EB", size: 2 },
+          left: { style: BorderStyle.SINGLE, color: "E5E7EB", size: 2 },
+          right: { style: BorderStyle.SINGLE, color: "E5E7EB", size: 2 },
+        },
+        children: [
+          new Paragraph({
+            bidirectional: true,
+            alignment: AlignmentType.RIGHT,
+            children: [new TextRun({ text: "التعريف والإجراء المطلوب  /  Definition & Required Action", bold: true, size: 20, color: WHITE, font: "Calibri" })],
+          }),
+        ],
+      }),
+    ],
+  });
+
+  const riskRows: TableRow[] = [
+    new TableRow({
+      children: [
+        riskCell("منخفض\nLow", RISK_LOW_BG, RISK_LOW_FG),
+        plainCell("لا توجد عوامل خطر مؤثرة – متابعة روتينية في المركز الصحي  /  No significant risk factors — routine follow-up at the health center"),
+      ],
+    }),
+    new TableRow({
+      children: [
+        riskCell("متوسط\nMedium", RISK_MED_BG, RISK_MED_FG),
+        plainCell("عوامل خطر محدودة – متابعة مكثفة في المركز الصحي  /  Limited risk factors — intensive follow-up at the health center"),
+      ],
+    }),
+    new TableRow({
+      children: [
+        riskCell("عالٍ\nHigh", RISK_HIGH_BG, RISK_HIGH_FG),
+        plainCell("عوامل خطر متعددة أو حادة – إحالة للمستشفى  /  Multiple or severe risk factors — referral to hospital"),
+      ],
+    }),
+    new TableRow({
+      children: [
+        riskCell("حرج\nCritical", RISK_CRIT_BG, RISK_CRIT_FG),
+        plainCell("حالة طارئة تستدعي تدخلًا فوريًا – إحالة لـ KFCH أو أقرب مستشفى  /  Emergency — immediate intervention, transfer to KFCH or nearest hospital"),
+      ],
+    }),
+  ];
+
+  items.push(
+    new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: [riskHeaderRow, ...riskRows],
+    }),
+  );
+
+  // ── Section 2: Compliance Threshold ──────────────────────────────────────
+  items.push(
+    new Paragraph({
+      bidirectional: true,
+      alignment: AlignmentType.RIGHT,
+      spacing: { before: 280, after: 120 },
+      children: [
+        new TextRun({
+          text: "معيار الالتزام بالمواعيد  /  Booking Compliance Threshold",
+          bold: true,
+          size: 26,
+          color: GREEN_MID,
+          font: "Calibri",
+        }),
+      ],
+    }),
+    new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: [
+        new TableRow({
+          children: [
+            labelCell("✅ ملتزم\nCompliant"),
+            plainCell("حُجز الموعد خلال ≤ 2 يوم عمل من تاريخ الزيارة (الجمعة والسبت مستثنيان)  /  Appointment booked within ≤ 2 working days of the visit date (Fri & Sat excluded)"),
+          ],
+        }),
+        new TableRow({
+          children: [
+            labelCell("❌ غير ملتزم\nNon-compliant"),
+            plainCell("تأخر الحجز أكثر من يومَي عمل  /  Appointment booked more than 2 working days after the visit date"),
+          ],
+        }),
+        new TableRow({
+          children: [
+            labelCell("⏳ معلق\nPending"),
+            plainCell("لم يُحجز موعد بعد  /  No appointment booked yet"),
+          ],
+        }),
+      ],
+    }),
+  );
+
+  // ── Section 3: Six-Step Checklist ────────────────────────────────────────
+  items.push(
+    new Paragraph({
+      bidirectional: true,
+      alignment: AlignmentType.RIGHT,
+      spacing: { before: 280, after: 120 },
+      children: [
+        new TextRun({
+          text: "قائمة الخطوات الأساسية  /  Key-Steps Checklist",
+          bold: true,
+          size: 26,
+          color: GREEN_MID,
+          font: "Calibri",
+        }),
+      ],
+    }),
+  );
+
+  const steps: [string, string][] = [
+    [
+      "سجِّلي المريضة برقم الهوية الوطنية (10 أرقام) – لكل مريضة سجل واحد فقط",
+      "Register the patient with her National ID (10 digits) — one record per patient",
+    ],
+    [
+      "أضيفي حالة الحمل وحدِّدي مستوى الخطورة وعوامل الخطر المنطبقة",
+      "Add the pregnancy case, set the risk level and applicable risk factors",
+    ],
+    [
+      "احجزي موعدًا خلال يومَي عمل من تاريخ الزيارة (الجمعة والسبت لا تُحسبان)",
+      "Book an appointment within 2 working days of the visit date (Fri & Sat excluded)",
+    ],
+    [
+      "سجِّلي الحضور وأي ملاحظات طبية بعد الزيارة",
+      "Record attendance and any clinical notes after the visit",
+    ],
+    [
+      "راجعي التنبيهات يوميًا: حالات VTE بدون إينوكساباريـن، وحالات حرجة بدون مواعيد",
+      "Check alerts daily: VTE cases without Enoxaparin, critical cases without appointments",
+    ],
+    [
+      "صدِّري تقارير CSV دورية وراجعي لوحة المعلومات لمتابعة الأداء",
+      "Export periodic CSV reports and review the dashboard to track performance",
+    ],
+  ];
+
+  steps.forEach(([ar, en], idx) => {
+    const num = String(idx + 1);
+    items.push(
+      new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        rows: [
+          new TableRow({
+            children: [
+              new TableCell({
+                width: { size: 6, type: WidthType.PERCENTAGE },
+                shading: { type: ShadingType.SOLID, color: GREEN_MID, fill: GREEN_MID },
+                borders: {
+                  top: { style: BorderStyle.SINGLE, color: "E5E7EB", size: 2 },
+                  bottom: { style: BorderStyle.SINGLE, color: "E5E7EB", size: 2 },
+                  left: { style: BorderStyle.SINGLE, color: "E5E7EB", size: 2 },
+                  right: { style: BorderStyle.SINGLE, color: "E5E7EB", size: 2 },
+                },
+                children: [
+                  new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    children: [new TextRun({ text: num, bold: true, size: 24, color: WHITE, font: "Calibri" })],
+                  }),
+                ],
+              }),
+              new TableCell({
+                width: { size: 94, type: WidthType.PERCENTAGE },
+                borders: {
+                  top: { style: BorderStyle.SINGLE, color: "E5E7EB", size: 2 },
+                  bottom: { style: BorderStyle.SINGLE, color: "E5E7EB", size: 2 },
+                  left: { style: BorderStyle.SINGLE, color: "E5E7EB", size: 2 },
+                  right: { style: BorderStyle.SINGLE, color: "E5E7EB", size: 2 },
+                },
+                children: [
+                  new Paragraph({
+                    bidirectional: true,
+                    alignment: AlignmentType.RIGHT,
+                    spacing: { before: 40, after: 20 },
+                    children: [new TextRun({ text: ar, bold: true, size: 20, color: GRAY_DARK, font: "Calibri" })],
+                  }),
+                  new Paragraph({
+                    bidirectional: true,
+                    alignment: AlignmentType.RIGHT,
+                    spacing: { before: 20, after: 40 },
+                    children: [new TextRun({ text: en, size: 18, color: GRAY_MID, font: "Calibri", italics: true })],
+                  }),
+                ],
+              }),
+            ],
+          }),
+        ],
+      }),
+    );
+    // small gap between step rows
+    items.push(new Paragraph({ spacing: { before: 0, after: 0 }, children: [] }));
+  });
+
+  items.push(pageBreak());
+  return items;
+}
+
 // ── Build document ────────────────────────────────────────────────────────────
 export type CaptureEntry = { order: number; key: string; filename: string };
 
@@ -552,6 +888,11 @@ export async function buildDocument(screenshots?: Map<string, Buffer>, captureOr
     ),
     pageBreak(),
   );
+
+  // ============================================================
+  // QUICK-REFERENCE SUMMARY PAGE
+  // ============================================================
+  sections.push(...buildQuickReferenceSummary());
 
   // ============================================================
   // SECTION 1: OVERVIEW
