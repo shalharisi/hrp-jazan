@@ -4,6 +4,7 @@ import { useI18n } from "@/lib/i18n-context";
 import {
   useGetPregnancy, useUpdatePregnancy, useListHospitals,
   useCreateAppointment, useUpdateAppointment,
+  useUpdatePatient, useListSectors, useListHealthCenters,
   PregnancyUpdateRiskLevel, PregnancyUpdateReferralRecommendation
 } from "@workspace/api-client-react";
 import type { PregnancyDetail } from "@workspace/api-client-react";
@@ -80,6 +81,15 @@ type EditForm = {
   appointmentDate: string;
   notes: string;
   followUpNotes: string;
+};
+
+type PatientForm = {
+  nameAr: string;
+  dateOfBirth: string;
+  phone: string;
+  doctorPhone: string;
+  address: string;
+  healthCenterId: number;
 };
 
 const riskLabelAr: Record<string, string> = {
@@ -253,8 +263,20 @@ export default function PregnancyDetail() {
 
   const { data: hospitals } = useListHospitals();
   const updatePregnancy = useUpdatePregnancy();
+  const updatePatient = useUpdatePatient();
   const createAppointmentMutation = useCreateAppointment();
   const updateAppointmentMutation = useUpdateAppointment();
+
+  const { data: sectors } = useListSectors();
+  const [selectedSectorId, setSelectedSectorId] = useState<number | null>(null);
+  const { data: healthCenters } = useListHealthCenters(
+    { sectorId: selectedSectorId ? Number(selectedSectorId) : undefined },
+    { query: { queryKey: ["health-centers", selectedSectorId], enabled: !!selectedSectorId } }
+  );
+
+  const [patientForm, setPatientForm] = useState<PatientForm>({
+    nameAr: "", dateOfBirth: "", phone: "", doctorPhone: "", address: "", healthCenterId: 0,
+  });
 
   // ── Attendance dialog state ────────────────────────────────────────────
   const [attendDlg, setAttendDlg] = useState<{
@@ -313,7 +335,7 @@ export default function PregnancyDetail() {
 
   function startEdit() {
     if (!detail) return;
-    const { pregnancy } = detail;
+    const { pregnancy, patient } = detail;
     setForm({
       visitDate: pregnancy.visitDate ?? "",
       lmpDate: pregnancy.lmpDate ?? "",
@@ -333,50 +355,86 @@ export default function PregnancyDetail() {
       notes: pregnancy.notes ?? "",
       followUpNotes: pregnancy.followUpNotes ?? "",
     });
+    setPatientForm({
+      nameAr: patient.nameAr ?? "",
+      dateOfBirth: patient.dateOfBirth ?? "",
+      phone: patient.phone ?? "",
+      doctorPhone: patient.doctorPhone ?? "",
+      address: patient.address ?? "",
+      healthCenterId: patient.healthCenterId ?? 0,
+    });
+    setSelectedSectorId(patient.sectorId ?? null);
     setEditMode(true);
   }
 
-  function cancelEdit() { setEditMode(false); }
+  function cancelEdit() {
+    setEditMode(false);
+    setSelectedSectorId(null);
+  }
 
   function toggleInArray(arr: string[], val: string): string[] {
     return arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val];
   }
 
   function saveEdit() {
-    updatePregnancy.mutate(
-      {
-        id: pregnancyId,
-        data: {
-          visitDate: form.visitDate || undefined,
-          lmpDate: form.lmpDate || null,
-          gestationalAge: form.gestationalAge ? Number(form.gestationalAge) : null,
-          riskLevel: form.riskLevel as PregnancyUpdateRiskLevel || undefined,
-          referralRecommendation: form.referralRecommendation as PregnancyUpdateReferralRecommendation || undefined,
-          riskFactors: form.riskFactors,
-          pregnancyRiskFactors: form.pregnancyRiskFactors,
-          medicalConditions: form.medicalConditions,
-          medications: form.medications || null,
-          isVteHighRisk: form.isVteHighRisk,
-          enoxaparinPrescribed: form.enoxaparinPrescribed,
-          referralExplained: form.referralExplained,
-          doctorName: form.doctorName || null,
-          referredHospitalId: form.referredHospitalId ? Number(form.referredHospitalId) : null,
-          appointmentDate: form.appointmentDate || null,
-          notes: form.notes || null,
-          followUpNotes: form.followUpNotes || null,
+    const patientId = detail?.patient?.id;
+    const pregnancySave = new Promise<void>((resolve, reject) => {
+      updatePregnancy.mutate(
+        {
+          id: pregnancyId,
+          data: {
+            visitDate: form.visitDate || undefined,
+            lmpDate: form.lmpDate || null,
+            gestationalAge: form.gestationalAge ? Number(form.gestationalAge) : null,
+            riskLevel: form.riskLevel as PregnancyUpdateRiskLevel || undefined,
+            referralRecommendation: form.referralRecommendation as PregnancyUpdateReferralRecommendation || undefined,
+            riskFactors: form.riskFactors,
+            pregnancyRiskFactors: form.pregnancyRiskFactors,
+            medicalConditions: form.medicalConditions,
+            medications: form.medications || null,
+            isVteHighRisk: form.isVteHighRisk,
+            enoxaparinPrescribed: form.enoxaparinPrescribed,
+            referralExplained: form.referralExplained,
+            doctorName: form.doctorName || null,
+            referredHospitalId: form.referredHospitalId ? Number(form.referredHospitalId) : null,
+            appointmentDate: form.appointmentDate || null,
+            notes: form.notes || null,
+            followUpNotes: form.followUpNotes || null,
+          },
         },
-      },
-      {
-        onSuccess: () => {
-          toast({ title: t("general.saved"), description: t("general.saveSuccess") });
-          setEditMode(false);
-          refetch();
-        },
-        onError: () => {
-          toast({ title: "خطأ", description: t("general.saveError"), variant: "destructive" });
-        },
-      }
-    );
+        { onSuccess: () => resolve(), onError: (e) => reject(e) }
+      );
+    });
+
+    const patientSave = patientId
+      ? new Promise<void>((resolve, reject) => {
+          updatePatient.mutate(
+            {
+              id: patientId,
+              data: {
+                nameAr: patientForm.nameAr || undefined,
+                dateOfBirth: patientForm.dateOfBirth || null,
+                phone: patientForm.phone || undefined,
+                doctorPhone: patientForm.doctorPhone || null,
+                address: patientForm.address || null,
+                healthCenterId: patientForm.healthCenterId || undefined,
+              },
+            },
+            { onSuccess: () => resolve(), onError: (e) => reject(e) }
+          );
+        })
+      : Promise.resolve();
+
+    Promise.all([pregnancySave, patientSave])
+      .then(() => {
+        toast({ title: t("general.saved"), description: t("general.saveSuccess") });
+        setEditMode(false);
+        setSelectedSectorId(null);
+        refetch();
+      })
+      .catch(() => {
+        toast({ title: "خطأ", description: t("general.saveError"), variant: "destructive" });
+      });
   }
 
   if (isLoading) return <Skeleton className="h-64 w-full" />;
@@ -429,22 +487,80 @@ export default function PregnancyDetail() {
 
       {/* Patient summary */}
       {patient && (
-        <Card className="bg-muted/40">
-          <CardContent className="pt-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-              <div><span className="text-muted-foreground">{t("patients.name")}: </span><span className="font-medium">{patient.nameAr}</span></div>
-              <div><span className="text-muted-foreground">{t("patients.nationalId")}: </span><span className="font-medium" dir="ltr">{patient.nationalId}</span></div>
-              <div><span className="text-muted-foreground">{t("patients.age")}: </span><span className="font-medium">{patient.age != null ? `${patient.age} سنة` : "—"}</span></div>
-              <div><span className="text-muted-foreground">{t("patients.phone")}: </span><span className="font-medium" dir="ltr">{patient.phone}</span></div>
-              {patient.doctorPhone && (
-                <div><span className="text-muted-foreground">{t("patients.doctorPhone")}: </span><span className="font-medium" dir="ltr">{patient.doctorPhone}</span></div>
-              )}
-              {patient.address && (
-                <div><span className="text-muted-foreground">{t("patients.address")}: </span><span className="font-medium">{patient.address}</span></div>
-              )}
-              <div><span className="text-muted-foreground">{t("patients.sector")}: </span><span className="font-medium">{patient.sectorNameAr ?? "—"}</span></div>
-              <div><span className="text-muted-foreground">{t("patients.healthCenter")}: </span><span className="font-medium">{patient.healthCenterNameAr ?? "—"}</span></div>
-            </div>
+        <Card className={editMode ? "border-primary/40 bg-primary/5" : "bg-muted/40"}>
+          <CardHeader className="pb-2 pt-4">
+            <CardTitle className="text-base flex items-center gap-2">
+              {editMode ? "تعديل بيانات المريضة" : t("patients.name")}
+              {!editMode && <span className="font-normal text-muted-foreground text-sm">— {patient.nameAr}</span>}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {editMode ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Field label={t("patients.name")}>
+                  <Input value={patientForm.nameAr} onChange={e => setPatientForm(f => ({ ...f, nameAr: e.target.value }))} />
+                </Field>
+                <Field label={t("patients.nationalId")}>
+                  <Input value={patient.nationalId} disabled className="bg-muted" dir="ltr" />
+                </Field>
+                <Field label={t("patients.dateOfBirth")}>
+                  <Input type="date" value={patientForm.dateOfBirth} onChange={e => setPatientForm(f => ({ ...f, dateOfBirth: e.target.value }))} />
+                </Field>
+                <Field label={t("patients.phone")}>
+                  <Input value={patientForm.phone} onChange={e => setPatientForm(f => ({ ...f, phone: e.target.value }))} dir="ltr" />
+                </Field>
+                <Field label={t("patients.doctorPhone")}>
+                  <Input value={patientForm.doctorPhone} onChange={e => setPatientForm(f => ({ ...f, doctorPhone: e.target.value }))} dir="ltr" />
+                </Field>
+                <Field label={t("patients.address")}>
+                  <Input value={patientForm.address} onChange={e => setPatientForm(f => ({ ...f, address: e.target.value }))} />
+                </Field>
+                <Field label={t("patients.sector")}>
+                  <Select
+                    value={selectedSectorId ? String(selectedSectorId) : ""}
+                    onValueChange={v => {
+                      setSelectedSectorId(Number(v));
+                      setPatientForm(f => ({ ...f, healthCenterId: 0 }));
+                    }}
+                  >
+                    <SelectTrigger><SelectValue placeholder="اختر القطاع" /></SelectTrigger>
+                    <SelectContent>
+                      {sectors?.map(s => (
+                        <SelectItem key={s.id} value={String(s.id)}>{s.nameAr}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label={t("patients.healthCenter")}>
+                  <Select
+                    value={patientForm.healthCenterId ? String(patientForm.healthCenterId) : ""}
+                    onValueChange={v => setPatientForm(f => ({ ...f, healthCenterId: Number(v) }))}
+                    disabled={!selectedSectorId}
+                  >
+                    <SelectTrigger><SelectValue placeholder="اختر المركز الصحي" /></SelectTrigger>
+                    <SelectContent>
+                      {healthCenters?.map(hc => (
+                        <SelectItem key={hc.id} value={String(hc.id)}>{hc.nameAr}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                <div><span className="text-muted-foreground">{t("patients.nationalId")}: </span><span className="font-medium" dir="ltr">{patient.nationalId}</span></div>
+                <div><span className="text-muted-foreground">{t("patients.age")}: </span><span className="font-medium">{patient.age != null ? `${patient.age} سنة` : "—"}</span></div>
+                <div><span className="text-muted-foreground">{t("patients.phone")}: </span><span className="font-medium" dir="ltr">{patient.phone}</span></div>
+                {patient.doctorPhone && (
+                  <div><span className="text-muted-foreground">{t("patients.doctorPhone")}: </span><span className="font-medium" dir="ltr">{patient.doctorPhone}</span></div>
+                )}
+                {patient.address && (
+                  <div><span className="text-muted-foreground">{t("patients.address")}: </span><span className="font-medium">{patient.address}</span></div>
+                )}
+                <div><span className="text-muted-foreground">{t("patients.sector")}: </span><span className="font-medium">{patient.sectorNameAr ?? "—"}</span></div>
+                <div><span className="text-muted-foreground">{t("patients.healthCenter")}: </span><span className="font-medium">{patient.healthCenterNameAr ?? "—"}</span></div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
