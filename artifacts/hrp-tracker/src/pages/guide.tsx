@@ -151,10 +151,18 @@ export default function UserGuide() {
     fetchStatus();
   }, [user]);
 
+  useEffect(() => {
+    if (!generating) return;
+    setElapsedSeconds(0);
+    const interval = setInterval(() => {
+      setElapsedSeconds((s) => (s ?? 0) + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [generating]);
+
   const handleGenerate = async () => {
     setGenerating(true);
     setGenerateResult(null);
-    setElapsedSeconds(null);
     startTimeRef.current = Date.now();
     try {
       const res = await fetch(`${API}/downloads/user-guide/generate`, { method: "POST" });
@@ -276,6 +284,11 @@ export default function UserGuide() {
                         <div className="h-full bg-primary/60 rounded-full animate-[progress_2s_ease-in-out_infinite]" />
                       </div>
                       <p className="text-xs text-muted-foreground">{t("guide.generatingHint")}</p>
+                      {elapsedSeconds !== null && (
+                        <p className="text-xs text-muted-foreground font-mono">
+                          {t("guide.elapsed").replace("{n}", String(elapsedSeconds))}
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
