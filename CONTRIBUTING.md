@@ -64,7 +64,9 @@ Branch protection rules must be set in GitHub repository settings. Run the autom
 
 The same checks that CI runs are also enforced locally:
 
-- **Pre-commit hook** — `pnpm run check:codegen` runs automatically before every commit via `simple-git-hooks`. It blocks commits where `openapi.yaml` has been modified without regenerating the client/schemas.
+- **Pre-commit hook** — two checks run automatically before every commit via `simple-git-hooks`:
+  1. `pnpm run check:codegen` — blocks commits where `openapi.yaml` has been modified without regenerating the client/schemas.
+  2. `pnpm run lint` — blocks commits that contain ESLint errors or Prettier formatting violations.
 
 To install the hook in a fresh clone:
 

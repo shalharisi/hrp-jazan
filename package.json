@@ -12,7 +12,7 @@
     "lint": "eslint artifacts/ lib/ scripts/ && prettier --check \"artifacts/**/*.{ts,tsx}\" \"lib/**/*.{ts,tsx}\" \"scripts/**/*.{ts,tsx}\" --ignore-path .gitignore"
   },
   "simple-git-hooks": {
-    "pre-commit": "pnpm run check:codegen"
+    "pre-commit": "pnpm run check:codegen && pnpm run lint"
   },
   "type": "module",
   "private": true,
