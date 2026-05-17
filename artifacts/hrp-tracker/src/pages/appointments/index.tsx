@@ -117,10 +117,21 @@ function attendedLabel(attended: boolean | null | undefined, lang: string): stri
   return lang === "ar" ? "مجدول" : "Scheduled";
 }
 
+function buildExportFilename(dateFilter: DateFilter, sectorName: string | null): string {
+  const today = localDateStr(new Date());
+  const parts: string[] = ["appointments"];
+  if (dateFilter !== "all") parts.push(dateFilter);
+  if (sectorName) parts.push("sector", sectorName.replace(/\s+/g, "-"));
+  parts.push(today);
+  return `${parts.join("-")}.csv`;
+}
+
 function exportAppointmentsToCsv(
   rows: Appointment[],
   lang: string,
-  headers: { patient: string; nationalId: string; sector: string; hospital: string; date: string; status: string; note: string }
+  headers: { patient: string; nationalId: string; sector: string; hospital: string; date: string; status: string; note: string },
+  dateFilter: DateFilter,
+  sectorName: string | null
 ) {
   const cols = [
     headers.patient,
@@ -160,9 +171,8 @@ function exportAppointmentsToCsv(
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
-  const today = new Date().toISOString().slice(0, 10);
   link.href = url;
-  link.download = `appointments-${today}.csv`;
+  link.download = buildExportFilename(dateFilter, sectorName);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -394,17 +404,27 @@ export default function AppointmentsPage() {
             size="sm"
             className="h-9 gap-2"
             disabled={filtered.length === 0}
-            onClick={() =>
-              exportAppointmentsToCsv(filtered, lang, {
-                patient: t("appointments.colPatient"),
-                nationalId: t("appointments.colNationalId"),
-                sector: t("appointments.colSector"),
-                hospital: t("appointments.colHospital"),
-                date: t("appointments.colDate"),
-                status: t("appointments.colStatus"),
-                note: t("appointments.colAttendanceNote"),
-              })
-            }
+            onClick={() => {
+              const activeSectorName =
+                sectorFilter !== "all"
+                  ? (sectors?.find((s) => String(s.id) === sectorFilter)?.nameAr ?? null)
+                  : null;
+              exportAppointmentsToCsv(
+                filtered,
+                lang,
+                {
+                  patient: t("appointments.colPatient"),
+                  nationalId: t("appointments.colNationalId"),
+                  sector: t("appointments.colSector"),
+                  hospital: t("appointments.colHospital"),
+                  date: t("appointments.colDate"),
+                  status: t("appointments.colStatus"),
+                  note: t("appointments.colAttendanceNote"),
+                },
+                dateFilter,
+                activeSectorName
+              );
+            }}
           >
             <Download className="w-4 h-4" />
             {t("appointments.exportCsv")}
