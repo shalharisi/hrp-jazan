@@ -11,6 +11,16 @@ const INDEX_JSON = path.join(SCREENSHOTS_DIR, "index.json");
 const GUIDE_SOURCE = path.resolve(__dirname, "./generate-user-guide.ts");
 const DEBOUNCE_MS = 500;
 
+/**
+ * Static asset files consumed by generate-user-guide.ts.
+ * Add new entries here as the guide toolchain grows — each will be watched
+ * via its parent directory so file replacements and create-after-start are
+ * captured without restarting the watcher.
+ */
+const STATIC_ASSET_FILES: string[] = [
+  path.resolve(__dirname, "../../artifacts/hrp-tracker/src/assets/logo.jpg"),
+];
+
 const OPEN_FLAG = process.argv.includes("--open");
 
 function ts(): string {
@@ -155,6 +165,9 @@ function startWatcher(): void {
   console.log(`    • ${SCREENSHOTS_DIR}  (ملفات PNG)`);
   console.log(`    • ${INDEX_JSON}`);
   console.log(`    • ${GUIDE_SOURCE}`);
+  for (const assetPath of STATIC_ASSET_FILES) {
+    console.log(`    • ${assetPath}`);
+  }
   console.log(`    (أي تغيير سيُعيد بناء المستند بعد ${DEBOUNCE_MS}ms)`);
   if (OPEN_FLAG) {
     console.log(`    (--open مُفعَّل: سيُفتح الملف تلقائياً بعد كل إعادة بناء ناجحة)`);
@@ -178,6 +191,19 @@ function startWatcher(): void {
   fs.watch(GUIDE_SOURCE, { persistent: true }, (eventType, filename) => {
     scheduleRebuild(filename ?? path.basename(GUIDE_SOURCE), eventType ?? "change");
   });
+
+  // Watch each static asset file via its parent directory so that file
+  // replacements (cp newlogo.jpg logo.jpg) and create-after-start events
+  // are captured reliably without restarting the watcher process.
+  for (const assetPath of STATIC_ASSET_FILES) {
+    const assetDir = path.dirname(assetPath);
+    const assetName = path.basename(assetPath);
+    fs.watch(assetDir, { persistent: true }, (_eventType, filename) => {
+      if (filename === assetName) {
+        scheduleRebuild(assetName, "change");
+      }
+    });
+  }
 }
 
 startWatcher();
