@@ -3,6 +3,26 @@ name: Suggest CODEOWNERS Updates
 # Runs on every PR so it catches directory renames regardless of whether
 # CODEOWNERS itself was touched.  When no renames affect a tracked CODEOWNERS
 # path the job exits in a few seconds with no side-effects.
+#
+# ── Dry-run mode ─────────────────────────────────────────────────────────────
+# By default the bot commits and pushes the CODEOWNERS fix automatically.
+# To preview changes without committing, enable dry-run mode in one of two
+# ways:
+#
+#   1. Repository variable  (Settings → Variables → Actions):
+#        CODEOWNERS_BOT_DRY_RUN = true
+#      This turns dry-run on globally for every PR in the repository.
+#
+#   2. PR label:
+#        codeowners-dry-run
+#      Add this label to a specific PR to preview changes for that PR only.
+#      Remove the label to let the bot auto-commit on the next push.
+#
+# In dry-run mode the bot will NOT push any commit; it posts a comment that
+# clearly states it is in dry-run mode and lists the pending changes.  A human
+# reviewer must apply the changes manually (or remove the dry-run trigger) and
+# push before merging.
+# ─────────────────────────────────────────────────────────────────────────────
 
 on:
   pull_request:
@@ -33,10 +53,36 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           HEAD_BRANCH: ${{ github.head_ref }}
+          # Dry-run via repository variable (true/false string)
+          DRY_RUN_VAR: ${{ vars.CODEOWNERS_BOT_DRY_RUN }}
+          # PR labels as a JSON array for label-based dry-run detection
+          PR_LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
         run: |
           set -euo pipefail
 
           CODEOWNERS=".github/CODEOWNERS"
+
+          # ── 0. Resolve dry-run mode ───────────────────────────────────────
+          # Dry-run is active when the repository variable is "true" (case-
+          # insensitive) OR when the PR carries the "codeowners-dry-run" label.
+          DRY_RUN=false
+
+          if [[ "${DRY_RUN_VAR,,}" == "true" ]]; then
+            DRY_RUN=true
+            echo "Dry-run enabled via repository variable CODEOWNERS_BOT_DRY_RUN=true."
+          fi
+
+          if echo "${PR_LABELS}" | grep -qi '"codeowners-dry-run"'; then
+            DRY_RUN=true
+            echo "Dry-run enabled via PR label 'codeowners-dry-run'."
+          fi
+
+          if [[ "$DRY_RUN" == "true" ]]; then
+            echo "Running in DRY-RUN mode — no commits will be pushed."
+          else
+            echo "Running in AUTO-COMMIT mode — changes will be committed automatically."
+          fi
+          echo ""
 
           # ── 1. Collect all file-level renames in this PR ─────────────────────
           # Output format: R<score> TAB old-path TAB new-path
@@ -165,48 +211,95 @@ jobs:
           done
 
           # ── 5. Try to apply changes directly to CODEOWNERS and push ──────────
+          # Skipped entirely in dry-run mode.
           PUSHED=false
           COMMITTED=false
 
-          # Apply each replacement in-place using sed.
-          # Escape all characters with special meaning in sed's s|…|…| syntax,
-          # including the | delimiter itself.
-          for repl in "${unique_replacements[@]}"; do
-            old_pat="${repl%%|||*}"
-            new_pat="${repl##*|||}"
-            old_escaped=$(printf '%s' "$old_pat" | sed 's|[\\&/|]|\\&|g')
-            new_escaped=$(printf '%s' "$new_pat" | sed 's|[\\&/|]|\\&|g')
-            sed -i "s|${old_escaped}|${new_escaped}|g" "$CODEOWNERS"
-            echo "Applied: '${old_pat}' → '${new_pat}'"
-          done
-
-          # Commit and push only when the file actually changed
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add "$CODEOWNERS"
-
-          if git diff --cached --quiet; then
-            echo "CODEOWNERS was already up to date — no commit needed."
-            PUSHED=true  # treat as success so we post the auto-updated comment
+          if [[ "$DRY_RUN" == "true" ]]; then
+            echo "Dry-run mode active — skipping commit and push."
           else
-            git commit -m "chore: auto-update CODEOWNERS for renamed directories [skip ci]"
+            # Apply each replacement in-place using sed.
+            # Escape all characters with special meaning in sed's s|…|…| syntax,
+            # including the | delimiter itself.
+            for repl in "${unique_replacements[@]}"; do
+              old_pat="${repl%%|||*}"
+              new_pat="${repl##*|||}"
+              old_escaped=$(printf '%s' "$old_pat" | sed 's|[\\&/|]|\\&|g')
+              new_escaped=$(printf '%s' "$new_pat" | sed 's|[\\&/|]|\\&|g')
+              sed -i "s|${old_escaped}|${new_escaped}|g" "$CODEOWNERS"
+              echo "Applied: '${old_pat}' → '${new_pat}'"
+            done
 
-            if git push origin "HEAD:${HEAD_BRANCH}" 2>/dev/null; then
-              PUSHED=true
-              COMMITTED=true
-              echo "Successfully pushed CODEOWNERS update to '${HEAD_BRANCH}'."
+            # Commit and push only when the file actually changed
+            git config user.name  "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add "$CODEOWNERS"
+
+            if git diff --cached --quiet; then
+              echo "CODEOWNERS was already up to date — no commit needed."
+              PUSHED=true  # treat as success so we post the auto-updated comment
             else
-              echo "WARNING: Could not push to '${HEAD_BRANCH}' (fork PR or protected branch)."
-              echo "Reverting local commit and falling back to comment-only mode."
-              git reset HEAD~1
-              git checkout -- "$CODEOWNERS"
+              git commit -m "chore: auto-update CODEOWNERS for renamed directories [skip ci]"
+
+              if git push origin "HEAD:${HEAD_BRANCH}" 2>/dev/null; then
+                PUSHED=true
+                COMMITTED=true
+                echo "Successfully pushed CODEOWNERS update to '${HEAD_BRANCH}'."
+              else
+                echo "WARNING: Could not push to '${HEAD_BRANCH}' (fork PR or protected branch)."
+                echo "Reverting local commit and falling back to comment-only mode."
+                git reset HEAD~1
+                git checkout -- "$CODEOWNERS"
+              fi
             fi
           fi
 
           # ── 6. Post (or update) a PR comment ─────────────────────────────────
           MARKER="<!-- codeowners-rename-bot -->"
 
-          if [[ "$PUSHED" == "true" ]]; then
+          if [[ "$DRY_RUN" == "true" ]]; then
+            # ── Dry-run comment ───────────────────────────────────────────────
+            # Explain why no commit was made and what changes are pending.
+            # Check whether dry-run was triggered by label, variable, or both.
+            dry_run_reason=""
+            if [[ "${DRY_RUN_VAR,,}" == "true" ]] && echo "${PR_LABELS}" | grep -qi '"codeowners-dry-run"'; then
+              dry_run_reason="the repository variable \`CODEOWNERS_BOT_DRY_RUN\` is set to \`true\` **and** the PR carries the \`codeowners-dry-run\` label"
+            elif [[ "${DRY_RUN_VAR,,}" == "true" ]]; then
+              dry_run_reason="the repository variable \`CODEOWNERS_BOT_DRY_RUN\` is set to \`true\`"
+            else
+              dry_run_reason="the PR carries the \`codeowners-dry-run\` label"
+            fi
+
+            table_rows=""
+            for row in "${unique_suggestions[@]}"; do
+              table_rows="${table_rows}
+          ${row}"
+            done
+
+            body="${MARKER}
+          ## :mag: CODEOWNERS — dry-run preview (no changes committed)
+
+          This PR renames one or more directories that are tracked in \`.github/CODEOWNERS\`.
+          The bot is running in **dry-run mode** because ${dry_run_reason}.
+
+          No commit has been pushed. The table below shows the changes that *would* be applied
+          automatically once dry-run mode is disabled:
+
+          | Current pattern | Suggested pattern | Owners |
+          |---|---|---|${table_rows}
+
+          **To apply the changes automatically:**
+          - Remove the \`codeowners-dry-run\` label from this PR, **or**
+          - Set the repository variable \`CODEOWNERS_BOT_DRY_RUN\` to \`false\` (or delete it).
+
+          The bot will commit the fix on the next push to this branch.
+
+          > _This preview was generated automatically by the \`suggest-codeowners-updates\` workflow._
+          > _If the rename is intentional and the CODEOWNERS rule is no longer needed, simply_
+          > _remove the old entry instead of updating it._"
+
+          elif [[ "$PUSHED" == "true" ]]; then
+            # ── Auto-commit comment ───────────────────────────────────────────
             if [[ "$COMMITTED" == "true" ]]; then
               update_note="The file has been **automatically updated** in a new commit on this branch — no manual changes are needed before merging."
             else
@@ -231,7 +324,7 @@ jobs:
           > _If the rename was unintentional, or the old CODEOWNERS rule should be removed instead_
           > _of renamed, you can edit \`.github/CODEOWNERS\` on this branch before merging._"
           else
-            # Fall-back: list manual suggestions (push was not possible)
+            # ── Fall-back comment (push not possible — fork / protected branch) ─
             table_rows=""
             for row in "${unique_suggestions[@]}"; do
               table_rows="${table_rows}
@@ -287,7 +380,9 @@ jobs:
               done
             else
               echo ""
-              if [[ "$PUSHED" == "true" ]]; then
+              if [[ "$DRY_RUN" == "true" ]]; then
+                echo "Done. Dry-run comment posted with ${#unique_suggestions[@]} pending change(s) — no commit was pushed."
+              elif [[ "$PUSHED" == "true" ]]; then
                 echo "Done. CODEOWNERS auto-updated and comment posted with ${#unique_suggestions[@]} change(s)."
               else
                 echo "Done. Review comment posted with ${#unique_suggestions[@]} suggestion(s) (manual action required)."
