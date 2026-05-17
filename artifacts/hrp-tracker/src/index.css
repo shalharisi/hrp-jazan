@@ -186,3 +186,81 @@
 [dir="ltr"] .rtl-only {
   display: none;
 }
+
+/* ── Print styles ────────────────────────────────────────────── */
+@media print {
+  /* Hide all interactive chrome */
+  [data-sidebar],
+  [data-slot="sidebar"],
+  nav,
+  aside,
+  header,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Let the main content fill the page */
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 11pt;
+  }
+
+  /* Remove card shadows / backgrounds */
+  .card,
+  [data-slot="card"] {
+    box-shadow: none !important;
+    border: 1px solid #ccc !important;
+    background: white !important;
+    break-inside: avoid;
+  }
+
+  /* Show the print-only header */
+  .print-only {
+    display: block !important;
+  }
+
+  /* Table tweaks */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10pt;
+  }
+  th, td {
+    border: 1px solid #bbb;
+    padding: 4px 8px;
+    text-align: start;
+  }
+  thead {
+    background: #e8f5e9 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Avoid breaking rows across pages */
+  tr {
+    break-inside: avoid;
+  }
+
+  /* Remove overflow hidden so table prints fully */
+  .overflow-x-auto {
+    overflow: visible !important;
+  }
+
+  /* Keep badge colours */
+  .bg-green-100, .bg-red-100, .bg-yellow-100 {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Page margins */
+  @page {
+    margin: 15mm 10mm;
+    size: A4 landscape;
+  }
+}
+
+/* Hidden in screen mode, shown only during print */
+.print-only {
+  display: none;
+}

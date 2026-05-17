@@ -36,7 +36,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { CalendarCheck2, CalendarX2, Clock, ExternalLink, CalendarDays, Download, AlertCircle } from "lucide-react";
+import { CalendarCheck2, CalendarX2, Clock, ExternalLink, CalendarDays, Download, AlertCircle, Printer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { getListAppointmentsQueryKey } from "@workspace/api-client-react";
@@ -264,16 +264,55 @@ export default function AppointmentsPage() {
     return appointments.filter((a) => a.appointmentDate < todayStr && a.attended === null).length;
   }, [appointments, todayStr]);
 
+  const dateFilterLabel = (() => {
+    if (dateFilter === "today") return t("appointments.dateToday");
+    if (dateFilter === "week") return t("appointments.dateWeek");
+    return t("appointments.dateAll");
+  })();
+
+  const statusFilterLabel = (() => {
+    if (statusFilter === "needs_action") return t("appointments.statusNeedsAction");
+    if (statusFilter === "attended") return t("appt.attended");
+    if (statusFilter === "absent") return t("appt.absent");
+    if (statusFilter === "scheduled") return t("appt.scheduled");
+    return t("appointments.printAll");
+  })();
+
+  const sectorFilterLabel = (() => {
+    if (sectorFilter !== "all") {
+      return sectors?.find((s) => String(s.id) === sectorFilter)?.nameAr ?? sectorFilter;
+    }
+    return t("appointments.printAll");
+  })();
+
+  const printDate = new Date().toLocaleDateString(lang === "ar" ? "ar-SA" : "en-GB", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
   return (
     <div className="space-y-6">
-      <div>
+      {/* Print-only header — hidden on screen */}
+      <div className="print-only border-b pb-3 mb-4">
+        <h1 className="text-xl font-bold">{t("appointments.printTitle")}</h1>
+        <div className="flex flex-wrap gap-x-6 gap-y-1 mt-2 text-sm text-gray-600">
+          <span>{t("appointments.printFilterDate")}: <strong>{dateFilterLabel}</strong></span>
+          <span>{t("appointments.printFilterStatus")}: <strong>{statusFilterLabel}</strong></span>
+          <span>{t("appointments.printFilterSector")}: <strong>{sectorFilterLabel}</strong></span>
+          <span>{t("appointments.printDate")}: <strong>{printDate}</strong></span>
+          <span>{t("appointments.totalCount")}: <strong>{filtered.length}</strong></span>
+        </div>
+      </div>
+
+      <div className="no-print">
         <h1 className="text-3xl font-bold">{t("appointments.title")}</h1>
         <p className="text-muted-foreground mt-1 text-sm">{t("appointments.subtitle")}</p>
       </div>
 
       {/* Stats */}
       {!isLoading && (
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 no-print">
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
               <div className="p-2 rounded-full bg-slate-100">
@@ -343,7 +382,7 @@ export default function AppointmentsPage() {
       )}
 
       {/* Filters */}
-      <Card>
+      <Card className="no-print">
         <CardContent className="p-4 flex flex-wrap gap-3 items-end">
           <div className="flex flex-col gap-1">
             <Label className="text-xs text-muted-foreground">{t("appointments.filterDate")}</Label>
@@ -404,7 +443,7 @@ export default function AppointmentsPage() {
           <Button
             variant="outline"
             size="sm"
-            className="h-9 gap-2"
+            className="h-9 gap-2 no-print"
             disabled={filtered.length === 0}
             onClick={() => {
               const activeSectorName =
@@ -431,6 +470,17 @@ export default function AppointmentsPage() {
           >
             <Download className="w-4 h-4" />
             {t("appointments.exportCsv")}
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 gap-2 no-print"
+            disabled={filtered.length === 0}
+            onClick={() => window.print()}
+          >
+            <Printer className="w-4 h-4" />
+            {t("appointments.print")}
           </Button>
         </CardContent>
       </Card>
@@ -465,7 +515,7 @@ export default function AppointmentsPage() {
                     <TableHead>{t("appointments.colHospital")}</TableHead>
                     <TableHead>{t("appointments.colDate")}</TableHead>
                     <TableHead>{t("appointments.colStatus")}</TableHead>
-                    <TableHead className="text-center">{t("appointments.colActions")}</TableHead>
+                    <TableHead className="text-center no-print">{t("appointments.colActions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -495,7 +545,7 @@ export default function AppointmentsPage() {
                         <TableCell>
                           <StatusBadge attended={appt.attended} />
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="no-print">
                           <div className="flex items-center justify-center gap-2 flex-wrap">
                             {canWrite && appt.attended !== true && (
                               <Button

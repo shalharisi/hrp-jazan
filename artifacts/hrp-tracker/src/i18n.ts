@@ -182,6 +182,13 @@ export const translations = {
     "appointments.needsAction": "بحاجة إجراء",
     "appointments.needsActionDesc": "مواعيد ماضية لم يُسجَّل فيها الحضور",
     "appointments.statusNeedsAction": "بحاجة إجراء",
+    "appointments.print": "طباعة",
+    "appointments.printTitle": "جدول المواعيد – تجمع جازان الصحي",
+    "appointments.printFilterDate": "الفترة الزمنية",
+    "appointments.printFilterStatus": "حالة الحضور",
+    "appointments.printFilterSector": "القطاع",
+    "appointments.printAll": "الكل",
+    "appointments.printDate": "تاريخ الطباعة",
   },
   en: {
     // Navigation
@@ -366,6 +373,13 @@ export const translations = {
     "appointments.needsAction": "Needs Action",
     "appointments.needsActionDesc": "Past appointments with no attendance recorded",
     "appointments.statusNeedsAction": "Needs Action",
+    "appointments.print": "Print",
+    "appointments.printTitle": "Appointments Schedule – Jazan Health Cluster",
+    "appointments.printFilterDate": "Date Range",
+    "appointments.printFilterStatus": "Attendance Status",
+    "appointments.printFilterSector": "Sector",
+    "appointments.printAll": "All",
+    "appointments.printDate": "Print Date",
   }
 } as const;
 
