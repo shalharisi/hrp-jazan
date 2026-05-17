@@ -9,25 +9,30 @@ on:
     branches: ["**"]
 
 permissions:
-  contents: read          # for checkout + git diff
+  contents: write         # for checkout + git diff + pushing the auto-fix commit
   pull-requests: write    # for posting review comments
 
 jobs:
   suggest-codeowners-updates:
-    name: Detect renamed directories and suggest CODEOWNERS updates
+    name: Detect renamed directories and update CODEOWNERS
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0   # needed to diff against the PR base branch
+          # Use the default GITHUB_TOKEN so the push is attributed to the bot.
+          # For fork PRs this token is read-only, which is fine — we fall back
+          # to comment-only mode in that case.
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Detect renames and post CODEOWNERS suggestions
+      - name: Detect renames and auto-update CODEOWNERS (or post suggestions)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_BRANCH: ${{ github.head_ref }}
         run: |
           set -euo pipefail
 
@@ -103,7 +108,8 @@ jobs:
           echo ""
 
           # ── 3. Scan CODEOWNERS for rules referencing the old paths ───────────
-          declare -a suggestions  # accumulate suggestion lines
+          declare -a suggestions    # table rows for the PR comment
+          declare -a replacements   # "old_pattern|||new_pattern" pairs for sed
 
           while IFS= read -r line; do
             # Skip comment-only lines and blank lines
@@ -126,6 +132,7 @@ jobs:
 
                 owners="${fields[*]:1}"
                 suggestions+=("| \`$pattern\` | \`$updated_pattern\` | $owners |")
+                replacements+=("${pattern}|||${updated_pattern}")
                 echo "Match: '$pattern' → '$updated_pattern'"
               fi
             done
@@ -140,6 +147,9 @@ jobs:
           #        by multiple rename pairs) ────────────────────────────────────
           declare -A seen_suggestions
           declare -a unique_suggestions
+          declare -A seen_replacements
+          declare -a unique_replacements
+
           for row in "${suggestions[@]}"; do
             if [[ -z "${seen_suggestions[$row]+_}" ]]; then
               seen_suggestions[$row]=1
@@ -147,23 +157,98 @@ jobs:
             fi
           done
 
-          # ── 5. Post (or update) a PR comment with the suggestions ────────────
-          MARKER="<!-- codeowners-rename-bot -->"
-
-          table_rows=""
-          for row in "${unique_suggestions[@]}"; do
-            table_rows="${table_rows}
-          ${row}"
+          for repl in "${replacements[@]}"; do
+            if [[ -z "${seen_replacements[$repl]+_}" ]]; then
+              seen_replacements[$repl]=1
+              unique_replacements+=("$repl")
+            fi
           done
 
-          body="${MARKER}
+          # ── 5. Try to apply changes directly to CODEOWNERS and push ──────────
+          PUSHED=false
+          COMMITTED=false
+
+          # Apply each replacement in-place using sed.
+          # Escape all characters with special meaning in sed's s|…|…| syntax,
+          # including the | delimiter itself.
+          for repl in "${unique_replacements[@]}"; do
+            old_pat="${repl%%|||*}"
+            new_pat="${repl##*|||}"
+            old_escaped=$(printf '%s' "$old_pat" | sed 's|[\\&/|]|\\&|g')
+            new_escaped=$(printf '%s' "$new_pat" | sed 's|[\\&/|]|\\&|g')
+            sed -i "s|${old_escaped}|${new_escaped}|g" "$CODEOWNERS"
+            echo "Applied: '${old_pat}' → '${new_pat}'"
+          done
+
+          # Commit and push only when the file actually changed
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "$CODEOWNERS"
+
+          if git diff --cached --quiet; then
+            echo "CODEOWNERS was already up to date — no commit needed."
+            PUSHED=true  # treat as success so we post the auto-updated comment
+          else
+            git commit -m "chore: auto-update CODEOWNERS for renamed directories [skip ci]"
+
+            if git push origin "HEAD:${HEAD_BRANCH}" 2>/dev/null; then
+              PUSHED=true
+              COMMITTED=true
+              echo "Successfully pushed CODEOWNERS update to '${HEAD_BRANCH}'."
+            else
+              echo "WARNING: Could not push to '${HEAD_BRANCH}' (fork PR or protected branch)."
+              echo "Reverting local commit and falling back to comment-only mode."
+              git reset HEAD~1
+              git checkout -- "$CODEOWNERS"
+            fi
+          fi
+
+          # ── 6. Post (or update) a PR comment ─────────────────────────────────
+          MARKER="<!-- codeowners-rename-bot -->"
+
+          if [[ "$PUSHED" == "true" ]]; then
+            if [[ "$COMMITTED" == "true" ]]; then
+              update_note="The file has been **automatically updated** in a new commit on this branch — no manual changes are needed before merging."
+            else
+              update_note="The file was **already up to date** — no commit was needed."
+            fi
+
+            body="${MARKER}
+          ## CODEOWNERS has been auto-updated
+
+          This PR renamed one or more directories that were tracked in \`.github/CODEOWNERS\`.
+          ${update_note}
+
+          | Old pattern | New pattern | Owners |
+          |---|---|---|"
+            for row in "${unique_suggestions[@]}"; do
+              body="${body}
+          ${row}"
+            done
+            body="${body}
+
+          > _This update was committed automatically by the \`suggest-codeowners-updates\` workflow._
+          > _If the rename was unintentional, or the old CODEOWNERS rule should be removed instead_
+          > _of renamed, you can edit \`.github/CODEOWNERS\` on this branch before merging._"
+          else
+            # Fall-back: list manual suggestions (push was not possible)
+            table_rows=""
+            for row in "${unique_suggestions[@]}"; do
+              table_rows="${table_rows}
+          ${row}"
+            done
+
+            body="${MARKER}
           ## CODEOWNERS may need updating
 
           This PR renames one or more directories that are tracked in \`.github/CODEOWNERS\`.
           GitHub silently ignores rules whose path no longer exists, so no review will be
           requested for those paths until the file is updated.
 
-          **Suggested changes** — update \`.github/CODEOWNERS\` before merging:
+          The bot tried to commit the fix automatically but could not push to this branch
+          (this is expected for PRs from forks or branches with push restrictions).
+
+          **Please update \`.github/CODEOWNERS\` manually before merging:**
 
           | Current pattern | Suggested pattern | Owners |
           |---|---|---|${table_rows}
@@ -171,6 +256,7 @@ jobs:
           > _This comment is posted automatically by the \`suggest-codeowners-updates\` workflow._
           > _If the rename is intentional and the CODEOWNERS rule is no longer needed, simply_
           > _remove the old entry instead of updating it._"
+          fi
 
           # Look for an existing bot comment to avoid spamming on every push
           existing_id=$(
@@ -201,6 +287,10 @@ jobs:
               done
             else
               echo ""
-              echo "Done. Review comment posted with ${#unique_suggestions[@]} suggestion(s)."
+              if [[ "$PUSHED" == "true" ]]; then
+                echo "Done. CODEOWNERS auto-updated and comment posted with ${#unique_suggestions[@]} change(s)."
+              else
+                echo "Done. Review comment posted with ${#unique_suggestions[@]} suggestion(s) (manual action required)."
+              fi
             fi
           fi
