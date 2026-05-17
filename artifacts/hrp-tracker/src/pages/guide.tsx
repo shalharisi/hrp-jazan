@@ -181,15 +181,6 @@ export default function UserGuide() {
     });
   };
 
-  const displayMtime = (() => {
-    if (!status) return "";
-    const candidates = [status.pdfMtime, status.docxMtime]
-      .filter((m): m is string => m !== null)
-      .map((m) => new Date(m).getTime());
-    if (candidates.length === 0) return "";
-    return formatMtime(new Date(Math.max(...candidates)).toISOString());
-  })();
-
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -211,29 +202,36 @@ export default function UserGuide() {
             {checking ? (
               <p className="text-sm text-muted-foreground">{t("guide.checking")}</p>
             ) : anyAvailable ? (
-              <div className="space-y-3">
-                <div className={`flex gap-3 flex-wrap ${lang === "ar" ? "flex-row-reverse justify-end" : ""}`}>
+              <div className={`flex gap-4 flex-wrap ${lang === "ar" ? "flex-row-reverse justify-end" : ""}`}>
                   {status?.pdf && (
-                    <Button asChild variant="default">
-                      <a href={`${API}/downloads/user-guide.pdf`} download>
-                        {t("guide.downloadPdf")}
-                      </a>
-                    </Button>
+                    <div className="flex flex-col gap-1">
+                      <Button asChild variant="default">
+                        <a href={`${API}/downloads/user-guide.pdf`} download>
+                          {t("guide.downloadPdf")}
+                        </a>
+                      </Button>
+                      {status.pdfMtime && (
+                        <p className="text-xs text-muted-foreground">
+                          {t("guide.lastGenerated")} {formatMtime(status.pdfMtime)}
+                        </p>
+                      )}
+                    </div>
                   )}
                   {status?.docx && (
-                    <Button asChild variant="outline">
-                      <a href={`${API}/downloads/user-guide.docx`} download>
-                        {t("guide.downloadWord")}
-                      </a>
-                    </Button>
+                    <div className="flex flex-col gap-1">
+                      <Button asChild variant="outline">
+                        <a href={`${API}/downloads/user-guide.docx`} download>
+                          {t("guide.downloadWord")}
+                        </a>
+                      </Button>
+                      {status.docxMtime && (
+                        <p className="text-xs text-muted-foreground">
+                          {t("guide.lastGenerated")} {formatMtime(status.docxMtime)}
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
-                {displayMtime && (
-                  <p className="text-xs text-muted-foreground">
-                    {t("guide.lastGenerated")} {displayMtime}
-                  </p>
-                )}
-              </div>
             ) : isAdmin ? (
               <div className="space-y-3">
                 <p className="text-sm text-amber-700">{t("guide.filesNotReadyAdmin")}</p>
