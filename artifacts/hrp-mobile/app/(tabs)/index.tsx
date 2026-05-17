@@ -46,12 +46,30 @@ export default function DashboardScreen() {
   const riskStats = useGetDashboardByRiskLevel();
   const alerts = useListAlerts();
   const appointments = useListAppointments();
+  const { refetch: refetchSummary } = summary;
+  const { refetch: refetchRiskStats } = riskStats;
+  const { refetch: refetchAlerts } = alerts;
+  const { refetch: refetchAppointments } = appointments;
 
   const [bannerDismissed, setBannerDismissed] = useState(false);
 
   const topWebPadding = Platform.OS === "web" ? 67 : 0;
 
   const today = localDateStr(new Date());
+
+  const isLoading = summary.isLoading;
+  const refetch = useCallback(() => {
+    refetchSummary();
+    refetchRiskStats();
+    refetchAlerts();
+    refetchAppointments();
+  }, [refetchSummary, refetchRiskStats, refetchAlerts, refetchAppointments]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refetchAppointments();
+    }, [refetchAppointments])
+  );
 
   const needsActionCount = useMemo(() => {
     const all = appointments.data ?? [];
@@ -61,21 +79,6 @@ export default function DashboardScreen() {
   }, [appointments.data, today]);
 
   const showUrgentBanner = !bannerDismissed && needsActionCount > URGENT_THRESHOLD;
-
-  const { refetch: refetchAppointments } = appointments;
-  useFocusEffect(
-    useCallback(() => {
-      refetchAppointments();
-    }, [refetchAppointments])
-  );
-
-  const isLoading = summary.isLoading;
-  const refetch = () => {
-    summary.refetch();
-    riskStats.refetch();
-    alerts.refetch();
-    appointments.refetch();
-  };
 
   const s = summary.data;
   const styles = makeStyles(colors, isRTL);
