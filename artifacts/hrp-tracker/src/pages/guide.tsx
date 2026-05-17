@@ -1227,6 +1227,13 @@ export default function UserGuide() {
       const computeElapsed = () =>
         Math.max(1, Math.round((Date.now() - (startTimeRef.current ?? Date.now())) / 1000));
 
+      const saveDuration = (elapsed: number) => {
+        try {
+          localStorage.setItem(GUIDE_DURATION_KEY, String(elapsed));
+        } catch {
+        }
+      };
+
       const finishSuccess = async () => {
         const elapsed = computeElapsed();
         setElapsedSeconds(elapsed);
