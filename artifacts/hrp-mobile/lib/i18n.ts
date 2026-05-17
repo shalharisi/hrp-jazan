@@ -156,6 +156,9 @@ export const translations = {
     "general.back": "رجوع",
     "general.cancel": "إلغاء",
     "general.confirm": "تأكيد",
+
+    "guide.generating": "جاري توليد الدليل...",
+    "guide.generatingSub": "قد يستغرق هذا بضع دقائق",
   },
   en: {
     "nav.dashboard": "Dashboard",
@@ -315,6 +318,9 @@ export const translations = {
     "general.back": "Back",
     "general.cancel": "Cancel",
     "general.confirm": "Confirm",
+
+    "guide.generating": "Generating guide...",
+    "guide.generatingSub": "This may take a few minutes",
   },
 } as const;
 
