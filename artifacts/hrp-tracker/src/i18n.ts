@@ -101,6 +101,8 @@ export const translations = {
     "appt.selectHospital": "اختر المستشفى",
     "appt.addSuccess": "تم إضافة الموعد بنجاح",
     "appt.updateSuccess": "تم تحديث حالة الحضور",
+    "appt.resetSuccess": "تم إعادة تعيين الحضور",
+    "appt.appointmentsTitle": "المواعيد في المستشفى",
 
     // Reports
     "reports.title": "التقارير والتصدير",
@@ -257,6 +259,8 @@ export const translations = {
     "appt.selectHospital": "Select Hospital",
     "appt.addSuccess": "Appointment added successfully",
     "appt.updateSuccess": "Attendance updated",
+    "appt.resetSuccess": "Attendance reset",
+    "appt.appointmentsTitle": "Hospital Appointments",
 
     // Reports
     "reports.title": "Reports & Export",

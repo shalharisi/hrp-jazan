@@ -119,7 +119,7 @@ export default function PregnancyDetail() {
       { id: attendDlg.appointmentId, data: { attended: attendDlg.attended, attendanceNote: attendDlg.note || null } },
       {
         onSuccess: () => {
-          toast({ title: t("appt.updateSuccess" as any) });
+          toast({ title: t("appt.updateSuccess") });
           setAttendDlg({ open: false, appointmentId: null, attended: true, note: "" });
           refetch();
         },
@@ -134,7 +134,7 @@ export default function PregnancyDetail() {
       { data: { pregnancyId, hospitalId: Number(newAppt.hospitalId), appointmentDate: newAppt.date } },
       {
         onSuccess: () => {
-          toast({ title: t("appt.addSuccess" as any) });
+          toast({ title: t("appt.addSuccess") });
           setShowAddAppt(false);
           setNewAppt({ date: "", hospitalId: "" });
           refetch();
@@ -498,7 +498,7 @@ export default function PregnancyDetail() {
               onClick={() => setShowAddAppt(v => !v)}
             >
               <Plus className="w-4 h-4 ms-1" />
-              {t("appt.addAppointment" as any)}
+              {t("appt.addAppointment")}
             </Button>
           </div>
         </CardHeader>
@@ -506,7 +506,7 @@ export default function PregnancyDetail() {
           {/* ── Add appointment inline form ── */}
           {showAddAppt && (
             <div className="rounded-lg border border-dashed p-4 space-y-3 bg-muted/30" style={{ borderColor: "#006633" }}>
-              <p className="text-sm font-medium" style={{ color: "#006633" }}>{t("appt.addAppointment" as any)}</p>
+              <p className="text-sm font-medium" style={{ color: "#006633" }}>{t("appt.addAppointment")}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label className="text-xs">{t("pregnancy.appointmentDate")}</Label>
@@ -520,7 +520,7 @@ export default function PregnancyDetail() {
                   <Label className="text-xs">{t("pregnancy.referredHospital")}</Label>
                   <Select value={newAppt.hospitalId} onValueChange={v => setNewAppt(prev => ({ ...prev, hospitalId: v }))}>
                     <SelectTrigger>
-                      <SelectValue placeholder={t("appt.selectHospital" as any)} />
+                      <SelectValue placeholder={t("appt.selectHospital")} />
                     </SelectTrigger>
                     <SelectContent>
                       {hospitals?.map(h => (
@@ -575,11 +575,11 @@ export default function PregnancyDetail() {
                     <TableCell>{apt.hospitalNameAr ?? "—"}</TableCell>
                     <TableCell>
                       {apt.attended === true ? (
-                        <Badge className="bg-green-100 text-green-800">✅ {t("appt.attended" as any)}</Badge>
+                        <Badge className="bg-green-100 text-green-800">✅ {t("appt.attended")}</Badge>
                       ) : apt.attended === false ? (
-                        <Badge className="bg-red-100 text-red-800">❌ {t("appt.absent" as any)}</Badge>
+                        <Badge className="bg-red-100 text-red-800">❌ {t("appt.absent")}</Badge>
                       ) : (
-                        <Badge variant="outline">⏳ {t("appt.scheduled" as any)}</Badge>
+                        <Badge variant="outline">⏳ {t("appt.scheduled")}</Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">{apt.attendanceNote ?? "—"}</TableCell>
@@ -593,7 +593,7 @@ export default function PregnancyDetail() {
                             onClick={() => openAttendDlg(apt.id, true)}
                           >
                             <CheckCircle2 className="w-3.5 h-3.5 ms-1" />
-                            {t("appt.registerAttendance" as any)}
+                            {t("appt.registerAttendance")}
                           </Button>
                         )}
                         {apt.attended !== false && (
@@ -604,7 +604,7 @@ export default function PregnancyDetail() {
                             onClick={() => openAttendDlg(apt.id, false)}
                           >
                             <XCircle className="w-3.5 h-3.5 ms-1" />
-                            {t("appt.registerAbsence" as any)}
+                            {t("appt.registerAbsence")}
                           </Button>
                         )}
                         {apt.attended !== null && (
@@ -615,7 +615,7 @@ export default function PregnancyDetail() {
                             title="إعادة تعيين"
                             onClick={() => updateAppointmentMutation.mutate(
                               { id: apt.id, data: { attended: null, attendanceNote: null } },
-                              { onSuccess: () => { toast({ title: "تم إعادة التعيين" }); refetch(); } }
+                              { onSuccess: () => { toast({ title: t("appt.resetSuccess") }); refetch(); } }
                             )}
                           >
                             <RotateCcw className="w-3.5 h-3.5" />
@@ -635,7 +635,7 @@ export default function PregnancyDetail() {
       <Dialog open={attendDlg.open} onOpenChange={open => setAttendDlg(v => ({ ...v, open }))}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{t("appt.attendanceDialogTitle" as any)}</DialogTitle>
+            <DialogTitle>{t("appt.attendanceDialogTitle")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="flex gap-3">
@@ -648,7 +648,7 @@ export default function PregnancyDetail() {
                 }`}
               >
                 <CheckCircle2 className="w-5 h-5" />
-                {t("appt.attended" as any)}
+                {t("appt.attended")}
               </button>
               <button
                 onClick={() => setAttendDlg(v => ({ ...v, attended: false }))}
@@ -659,14 +659,14 @@ export default function PregnancyDetail() {
                 }`}
               >
                 <XCircle className="w-5 h-5" />
-                {t("appt.registerAbsence" as any)}
+                {t("appt.registerAbsence")}
               </button>
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm">{t("pregnancy.attendanceNote")}</Label>
               <Textarea
                 rows={3}
-                placeholder={t("appt.attendanceNotePlaceholder" as any)}
+                placeholder={t("appt.attendanceNotePlaceholder")}
                 value={attendDlg.note}
                 onChange={e => setAttendDlg(v => ({ ...v, note: e.target.value }))}
               />
@@ -685,7 +685,7 @@ export default function PregnancyDetail() {
               disabled={updateAppointmentMutation.isPending}
             >
               <Save className="w-4 h-4 ms-1" />
-              {t("appt.saveAttendance" as any)}
+              {t("appt.saveAttendance")}
             </Button>
           </DialogFooter>
         </DialogContent>
