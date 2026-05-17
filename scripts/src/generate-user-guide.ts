@@ -2146,12 +2146,13 @@ async function captureScreenshots(baseUrl: string): Promise<Map<string, Buffer>>
   console.log(`✅ تم إنشاء ملف Word: ${OUTPUT_PATH}`);
   console.log(`   الحجم: ${sizeKB} كيلوبايت`);
 
+  let pdfSizeKB = 0;
   if (generatePdf) {
     console.log("📄 جاري إنشاء دليل المستخدم (PDF)...");
     try {
       const pdfBuffer = await buildPdf();
       fs.writeFileSync(PDF_OUTPUT_PATH, pdfBuffer);
-      const pdfSizeKB = Math.round(pdfBuffer.length / 1024);
+      pdfSizeKB = Math.round(pdfBuffer.length / 1024);
       console.log(`✅ تم إنشاء ملف PDF: ${PDF_OUTPUT_PATH}`);
       console.log(`   الحجم: ${pdfSizeKB} كيلوبايت`);
       pdfStatus = "produced";
@@ -2170,9 +2171,9 @@ async function captureScreenshots(baseUrl: string): Promise<Map<string, Buffer>>
   const pdfFile = path.basename(PDF_OUTPUT_PATH);
   const pdfSummary =
     pdfStatus === "produced"
-      ? `PDF ✅ (${pdfFile})`
+      ? `PDF ✅ ${pdfSizeKB} KB (${pdfFile})`
       : pdfStatus === "skipped"
         ? `PDF ⚠️ skipped — no browser`
         : `PDF ⏭️ disabled (--no-pdf)`;
-  console.log(`\nالملخص: Word ✅ (${wordFile})  ${pdfSummary}`);
+  console.log(`\nالملخص: Word ✅ ${sizeKB} KB (${wordFile})  ${pdfSummary}`);
 })();
