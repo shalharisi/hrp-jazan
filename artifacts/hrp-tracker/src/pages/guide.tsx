@@ -28,6 +28,19 @@ function getExpectedDuration(): number {
   return FALLBACK_DURATION_S;
 }
 
+function getLastStoredDuration(): number | null {
+  try {
+    const stored = localStorage.getItem(GUIDE_DURATION_KEY);
+    if (stored) {
+      const n = Number(stored);
+      if (Number.isFinite(n) && n > 0) return n;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
 type FileStatus = { docx: boolean; pdf: boolean; docxMtime?: string | null; pdfMtime?: string | null; generating?: boolean } | null;
 
 // ─── Bilingual cell and row types ─────────────────────────────────────────────
@@ -1103,6 +1116,7 @@ export default function UserGuide() {
   const [progressPct, setProgressPct] = useState(0);
   const startTimeRef = useRef<number | null>(null);
   const [currentStep, setCurrentStep] = useState<string | null>(null);
+  const [lastDuration, setLastDuration] = useState<number | null>(() => getLastStoredDuration());
   const [showBackToTop, setShowBackToTop] = useState(false);
   // Tracks whether the current generating state was triggered by the button (SSE stream
   // is active) vs detected from the server's status response (startup auto-generation).
@@ -1298,6 +1312,7 @@ export default function UserGuide() {
         setProgressPct(100);
         try {
           localStorage.setItem(GUIDE_DURATION_KEY, String(elapsed));
+          setLastDuration(elapsed);
         } catch {
           // ignore
         }
@@ -1664,16 +1679,23 @@ export default function UserGuide() {
                     <AlertDescription>{t("guide.generatingElsewhere")}</AlertDescription>
                   </Alert>
                 )}
-                <Button
-                  onClick={handleGenerate}
-                  disabled={generating || (status?.generating ?? false)}
-                  variant="secondary"
-                >
-                  {(generating || status?.generating) && (
-                    <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                <div className="flex items-center gap-3 flex-wrap">
+                  <Button
+                    onClick={handleGenerate}
+                    disabled={generating || (status?.generating ?? false)}
+                    variant="secondary"
+                  >
+                    {(generating || status?.generating) && (
+                      <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                    )}
+                    {generating ? t("guide.generating") : t("guide.generateBtn")}
+                  </Button>
+                  {!generating && lastDuration !== null && (
+                    <span className="text-xs text-muted-foreground">
+                      {t("guide.lastDuration").replace("{n}", String(lastDuration))}
+                    </span>
                   )}
-                  {generating ? t("guide.generating") : t("guide.generateBtn")}
-                </Button>
+                </div>
                 {generating && (
                   <div className="space-y-1.5 pt-1">
                     <div className="h-2 w-full rounded-full bg-muted overflow-hidden">

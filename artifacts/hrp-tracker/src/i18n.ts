@@ -243,6 +243,7 @@ export const translations = {
     "guide.step.write_pdf": "جارٍ حفظ ملف PDF...",
     "guide.generatingElsewhere": "جارٍ إنشاء الدليل حاليًا في علامة تبويب أخرى. يرجى الانتظار حتى تكتمل العملية.",
     "guide.generatingBadge": "جارٍ إنشاء الدليل…",
+    "guide.lastDuration": "آخر إنشاء استغرق {n} ثانية",
   },
   en: {
     // Navigation
@@ -490,6 +491,7 @@ export const translations = {
     "guide.step.write_pdf": "Saving PDF file...",
     "guide.generatingElsewhere": "Guide generation is already in progress. Please wait for it to complete.",
     "guide.generatingBadge": "Generating guide…",
+    "guide.lastDuration": "Last generation took {n} s",
   },
 } as const;
 
