@@ -118,6 +118,17 @@ jobs:
             # Tokenise: field 0 is the path pattern, fields 1+ are owner tokens
             read -r -a fields <<< "$line"
 
+            # Fail loudly when a rule has no owners — GitHub silently skips such
+            # rules and requests no review, which defeats the purpose of the entry.
+            if [[ ${#fields[@]} -lt 2 ]]; then
+              echo "✗  No owners listed for pattern '${fields[0]}' on line: $line"
+              echo "   Every rule must have at least one owner token (e.g. @username or @org/team-slug)."
+              echo "   A rule with no owners is valid CODEOWNERS syntax but GitHub will never"
+              echo "   request a review for matching files, silently bypassing code review."
+              failed=1
+              continue
+            fi
+
             for (( i=1; i<${#fields[@]}; i++ )); do
               token="${fields[$i]}"
 
@@ -167,11 +178,13 @@ jobs:
 
           echo ""
           if [[ $failed -ne 0 ]]; then
-            echo "ERROR: One or more CODEOWNERS entries could not be resolved."
+            echo "ERROR: One or more CODEOWNERS entries are invalid."
             echo ""
             echo "Fix the entries above before merging this PR."
             echo ""
             echo "Tips:"
+            echo "  • Rule with no owners → add at least one @username or @org/team-slug"
+            echo "    owner after the path pattern, or remove the rule entirely."
             echo "  • Team renamed/deleted → update the slug in .github/CODEOWNERS."
             echo "  • Username renamed/deleted → update or remove the @username entry."
             echo "  • Token lacks read:org → add a repository secret GH_PAT (classic"
