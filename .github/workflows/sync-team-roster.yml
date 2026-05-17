@@ -1,0 +1,224 @@
+name: Sync Team Roster
+
+# Keeps the "Team roster" table in CONTRIBUTING.md in sync with actual GitHub
+# team membership in the @jazan-health organisation.
+#
+# Triggers:
+#   • membership — fires when someone is added to or removed from an org team
+#   • team       — fires on broader team events (create, delete, rename, etc.)
+#   • schedule   — weekly fallback to catch any membership changes that slipped
+#                  through without firing a webhook (e.g. API-level removals)
+#   • workflow_dispatch — run manually at any time
+#
+# Prerequisites:
+#   • ORG_ADMIN_PAT (preferred) — classic PAT with admin:org scope, OR
+#   • GH_PAT                   — classic PAT with read:org scope (read-only)
+#   The workflow tries ORG_ADMIN_PAT first, then falls back to GH_PAT.
+
+on:
+  membership:
+    types: [added, removed]
+  team:
+    types: [created, deleted, edited, added_to_repository, removed_from_repository]
+  schedule:
+    - cron: "0 3 * * 0"   # Every Sunday at 03:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync-roster:
+    name: Sync team roster in CONTRIBUTING.md
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build updated team roster table
+        id: roster
+        uses: actions/github-script@v7
+        with:
+          # Prefer ORG_ADMIN_PAT (admin:org); fall back to GH_PAT (read:org).
+          github-token: ${{ secrets.ORG_ADMIN_PAT || secrets.GH_PAT }}
+          script: |
+            const org = "jazan-health";
+
+            const teams = [
+              { slug: "maintainers",   role: "Project leads — fallback reviewers for all paths" },
+              { slug: "backend-leads", role: "API, database, and server-side engineers" },
+              { slug: "frontend-leads",role: "Web and mobile UI engineers" },
+              { slug: "clinical-leads",role: "Clinical informatics / patient-safety reviewers" },
+              { slug: "admins",        role: "Organisation and repository administrators" },
+            ];
+
+            const rows = [];
+            let fetchErrors = 0;
+
+            for (const team of teams) {
+              let handles = "";
+              try {
+                // Paginate to handle teams with more than 100 members.
+                const members = await github.paginate(
+                  github.rest.teams.listMembersInOrg,
+                  { org, team_slug: team.slug, per_page: 100 },
+                );
+                // Sort alphabetically so API ordering changes don't create
+                // noisy, non-semantic diffs in the PR.
+                const logins = members.map(m => m.login).sort();
+                handles = logins.length > 0
+                  ? logins.map(l => `@${l}`).join(", ")
+                  : "_(none)_";
+              } catch (err) {
+                core.error(`Could not fetch members for ${team.slug}: ${err.message}`);
+                fetchErrors++;
+                handles = "_(unavailable)_";
+              }
+
+              rows.push(`| \`${team.slug}\` | ${team.role} | ${handles} |`);
+            }
+
+            if (fetchErrors === teams.length) {
+              core.setFailed(
+                "All team member lookups failed — likely an auth or network issue. " +
+                "Aborting to avoid writing incorrect data to CONTRIBUTING.md."
+              );
+              return;
+            }
+
+            if (fetchErrors > 0) {
+              core.warning(`${fetchErrors} of ${teams.length} team lookups failed. ` +
+                "The table will contain '_(unavailable)_' for those teams.");
+            }
+
+            const table = [
+              "| Team slug | Role | GitHub handles |",
+              "|---|---|---|",
+              ...rows,
+            ].join("\n");
+
+            core.setOutput("table", table);
+
+      - name: Update CONTRIBUTING.md if the table changed
+        id: patch
+        run: |
+          set -euo pipefail
+
+          NEW_TABLE="${{ steps.roster.outputs.table }}"
+
+          # Extract the current table block from CONTRIBUTING.md so we can
+          # compare it without touching the rest of the file.
+          CURRENT=$(awk '/^\| Team slug \| Role \| GitHub handles \|/{flag=1} flag && /^\|/{print; next} flag{exit}' CONTRIBUTING.md)
+
+          if [ "$CURRENT" = "$NEW_TABLE" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Team roster is already up to date — no PR needed."
+            exit 0
+          fi
+
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+          # Replace the five-row team-roster table block in CONTRIBUTING.md.
+          # We match from the header row through the last data row (five teams)
+          # using Python for reliable multi-line replacement.
+          python3 - <<'PYEOF'
+          import re, sys, os
+
+          path = "CONTRIBUTING.md"
+          with open(path, encoding="utf-8") as f:
+              content = f.read()
+
+          new_table = os.environ["NEW_TABLE"]
+
+          # Match the existing table: header + separator + 5 data rows.
+          # NOTE: The {5} quantifier is intentional — the project has exactly
+          # five fixed teams (maintainers, backend-leads, frontend-leads,
+          # clinical-leads, admins). If teams are ever added or removed, update
+          # both the `teams` list above AND this regex quantifier together.
+          pattern = (
+              r"\| Team slug \| Role \| GitHub handles \|\n"
+              r"\|---\|---\|---\|\n"
+              r"(?:\|[^\n]+\|\n){5}"
+          )
+
+          replacement = new_table + "\n"
+          updated, count = re.subn(pattern, replacement, content)
+
+          if count == 0:
+              sys.exit("ERROR: Could not locate the Team roster table in CONTRIBUTING.md")
+
+          with open(path, "w", encoding="utf-8") as f:
+              f.write(updated)
+
+          print("CONTRIBUTING.md updated successfully.")
+          PYEOF
+        env:
+          NEW_TABLE: ${{ steps.roster.outputs.table }}
+
+      - name: Open or update pull request
+        if: steps.patch.outputs.changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { execSync } = require("child_process");
+            const branch = "chore/sync-team-roster";
+            const base   = context.payload.repository.default_branch || "main";
+
+            // Configure git identity.
+            execSync('git config user.name  "github-actions[bot]"');
+            execSync('git config user.email "github-actions[bot]@users.noreply.github.com"');
+
+            // Stage and commit CONTRIBUTING.md while still on the checked-out
+            // default branch.  We do this first so there are no uncommitted
+            // changes when we create/reset the sync branch below.
+            execSync("git add CONTRIBUTING.md");
+
+            // Skip commit if nothing is staged (belt-and-suspenders guard).
+            const staged = execSync("git diff --cached --name-only").toString().trim();
+            if (!staged) {
+              console.log("Nothing staged — CONTRIBUTING.md already matches. Exiting.");
+              return;
+            }
+
+            execSync('git commit -m "chore: sync team roster table from GitHub teams"');
+
+            // Create or hard-reset the sync branch to the commit we just made.
+            // Using -B avoids any checkout conflict: it always resets to HEAD
+            // regardless of whether the branch already exists locally or remotely.
+            // Using --force (not --force-with-lease) because CI checkouts do not
+            // fetch the remote-tracking ref for this bot-only branch, so
+            // --force-with-lease would reject the push on subsequent runs.
+            execSync(`git checkout -B ${branch}`);
+            execSync(`git push origin ${branch} --force`);
+
+            // Check for an open PR for this branch.
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+              head:  `${context.repo.owner}:${branch}`,
+              state: "open",
+            });
+
+            if (prs.length > 0) {
+              console.log(`PR #${prs[0].number} already open — updated branch in place.`);
+            } else {
+              const { data: pr } = await github.rest.pulls.create({
+                owner: context.repo.owner,
+                repo:  context.repo.repo,
+                title: "chore: sync team roster table from GitHub teams",
+                body: [
+                  "This automated PR was opened by the **Sync Team Roster** workflow.",
+                  "",
+                  "It updates the *Team roster* table in `CONTRIBUTING.md` to match",
+                  "the current membership of all five `@jazan-health` teams.",
+                  "",
+                  "Review and merge once the handles look correct.",
+                ].join("\n"),
+                head: branch,
+                base,
+              });
+              console.log(`Opened PR #${pr.number}: ${pr.html_url}`);
+            }
