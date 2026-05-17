@@ -119,6 +119,56 @@ jobs:
 
           echo "All CODEOWNERS entries resolved successfully."
 
+      - name: Check that every path pattern matches at least one tracked file
+        if: steps.changed.outputs.modified == 'true'
+        run: |
+          set -euo pipefail
+
+          CODEOWNERS=".github/CODEOWNERS"
+          failed=0
+          unmatched=()
+
+          echo "Checking that every CODEOWNERS path pattern matches at least one tracked file …"
+          echo ""
+
+          while IFS= read -r line; do
+            # Skip comment lines and blank lines
+            [[ "$line" =~ ^[[:space:]]*# ]] && continue
+            [[ -z "${line//[[:space:]]/}" ]] && continue
+
+            # Field 0 is the path pattern; remaining fields are owners
+            read -r -a fields <<< "$line"
+            pattern="${fields[0]}"
+
+            # Skip the universal wildcard — it always matches every file
+            [[ "$pattern" == "*" ]] && continue
+
+            # Strip a leading / (CODEOWNERS anchors with /, git ls-files uses repo-relative paths)
+            pattern="${pattern#/}"
+
+            if git ls-files -- "$pattern" | grep -q .; then
+              echo "✓  $pattern"
+            else
+              echo "✗  Pattern matches no tracked files: $pattern"
+              unmatched+=("$pattern")
+              failed=1
+            fi
+          done < "$CODEOWNERS"
+
+          echo ""
+          if [[ $failed -ne 0 ]]; then
+            echo "ERROR: The following CODEOWNERS patterns match no tracked files:"
+            for p in "${unmatched[@]}"; do
+              echo "  • $p"
+            done
+            echo ""
+            echo "These patterns are silently ignored by GitHub — no review will ever"
+            echo "be requested for matching paths. Remove or update the dead entries."
+            exit 1
+          fi
+
+          echo "All CODEOWNERS path patterns match at least one tracked file."
+
       - name: Skip — CODEOWNERS not modified in this PR
         if: steps.changed.outputs.modified == 'false'
         run: echo "CODEOWNERS was not modified in this PR — validation skipped."
