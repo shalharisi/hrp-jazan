@@ -1,5 +1,37 @@
 # Contributing Guide
 
+## Connecting to GitHub (first-time setup)
+
+The CI badge and GitHub Actions workflows are ready to go, but the project needs to be pushed to a GitHub repository first. Follow these steps **once** from your local machine or in the Replit shell.
+
+### 1 — Create the repository
+
+Go to [github.com/organizations/jazan-health/repositories/new](https://github.com/organizations/jazan-health/repositories/new) and create an **empty** repository named `hrp-jazan` (no README, no `.gitignore`, no licence). Note the HTTPS or SSH URL that GitHub shows you.
+
+### 2 — Add the remote and push
+
+```bash
+git remote add origin https://github.com/jazan-health/hrp-jazan.git
+git push -u origin main
+```
+
+Replace the URL with the SSH variant (`git@github.com:jazan-health/hrp-jazan.git`) if you prefer SSH. After this push, GitHub Actions will trigger automatically and the CI badge in `replit.md` will show a live status.
+
+### 3 — Activate branch protection (one-time)
+
+Once the first push has completed:
+
+1. Go to **Actions → Setup Branch Protection** in the GitHub repository.
+2. Click **Run workflow** → **Run workflow** to confirm.
+
+This applies the PR review rules and required status checks described in the *Branch Protection Requirements* section below.
+
+### 4 — Provision teams and secrets (one-time, org admin)
+
+See the *Provisioning GitHub Teams* section below to create the `@jazan-health/*` teams that CODEOWNERS references, and add the `ORG_ADMIN_PAT` and `GH_PAT` repository secrets.
+
+---
+
 ## Branch Protection Requirements
 
 The `main` branch is protected. All pull requests targeting `main` **must** satisfy the following requirements before merging:
