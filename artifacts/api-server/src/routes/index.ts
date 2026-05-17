@@ -10,6 +10,7 @@ import alertsRouter from "./alerts";
 import usersRouter from "./users";
 import auditLogsRouter from "./audit-logs";
 import exportRouter from "./export";
+import downloadsRouter from "./downloads";
 import { requireAuth } from "../lib/auth";
 
 const router: IRouter = Router();
@@ -35,6 +36,9 @@ router.use(appointmentsRouter);
 
 // Export routes (admin / coordinator / doctor)
 router.use(exportRouter);
+
+// User guide downloads (all authenticated roles)
+router.use(downloadsRouter);
 
 // Admin-only routes (enforced inside the routers)
 router.use(usersRouter);

@@ -10,7 +10,7 @@ High-Risk Pregnancy Tracking Platform for Jazan Health Cluster 2026 — a biling
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- `pnpm --filter @workspace/scripts run generate-guide` — regenerate the user guide Word file (`scripts/src/دليل_المستخدم_منظومة_جازان.docx`)
+- `pnpm --filter @workspace/scripts run generate-guide` — regenerate the user guide Word + PDF files (output: `دليل_المستخدم_منظومة_جازان.docx` and `دليل_المستخدم_منظومة_جازان.pdf` at workspace root); append `--no-pdf` to skip PDF generation
 - Required env: `DATABASE_URL` — Postgres connection string
 
 ## Stack

@@ -23,12 +23,16 @@ import {
   LevelFormat,
   UnderlineType,
 } from "docx";
+import puppeteer from "puppeteer";
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
+import { execFileSync } from "child_process";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const OUTPUT_PATH = path.resolve(__dirname, "دليل_المستخدم_منظومة_جازان.docx");
+const WORKSPACE_ROOT = path.resolve(__dirname, "../../");
+const OUTPUT_PATH = path.resolve(WORKSPACE_ROOT, "دليل_المستخدم_منظومة_جازان.docx");
+const PDF_OUTPUT_PATH = path.resolve(WORKSPACE_ROOT, "دليل_المستخدم_منظومة_جازان.pdf");
 const LOGO_PATH = path.resolve(__dirname, "../../artifacts/hrp-tracker/src/assets/logo.jpg");
 
 // ── Color palette ────────────────────────────────────────────────────────────
@@ -1257,12 +1261,569 @@ async function buildDocument(): Promise<Buffer> {
   return Packer.toBuffer(doc);
 }
 
+// ── HTML helper functions ─────────────────────────────────────────────────────
+function htmlEsc(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function htmlH1(text: string): string {
+  return `<h1 class="h1">${htmlEsc(text)}</h1>`;
+}
+function htmlH2(text: string): string {
+  return `<h2 class="h2">${htmlEsc(text)}</h2>`;
+}
+function htmlH3(text: string): string {
+  return `<h3 class="h3">${htmlEsc(text)}</h3>`;
+}
+function htmlP(text: string, opts: { bold?: boolean; italic?: boolean; color?: string } = {}): string {
+  const style = opts.color ? ` style="color:#${opts.color}"` : "";
+  const inner = opts.bold ? `<strong>${htmlEsc(text)}</strong>` : (opts.italic ? `<em>${htmlEsc(text)}</em>` : htmlEsc(text));
+  return `<p class="body"${style}>${inner}</p>`;
+}
+function htmlBullet(text: string, sub = false): string {
+  return `<p class="${sub ? "bullet-sub" : "bullet"}">${sub ? "◦" : "•"} ${htmlEsc(text)}</p>`;
+}
+function htmlNote(text: string, type: "info" | "warning" | "tip" = "info"): string {
+  const icons = { info: "ℹ️", warning: "⚠️", tip: "💡" };
+  return `<div class="note note-${type}">${icons[type]}&nbsp; ${htmlEsc(text)}</div>`;
+}
+function htmlTable(rows: [string, string][], header?: string): string {
+  let html = `<table class="info-table">`;
+  if (header) {
+    html += `<thead><tr><th colspan="2">${htmlEsc(header)}</th></tr></thead>`;
+  }
+  html += `<tbody>`;
+  rows.forEach(([label, value], i) => {
+    const cls = i % 2 === 0 ? " even" : " odd";
+    html += `<tr class="${cls}"><td class="label-cell">${htmlEsc(label)}</td><td class="value-cell">${htmlEsc(value)}</td></tr>`;
+  });
+  html += `</tbody></table>`;
+  return html;
+}
+function htmlPageBreak(): string {
+  return `<div class="page-break"></div>`;
+}
+function htmlScreenshot(caption: string): string {
+  return `<div class="screenshot-placeholder">[ لقطة شاشة: ${htmlEsc(caption)} ]<br><small>${htmlEsc(caption)}</small></div>`;
+}
+
+// ── Build HTML document ───────────────────────────────────────────────────────
+function buildHtml(): string {
+  const logo64 = fs.existsSync(LOGO_PATH)
+    ? `data:image/jpeg;base64,${fs.readFileSync(LOGO_PATH).toString("base64")}`
+    : null;
+
+  const css = `
+    @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Tajawal', Arial, sans-serif;
+      font-size: 12pt;
+      color: #374151;
+      direction: rtl;
+      text-align: right;
+      background: white;
+      line-height: 1.7;
+    }
+    .page { padding: 1in 1.25in; }
+    h1.h1 {
+      font-size: 18pt; font-weight: 700; color: #006633;
+      background: #E8F5EE; border-bottom: 3px solid #006633;
+      padding: 10px 14px; margin: 28px 0 12px; border-radius: 2px;
+    }
+    h2.h2 {
+      font-size: 14pt; font-weight: 700; color: #006633;
+      border-right: 4px solid #006633; padding-right: 10px;
+      margin: 20px 0 8px;
+    }
+    h3.h3 {
+      font-size: 12pt; font-weight: 700; color: #374151;
+      margin: 14px 0 6px;
+    }
+    p.body { margin: 6px 0; }
+    p.bullet { margin: 4px 0 4px 0; padding-right: 16px; }
+    p.bullet-sub { margin: 3px 0 3px 0; padding-right: 32px; color: #6B7280; }
+    .note {
+      padding: 10px 14px; margin: 10px 0; border-radius: 4px;
+      border-right: 4px solid #006633; font-size: 11pt;
+    }
+    .note-info { background: #DBEAFE; border-color: #1E40AF; }
+    .note-warning { background: #FEF9C3; border-color: #854D0E; }
+    .note-tip { background: #E8F5EE; border-color: #006633; }
+    table.info-table {
+      width: 100%; border-collapse: collapse; margin: 10px 0;
+      font-size: 11pt;
+    }
+    table.info-table thead th {
+      background: #006633; color: #fff; padding: 8px 12px;
+      text-align: right; font-weight: 700;
+    }
+    table.info-table td {
+      padding: 7px 12px; border: 1px solid #E5E7EB;
+    }
+    table.info-table tr.even td.label-cell { background: #E8F5EE; }
+    table.info-table tr.odd td.value-cell { background: #F9FAFB; }
+    td.label-cell { width: 35%; font-weight: 700; }
+    td.value-cell { width: 65%; }
+    .screenshot-placeholder {
+      background: #F3F4F6; border: 1px solid #D1D5DB;
+      padding: 20px; text-align: center; color: #6B7280;
+      font-style: italic; margin: 12px 0; border-radius: 4px; font-size: 11pt;
+    }
+    .page-break { page-break-after: always; height: 0; }
+    .cover { text-align: center; padding: 60px 1.25in; }
+    .cover-title-box {
+      background: #006633; color: #fff; padding: 16px 24px;
+      font-size: 24pt; font-weight: 700; margin: 20px 0 10px;
+      border-radius: 4px; display: inline-block; width: 100%;
+    }
+    .cover-subtitle { font-size: 18pt; font-weight: 700; color: #006633; margin: 8px 0; }
+    .cover-year { font-size: 14pt; color: #6B7280; margin: 6px 0 30px; }
+    .cover-org { font-size: 13pt; font-weight: 700; color: #006633; margin: 4px 0; }
+    .cover-country { font-size: 12pt; color: #6B7280; margin: 2px 0 10px; }
+    .header-bar {
+      border-bottom: 1px solid #006633; color: #006633; font-size: 9pt;
+      padding-bottom: 6px; margin-bottom: 10px;
+    }
+    .footer-bar {
+      border-top: 1px solid #E5E7EB; color: #6B7280; font-size: 9pt;
+      padding-top: 6px; margin-top: 10px; text-align: center;
+    }
+    @media print {
+      .page-break { page-break-after: always; }
+      body { font-size: 11pt; }
+    }
+  `;
+
+  const sections: string[] = [];
+
+  // ── COVER ────────────────────────────────────────────────────────────────
+  sections.push(`
+    <div class="cover">
+      ${logo64 ? `<img src="${logo64}" style="width:100px;height:100px;object-fit:contain;margin-bottom:16px;" alt="شعار">` : `<div style="font-style:italic;color:#6B7280;margin-bottom:16px;">[ شعار تجمع جازان الصحي ]</div>`}
+      <div class="cover-country">المملكة العربية السعودية</div>
+      <div class="cover-org">وزارة الصحة – تجمع جازان الصحي</div>
+      <div class="cover-title-box">دليل المستخدم الشامل</div>
+      <div class="cover-subtitle">منظومة تتبع الحمل عالي الخطورة</div>
+      <div class="cover-year">تجمع جازان الصحي 2026</div>
+      ${htmlTable([
+        ["الإصدار", "1.0"],
+        ["تاريخ الإصدار", "مايو 2026"],
+        ["الجهة المُصدِرة", "تجمع جازان الصحي – إدارة المعلومات الصحية"],
+        ["الفئة المستهدفة", "منسقو الحوامل عالي الخطورة، الأطباء، المسؤولون"],
+        ["لغة الدليل", "العربية (RTL) – مع مصطلحات إنجليزية متخصصة"],
+      ])}
+    </div>
+  `);
+  sections.push(htmlPageBreak());
+
+  // ── DISCLAIMER ───────────────────────────────────────────────────────────
+  sections.push(`<div class="page">`);
+  sections.push(htmlH1("إخلاء المسؤولية وبيانات التواصل"));
+  sections.push(htmlP("هذا الدليل معدّ للمستخدمين المصرح لهم فقط ضمن منظومة تتبع الحمل عالي الخطورة التابعة لتجمع جازان الصحي. المعلومات الواردة فيه سرية ومخصصة للاستخدام الداخلي. يُحظر نشرها أو توزيعها خارج نطاق المنظومة."));
+  sections.push(htmlP("جميع العمليات المُنفَّذة داخل المنظومة مُسجَّلة وفق متطلبات نظام حماية البيانات الشخصية (PDPL) في المملكة العربية السعودية."));
+  sections.push(htmlH2("بيانات التواصل"));
+  sections.push(htmlTable([
+    ["الجهة المسؤولة", "إدارة المعلومات الصحية – تجمع جازان الصحي"],
+    ["البريد الإلكتروني", "his@jazan-health.gov.sa"],
+    ["الهاتف", "17xxxxxxxx – داخلي 1xx"],
+    ["ساعات الدعم", "الأحد – الخميس، 7:30 ص – 3:30 م"],
+  ]));
+  sections.push(`</div>`);
+  sections.push(htmlPageBreak());
+
+  // ── SECTION 1 ────────────────────────────────────────────────────────────
+  sections.push(`<div class="page">`);
+  sections.push(htmlH1("القسم الأول: نظرة عامة على المنظومة"));
+  sections.push(htmlH2("1.1 الهدف والغاية"));
+  sections.push(htmlP("منظومة تتبع الحمل عالي الخطورة هي نظام إلكتروني متكامل يهدف إلى استبدال نموذج العمل القائم على ملفات Excel والنماذج الورقية (Microsoft Forms) بمنصة رقمية مركزية لإدارة ومتابعة حالات الحمل عالي الخطورة في تجمع جازان الصحي."));
+  sections.push(htmlH2("1.2 الفوائد الرئيسية"));
+  sections.push(htmlBullet("تتبع آني لحالات الحمل عالي الخطورة عبر جميع المراكز الصحية والمستشفيات في المنطقة"));
+  sections.push(htmlBullet("تصنيف آلي لدرجة الخطورة وحساب مؤشر الالتزام بالمواعيد"));
+  sections.push(htmlBullet("تنبيهات فورية للحالات الحرجة التي تحتاج تدخلًا طارئًا"));
+  sections.push(htmlBullet("لوحة إحصاءات شاملة تعكس الأداء الصحي للقطاع"));
+  sections.push(htmlBullet("تصدير البيانات بصيغة CSV للتحليل والتقارير الدورية"));
+  sections.push(htmlBullet("واجهة ثنائية اللغة (العربية / الإنجليزية) مع دعم اتجاه RTL"));
+  sections.push(htmlH2("1.3 الفئات المستهدفة"));
+  sections.push(htmlTable([
+    ["منسق الحوامل عالي الخطورة", "الوصول الكامل: تسجيل المرضى، إدارة الحالات، المواعيد، التقارير"],
+    ["الطبيب (Doctor)", "إدارة الحالات السريرية، تسجيل الزيارات، تصدير البيانات"],
+    ["المسؤول (Admin)", "كل الصلاحيات + إدارة المستخدمين والحسابات"],
+    ["المشاهد (Viewer)", "قراءة البيانات فقط، بدون تعديل"],
+  ], "الأدوار والصلاحيات"));
+  sections.push(htmlH2("1.4 متطلبات التشغيل"));
+  sections.push(htmlTable([
+    ["المتصفح", "Chrome 110+ أو Edge 110+ أو Firefox 110+ (يُوصى بـ Chrome)"],
+    ["الجهاز", "حاسب مكتبي أو لابتوب أو جهاز لوحي (الشاشة لا تقل عن 10 بوصة)"],
+    ["الاتصال", "اتصال بإنترنت مستقر (الشبكة الداخلية للمنشأة مُفضَّلة)"],
+    ["التطبيق المحمول", "Android 8+ أو iOS 13+ عبر تطبيق Expo المرافق"],
+  ]));
+  sections.push(htmlNote("لا يلزم تثبيت أي برنامج على الجهاز للنسخة الإلكترونية؛ يكفي فتح الرابط في المتصفح.", "tip"));
+  sections.push(`</div>`);
+  sections.push(htmlPageBreak());
+
+  // ── SECTION 2 ────────────────────────────────────────────────────────────
+  sections.push(`<div class="page">`);
+  sections.push(htmlH1("القسم الثاني: تسجيل الدخول وإدارة الجلسة"));
+  sections.push(htmlH2("2.1 شاشة تسجيل الدخول"));
+  sections.push(htmlP("عند فتح رابط المنظومة يظهر للمستخدم شاشة تسجيل الدخول الآمنة. تعرض الشاشة شعار تجمع جازان الصحي، واسم المنظومة، وحقلَي اسم المستخدم وكلمة المرور."));
+  sections.push(htmlScreenshot("شاشة تسجيل الدخول – منظومة تتبع الحمل عالي الخطورة"));
+  sections.push(htmlH2("2.2 خطوات تسجيل الدخول"));
+  sections.push(htmlBullet("أدخِل اسم المستخدم المُخصَّص لك في حقل «اسم المستخدم»"));
+  sections.push(htmlBullet("أدخِل كلمة المرور السرية في حقل «كلمة المرور»"));
+  sections.push(htmlBullet("اضغط زر «تسجيل الدخول»"));
+  sections.push(htmlBullet("في حال صحة البيانات، ستنتقل مباشرةً إلى لوحة المعلومات الرئيسية"));
+  sections.push(htmlNote("إذا نسيت كلمة المرور، تواصل مع مسؤول المنظومة (Admin) لإعادة تعيينها.", "warning"));
+  sections.push(htmlH2("2.3 سياسة الجلسة والأمان"));
+  sections.push(htmlTable([
+    ["مدة الجلسة", "تبقى الجلسة نشطة ما دمت تتفاعل مع المنظومة"],
+    ["انتهاء الجلسة", "تنتهي الجلسة تلقائيًا عند توقف النشاط لفترة طويلة"],
+    ["تسجيل الخروج", "اضغط على أيقونة المستخدم في أعلى الشريط الجانبي ثم «تسجيل الخروج»"],
+    ["الأمان", "جميع العمليات مُسجَّلة وفق نظام PDPL"],
+  ]));
+  sections.push(htmlH2("2.4 تبديل اللغة"));
+  sections.push(htmlP("يمكن التبديل بين العربية والإنجليزية من أيقونة اللغة الموجودة في أعلى الشريط الجانبي. تُحفَظ تفضيلات اللغة تلقائيًا في المتصفح."));
+  sections.push(`</div>`);
+  sections.push(htmlPageBreak());
+
+  // ── SECTION 3 ────────────────────────────────────────────────────────────
+  sections.push(`<div class="page">`);
+  sections.push(htmlH1("القسم الثالث: لوحة المعلومات (Dashboard)"));
+  sections.push(htmlP("لوحة المعلومات هي الصفحة الرئيسية التي تعرض فور تسجيل الدخول. تُلخِّص الوضع الصحي الحالي لجميع حالات الحمل عالي الخطورة في المنطقة من خلال بطاقات إحصائية ومخططات بيانية."));
+  sections.push(htmlScreenshot("لوحة المعلومات الرئيسية مع البطاقات الإحصائية والمخططات"));
+  sections.push(htmlH2("3.1 البطاقات الإحصائية الأربع"));
+  sections.push(htmlTable([
+    ["إجمالي المرضى", "عدد جميع الحوامل المسجلات في المنظومة"],
+    ["إجمالي الحالات", "عدد حالات الحمل المُسجَّلة (قد تتعدد الحالات للمريضة الواحدة)"],
+    ["الحالات الحرجة", "عدد الحالات ذات مستوى الخطورة «حرج»، مع عرض عدد من ليس لديها موعد"],
+    ["نسبة الالتزام بالمواعيد", "نسبة الحالات التي حجزت موعدًا خلال يومَي عمل من تاريخ الزيارة"],
+  ], "البطاقات الإحصائية ومعانيها"));
+  sections.push(htmlH2("3.2 المخططات البيانية"));
+  sections.push(htmlH3("3.2.1 توزيع مستوى الخطورة (Pie Chart)"));
+  sections.push(htmlP("مخطط دائري يوضح توزيع الحالات حسب مستوى الخطورة الأربعة: منخفض (أخضر)، متوسط (أصفر)، عالٍ (برتقالي)، حرج (أحمر)."));
+  sections.push(htmlH3("3.2.2 الالتزام بالمواعيد (Bar Chart)"));
+  sections.push(htmlP("مخطط أعمدة يعرض عدد الحالات الملتزمة (أخضر)، غير الملتزمة (أحمر)، والمعلقة (رمادي) انتظارًا لموعد."));
+  sections.push(htmlH2("3.3 شريط التنبيه العاجل"));
+  sections.push(htmlP("يظهر شريط تنبيه برتقالي في أعلى الصفحة عندما يتجاوز عدد المواعيد المنقضية غير المُسجَّل حضورها حدَّ الإنذار (الافتراضي: 5 مواعيد). يمكن الضغط على «عرض المواعيد» للانتقال مباشرةً لقائمة الحالات التي تحتاج متابعة، أو الضغط على × لإغلاق الشريط مؤقتًا."));
+  sections.push(htmlNote("حدّ الإنذار قابل للتخصيص من صفحة الإعدادات من قِبَل المسؤول أو المنسق.", "info"));
+  sections.push(`</div>`);
+  sections.push(htmlPageBreak());
+
+  // ── SECTION 4 ────────────────────────────────────────────────────────────
+  sections.push(`<div class="page">`);
+  sections.push(htmlH1("القسم الرابع: إدارة المرضى"));
+  sections.push(htmlH2("4.1 قائمة المرضى"));
+  sections.push(htmlP("تعرض صفحة «المرضى» قائمةً كاملةً بجميع الحوامل المُسجَّلات. تشمل كل بطاقة: الاسم، رقم الهوية الوطنية، رقم الجوال، المركز الصحي، والقطاع."));
+  sections.push(htmlH2("4.2 البحث والتصفية"));
+  sections.push(htmlTable([
+    ["البحث النصي", "البحث باسم المريضة أو رقم هويتها في حقل البحث"],
+    ["تصفية بالمستشفى", "اختر مستشفى لعرض مريضات مرتبطات بقطاعاته"],
+    ["تصفية بالقطاع", "تصفية تبعية للمستشفى المختار"],
+    ["تصفية بالمركز الصحي", "تصفية تبعية للقطاع المختار"],
+    ["إزالة الفلاتر", "زر «مسح الفلاتر» يُعيد عرض جميع المرضى"],
+  ], "خيارات البحث والتصفية"));
+  sections.push(htmlH2("4.3 تسجيل مريضة جديدة"));
+  sections.push(htmlP("اضغط زر «تسجيل مريضة جديدة» (الأخضر) في أعلى يمين الصفحة. ستنتقل إلى نموذج التسجيل."));
+  sections.push(htmlH3("4.3.1 الحقول المطلوبة"));
+  sections.push(htmlTable([
+    ["رقم الهوية الوطنية (*)", "10 أرقام فقط – لا يمكن تكراره في المنظومة"],
+    ["الاسم بالعربية (*)", "الاسم الكامل"],
+    ["رقم الجوال (*)", "بصيغة 05XXXXXXXX"],
+    ["القطاع (*)", "اختر من القائمة المنسدلة"],
+    ["المركز الصحي (*)", "يظهر بعد اختيار القطاع – اختر المركز المناسب"],
+  ]));
+  sections.push(htmlNote("بعد حفظ البيانات، تنتقل مباشرةً إلى ملف المريضة حيث يمكنك إضافة حالة حمل جديدة.", "tip"));
+  sections.push(htmlH2("4.4 عرض ملف المريضة وتعديله"));
+  sections.push(htmlP("اضغط على اسم المريضة في القائمة للانتقال إلى ملفها الكامل."));
+  sections.push(htmlBullet("بيانات المريضة الشخصية (مع إمكانية التعديل بالضغط على «تعديل»)"));
+  sections.push(htmlBullet("قائمة جميع حالات الحمل المُسجَّلة لها مع مستوى الخطورة وحالة الالتزام"));
+  sections.push(htmlBullet("زر «إضافة حالة حمل جديدة»"));
+  sections.push(`</div>`);
+  sections.push(htmlPageBreak());
+
+  // ── SECTION 5 ────────────────────────────────────────────────────────────
+  sections.push(`<div class="page">`);
+  sections.push(htmlH1("القسم الخامس: إدارة حالات الحمل"));
+  sections.push(htmlH2("5.1 إضافة حالة حمل جديدة"));
+  sections.push(htmlP("يمكن إضافة حالة حمل جديدة بطريقتين: من ملف المريضة مباشرةً بالضغط «إضافة حالة حمل»، أو من قائمة «الحالات» ثم «حالة جديدة»."));
+  sections.push(htmlH2("5.2 مستويات تصنيف الخطورة"));
+  sections.push(htmlTable([
+    ["منخفض (Low)", "لا توجد عوامل خطر مؤثرة – متابعة روتينية في المركز الصحي"],
+    ["متوسط (Medium)", "عوامل خطر محدودة – متابعة مكثفة في المركز الصحي"],
+    ["عالٍ (High)", "عوامل خطر متعددة أو حادة – إحالة للمستشفى"],
+    ["حرج (Critical)", "حالة طارئة تستدعي تدخلًا فوريًا – إحالة لـ KFCH أو أقرب مستشفى"],
+  ], "مستويات الخطورة ومعاييرها"));
+  sections.push(htmlH2("5.3 عوامل الخطر"));
+  sections.push(htmlH3("5.3.1 المجموعة الأولى – عوامل سابقة للحمل"));
+  sections.push(htmlBullet("تعدد الأجنة"));
+  sections.push(htmlBullet("عمر الأم فوق 40 أو أقل من 16"));
+  sections.push(htmlBullet("BMI 35 أو أكثر"));
+  sections.push(htmlBullet("3 إجهاضات أو أكثر، ولادة مبكرة سابقة، وفاة جنينية سابقة"));
+  sections.push(htmlBullet("عملية قيصرية سابقة، سوابق تسمم الحمل، جلطات وريدية سابقة"));
+  sections.push(htmlH3("5.3.2 المجموعة الثانية – مضاعفات الحمل الحالي"));
+  sections.push(htmlBullet("ارتفاع ضغط الدم الحملي، تسمم الحمل / الإرعاش"));
+  sections.push(htmlBullet("داء السكري الحملي، انفصال المشيمة، تأخر النمو داخل الرحم (IUGR)"));
+  sections.push(htmlBullet("هيموغلوبين منخفض (Hb < 9)"));
+  sections.push(htmlH3("5.3.3 المجموعة الثالثة – الأمراض المزمنة"));
+  sections.push(htmlBullet("داء السكري النوع الأول أو الثاني، ارتفاع ضغط الدم المزمن"));
+  sections.push(htmlBullet("أمراض القلب، الكلى، الغدة الدرقية، الكبد"));
+  sections.push(htmlBullet("الصرع، الأمراض المناعية الذاتية، فقر الدم المنجلي"));
+  sections.push(htmlH2("5.4 الحقول السريرية"));
+  sections.push(htmlTable([
+    ["تاريخ الزيارة (*)", "تاريخ الفحص السريري الأول – يُحسَب الالتزام انطلاقًا منه"],
+    ["درجة الخطورة (*)", "اختر من: منخفض / متوسط / عالٍ / حرج"],
+    ["VTE عالي الخطورة", "مربع اختيار – للحالات ذات خطر التجلط الوريدي"],
+    ["Enoxaparin موصوف", "مربع اختيار – هل وُصف دواء إنوكساباريين؟"],
+    ["توصية الإحالة (*)", "متابعة في المركز / في المستشفى / تحويل لـ KFCH"],
+    ["تاريخ موعد المستشفى", "تاريخ الموعد المحجوز في المستشفى"],
+    ["ملاحظات المتابعة", "سجّل هنا ردود المريضة على التواصل"],
+  ], "الحقول السريرية في نموذج الحمل"));
+  sections.push(htmlH2("5.5 حساب الالتزام بالمواعيد"));
+  sections.push(htmlTable([
+    ["ملتزم ✅", "تم حجز الموعد في غضون يومَي عمل أو أقل من تاريخ الزيارة"],
+    ["غير ملتزم ❌", "تم حجز الموعد بعد أكثر من يومَي عمل من تاريخ الزيارة"],
+    ["بانتظار موعد ⏳", "لم يُحجز أي موعد بعد"],
+  ], "قيم مؤشر الالتزام"));
+  sections.push(`</div>`);
+  sections.push(htmlPageBreak());
+
+  // ── SECTION 6 ────────────────────────────────────────────────────────────
+  sections.push(`<div class="page">`);
+  sections.push(htmlH1("القسم السادس: المواعيد"));
+  sections.push(htmlP("صفحة المواعيد هي المحور الرئيسي لمتابعة حضور الحوامل في المستشفيات. تعرض جميع المواعيد المحجوزة مع إمكانية التصفية والبحث وتسجيل الحضور والتصدير."));
+  sections.push(htmlH2("6.1 خيارات التصفية"));
+  sections.push(htmlTable([
+    ["تصفية بالتاريخ", "اليوم / هذا الأسبوع / كل المواعيد / نطاق مخصص"],
+    ["تصفية بالحالة", "كل المواعيد / مجدول ⏳ / حضر ✅ / غائب ❌ / تحتاج متابعة"],
+    ["تصفية بالقطاع", "اختر قطاعًا لعرض مواعيد قطاع محدد"],
+    ["تصفية بمستوى الخطورة", "حرج / عالٍ / متوسط / منخفض"],
+  ], "خيارات التصفية المتاحة"));
+  sections.push(htmlNote("فلتر «تحتاج متابعة» يعرض المواعيد المنقضية التي لم يُسجَّل فيها حضور أو غياب – هذه هي الأولوية القصوى.", "warning"));
+  sections.push(htmlH2("6.2 تسجيل الحضور"));
+  sections.push(htmlBullet("اضغط أيقونة ✅ لتسجيل الحضور، أو ❌ لتسجيل الغياب"));
+  sections.push(htmlBullet("تظهر نافذة تأكيد تتيح لك إضافة ملاحظة حضور"));
+  sections.push(htmlBullet("اضغط «حفظ» لتثبيت حالة الحضور"));
+  sections.push(htmlH2("6.3 تصدير CSV والطباعة"));
+  sections.push(htmlP("اضغط زر «تصدير CSV» لتنزيل المواعيد المعروضة. اضغط «طباعة» لفتح نافذة طباعة جاهزة."));
+  sections.push(htmlNote("يُنصح بفتح ملف CSV في Excel باستخدام ترميز UTF-8 للحصول على النص العربي بشكل صحيح.", "tip"));
+  sections.push(`</div>`);
+  sections.push(htmlPageBreak());
+
+  // ── SECTION 7 ────────────────────────────────────────────────────────────
+  sections.push(`<div class="page">`);
+  sections.push(htmlH1("القسم السابع: التنبيهات"));
+  sections.push(htmlP("صفحة التنبيهات تعرض الحالات التي تستوجب تدخلًا عاجلًا. تُحسَب التنبيهات تلقائيًا في كل طلب دون الحاجة لجدولة وظائف مستقلة."));
+  sections.push(htmlH2("7.1 أنواع التنبيهات"));
+  sections.push(htmlTable([
+    ["VTE بدون إنوكساباريين", "حالة مصنفة كـ VTE عالي الخطورة لكن لم يُوصَف لها إنوكساباريين"],
+    ["حرج بدون موعد", "حالة بمستوى «حرج» ليس لها أي موعد مستشفى مسجّل"],
+    ["موعد فائت", "موعد انقضى تاريخه دون تسجيل حضور أو غياب"],
+    ["متأخر حرج (Overdue Critical)", "حالة حرجة بموعد منقضٍ لم يُعالج"],
+  ], "أنواع التنبيهات الأربعة"));
+  sections.push(htmlH2("7.2 كيفية معالجة التنبيه"));
+  sections.push(htmlBullet("اضغط على اسم المريضة في التنبيه للانتقال مباشرةً إلى ملف حالتها"));
+  sections.push(htmlBullet("راجع البيانات السريرية وأكمل المعلومات الناقصة (موعد، دواء، ملاحظة)"));
+  sections.push(htmlBullet("بعد تحديث الحالة سيختفي التنبيه تلقائيًا عند تحديث الصفحة"));
+  sections.push(htmlNote("إذا كانت صفحة التنبيهات فارغة، فهذا يعني أن كل الحالات مستوفية المتطلبات – وهو الهدف المثالي.", "tip"));
+  sections.push(`</div>`);
+  sections.push(htmlPageBreak());
+
+  // ── SECTION 8 ────────────────────────────────────────────────────────────
+  sections.push(`<div class="page">`);
+  sections.push(htmlH1("القسم الثامن: التقارير والتصدير"));
+  sections.push(htmlP("صفحة التقارير توفر أدوات تصدير بيانات المنظومة بصيغة CSV وطباعة/حفظ كـ PDF، لاستخدامها في التحليل والتقارير الدورية."));
+  sections.push(htmlH2("8.1 تقرير بيانات المرضى (CSV)"));
+  sections.push(htmlBullet("الاسم بالعربية والإنجليزية، رقم الهوية الوطنية، رقم الجوال"));
+  sections.push(htmlBullet("المركز الصحي والقطاع والمستشفى"));
+  sections.push(htmlH2("8.2 تقرير حالات الحمل (CSV)"));
+  sections.push(htmlBullet("بيانات المريضة المرتبطة، تاريخ الزيارة، درجة الخطورة"));
+  sections.push(htmlBullet("مستوى الالتزام، VTE، Enoxaparin، توصية الإحالة"));
+  sections.push(htmlH2("8.3 تصدير المواعيد بخيارات تصفية مخصصة"));
+  sections.push(htmlTable([
+    ["التصفية بالتاريخ", "اليوم / الأسبوع / نطاق زمني مخصص"],
+    ["التصفية بالقطاع", "اختر قطاعًا لتصدير مواعيد قطاع محدد"],
+    ["التصفية بمستوى الخطورة", "صدّر الحالات الحرجة أو العالية فقط"],
+  ], "خيارات التصفية قبل تصدير المواعيد"));
+  sections.push(htmlNote("ملفات CSV مُشفَّرة بـ UTF-8 مع BOM لضمان ظهور النص العربي بشكل صحيح في Excel.", "info"));
+  sections.push(`</div>`);
+  sections.push(htmlPageBreak());
+
+  // ── SECTION 9 ────────────────────────────────────────────────────────────
+  sections.push(`<div class="page">`);
+  sections.push(htmlH1("القسم التاسع: بيانات المراجع وإدارة المستخدمين"));
+  sections.push(htmlH2("9.1 بيانات المراجع"));
+  sections.push(htmlTable([
+    ["المستشفيات", "6 مستشفيات رئيسية في المنطقة"],
+    ["القطاعات", "8 قطاعات تابعة للمستشفيات"],
+    ["المراكز الصحية", "~165 مركزًا صحيًا موزعةً على القطاعات"],
+  ]));
+  sections.push(htmlH2("9.2 إدارة حسابات المستخدمين (للمدراء فقط)"));
+  sections.push(htmlBullet("اضغط «إضافة مستخدم» في أعلى الصفحة"));
+  sections.push(htmlBullet("أدخِل اسم المستخدم وكلمة المرور والاسم والدور ثم «إنشاء الحساب»"));
+  sections.push(htmlBullet("لإيقاف حساب: اضغط أيقونة ✓ الخضراء لتحويلها إلى ✗"));
+  sections.push(htmlNote("لا يمكن حذف حساب نهائيًا من الواجهة – الإيقاف هو الخيار الأنسب للحسابات غير الفعّالة.", "warning"));
+  sections.push(`</div>`);
+  sections.push(htmlPageBreak());
+
+  // ── SECTION 10 ───────────────────────────────────────────────────────────
+  sections.push(`<div class="page">`);
+  sections.push(htmlH1("القسم العاشر: التطبيق المحمول"));
+  sections.push(htmlP("يتوفر تطبيق مرافق للهواتف الذكية يتيح للمنسقين متابعة المواعيد وإدارة الحالات أثناء التنقل."));
+  sections.push(htmlTable([
+    ["Android", "قم بتثبيت تطبيق Expo Go من متجر Google Play، ثم امسح رمز QR"],
+    ["iOS", "قم بتثبيت تطبيق Expo Go من App Store، ثم امسح رمز QR"],
+  ], "تثبيت التطبيق"));
+  sections.push(`</div>`);
+  sections.push(htmlPageBreak());
+
+  // ── APPENDIX A ───────────────────────────────────────────────────────────
+  sections.push(`<div class="page">`);
+  sections.push(htmlH1("ملحق أ: الهيكل الجغرافي للمنطقة"));
+  sections.push(htmlTable([
+    ["1", "مستشفى جازان العام – يخدم قطاعَي المركزي وفرسان"],
+    ["2", "مستشفى صبيا العام – يخدم قطاعَي الغربي والجبلي"],
+    ["3", "مستشفى أبو عريش العام – يخدم قطاعَي الأوسط وبني مالك"],
+    ["4", "مستشفى صامطة العام – يخدم القطاع الجنوبي"],
+    ["5", "مستشفى بيش العام – يخدم القطاع الشمالي"],
+    ["6", "مستشفى الملك فهد المركزي (KFCH) – مستشفى تخصصي للحالات الحرجة"],
+  ], "المستشفيات الستة في تجمع جازان الصحي"));
+  sections.push(`</div>`);
+  sections.push(htmlPageBreak());
+
+  // ── APPENDIX B ───────────────────────────────────────────────────────────
+  sections.push(`<div class="page">`);
+  sections.push(htmlH1("ملحق ب: تعريفات مستويات الخطورة"));
+  sections.push(htmlTable([
+    ["منخفض (Low)", "لا توجد عوامل خطر أو عامل واحد طفيف – متابعة روتينية – اللون: أخضر"],
+    ["متوسط (Medium)", "عامل أو عاملان من المجموعة الأولى – متابعة مكثفة – اللون: أصفر"],
+    ["عالٍ (High)", "عوامل خطر متعددة أو حالة مزمنة مُؤثِّرة – إحالة للمستشفى – اللون: برتقالي"],
+    ["حرج (Critical)", "حالة طارئة أو مضاعفة شديدة – إحالة فورية لـ KFCH – اللون: أحمر غامق"],
+  ], "تعريفات مستويات الخطورة الأربعة"));
+  sections.push(`</div>`);
+  sections.push(htmlPageBreak());
+
+  // ── APPENDIX C ───────────────────────────────────────────────────────────
+  sections.push(`<div class="page">`);
+  sections.push(htmlH1("ملحق ج: حساب أيام الالتزام"));
+  sections.push(htmlTable([
+    ["أيام العمل", "الأحد، الاثنين، الثلاثاء، الأربعاء، الخميس"],
+    ["أيام العطلة (مستثناة)", "الجمعة والسبت"],
+    ["حد الالتزام", "≤ 2 يوم عمل من تاريخ الزيارة"],
+  ]));
+  sections.push(htmlH2("ج.1 أمثلة تطبيقية"));
+  sections.push(htmlTable([
+    ["زيارة الأحد + موعد الاثنين", "1 يوم عمل → ملتزم ✅"],
+    ["زيارة الأحد + موعد الثلاثاء", "2 يوم عمل → ملتزم ✅"],
+    ["زيارة الأحد + موعد الأربعاء", "3 أيام عمل → غير ملتزم ❌"],
+    ["زيارة الخميس + موعد الأحد التالي", "1 يوم عمل (الجمعة والسبت مستثنيان) → ملتزم ✅"],
+    ["لا يوجد موعد محجوز", "بانتظار موعد ⏳"],
+  ], "أمثلة على حساب الالتزام"));
+  sections.push(`</div>`);
+  sections.push(htmlPageBreak());
+
+  // ── APPENDIX D ───────────────────────────────────────────────────────────
+  sections.push(`<div class="page">`);
+  sections.push(htmlH1("ملحق د: الأسئلة الشائعة"));
+  const faqs: [string, string][] = [
+    ["لماذا لا تظهر المريضة في نتائج البحث؟", "تأكد من إدخال رقم الهوية الوطنية كاملًا (10 أرقام). إذا لم تُسجَّل بعد، اضغط «تسجيل مريضة جديدة»."],
+    ["هل يمكن للمريضة أن يكون لها أكثر من حالة حمل؟", "نعم، يمكن إضافة حالات حمل متعددة لنفس المريضة عبر ملفها الشخصي."],
+    ["كيف أُعدِّل بيانات حالة حمل بعد حفظها؟", "افتح تفاصيل الحالة، ثم اضغط «تعديل الحالة» لتفعيل وضع التعديل."],
+    ["لماذا تظهر تنبيهات VTE على حالة بدون إنوكساباريين؟", "لأن الحالة مصنفة كـ VTE عالي الخطورة دون وصف الدواء المناسب."],
+    ["هل تُحذَف التنبيهات تلقائيًا؟", "نعم، عند معالجة سبب التنبيه يختفي التنبيه عند تحديث الصفحة."],
+    ["كيف أُغيِّر لغة الواجهة؟", "اضغط على أيقونة اللغة (عربي/English) في أعلى الشريط الجانبي."],
+    ["ماذا أفعل إذا نسيت كلمة المرور؟", "تواصل مع مسؤول المنظومة (Admin) لإعادة تعيين كلمة المرور."],
+    ["كيف أتواصل مع الدعم التقني؟", "عبر البريد الإلكتروني: his@jazan-health.gov.sa في ساعات الدوام (الأحد – الخميس)."],
+  ];
+  for (const [q, a] of faqs) {
+    sections.push(htmlP(`س: ${q}`, { bold: true, color: "006633" }));
+    sections.push(`<p class="body" style="padding-right:16px;color:#374151">ج: ${htmlEsc(a)}</p>`);
+  }
+  sections.push(`</div>`);
+
+  const body = sections.join("\n");
+
+  return `<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>دليل المستخدم – منظومة تتبع الحمل عالي الخطورة</title>
+<style>${css}</style>
+</head>
+<body>
+${body}
+</body>
+</html>`;
+}
+
+// ── Resolve Puppeteer executable (prefers system Nix chromium over bundled) ───
+function resolvePuppeteerExecutable(): string | undefined {
+  // 1. System chromium from PATH (Nix-managed — has correct library paths)
+  try {
+    const out = execFileSync("which", ["chromium"]).toString().trim();
+    if (out && fs.existsSync(out)) return out;
+  } catch { /* ignore */ }
+  // 2. Common Nix store path patterns
+  const nixCandidates = [
+    "/nix/store/qa9cnw4v5xkxyip6mb9kxqfq1z4x2dx1-chromium-138.0.7204.100/bin/chromium",
+  ];
+  for (const c of nixCandidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  // 3. Puppeteer cache
+  const homeDir = process.env["HOME"] ?? "/root";
+  const cacheDir = process.env["PUPPETEER_CACHE_DIR"] ?? path.join(homeDir, ".cache", "puppeteer");
+  const cacheCandidates = [
+    path.join(cacheDir, "chrome-headless-shell", "linux-148.0.7778.167", "chrome-headless-shell-linux64", "chrome-headless-shell"),
+    path.join(cacheDir, "chrome", "linux-148.0.7778.167", "chrome-linux64", "chrome"),
+  ];
+  for (const candidate of cacheCandidates) {
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return undefined;
+}
+
+// ── Generate PDF using Puppeteer ──────────────────────────────────────────────
+async function buildPdf(): Promise<Buffer> {
+  const html = buildHtml();
+  const executablePath = resolvePuppeteerExecutable();
+  const browser = await puppeteer.launch({
+    executablePath,
+    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+  });
+  try {
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: "load", timeout: 30000 });
+    const pdf = await page.pdf({
+      format: "A4",
+      printBackground: true,
+      margin: { top: "0.75in", right: "1in", bottom: "0.75in", left: "1in" },
+      displayHeaderFooter: true,
+      headerTemplate: `<div style="font-family:Arial,sans-serif;font-size:8pt;color:#006633;width:100%;text-align:right;padding:0 1in;border-bottom:1px solid #006633;">منظومة تتبع الحمل عالي الخطورة – تجمع جازان الصحي 2026</div>`,
+      footerTemplate: `<div style="font-family:Arial,sans-serif;font-size:8pt;color:#6B7280;width:100%;text-align:center;padding:0 1in;">صفحة <span class="pageNumber"></span> من <span class="totalPages"></span> | دليل المستخدم – الإصدار 1.0 – مايو 2026</div>`,
+    });
+    return Buffer.from(pdf);
+  } finally {
+    await browser.close();
+  }
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 (async () => {
-  console.log("📄 جاري إنشاء دليل المستخدم...");
+  const generatePdf = !process.argv.includes("--no-pdf");
+  console.log("📄 جاري إنشاء دليل المستخدم (Word)...");
   const buffer = await buildDocument();
   fs.writeFileSync(OUTPUT_PATH, buffer);
   const sizeKB = Math.round(buffer.length / 1024);
-  console.log(`✅ تم إنشاء الملف بنجاح: ${OUTPUT_PATH}`);
+  console.log(`✅ تم إنشاء ملف Word: ${OUTPUT_PATH}`);
   console.log(`   الحجم: ${sizeKB} كيلوبايت`);
+
+  if (generatePdf) {
+    console.log("📄 جاري إنشاء دليل المستخدم (PDF)...");
+    const pdfBuffer = await buildPdf();
+    fs.writeFileSync(PDF_OUTPUT_PATH, pdfBuffer);
+    const pdfSizeKB = Math.round(pdfBuffer.length / 1024);
+    console.log(`✅ تم إنشاء ملف PDF: ${PDF_OUTPUT_PATH}`);
+    console.log(`   الحجم: ${pdfSizeKB} كيلوبايت`);
+  }
 })();
