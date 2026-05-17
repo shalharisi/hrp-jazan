@@ -1,6 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import {
+  useCreateAppointment,
   useListAppointments,
+  useListHospitals,
+  useListPregnancies,
   useUpdateAppointment,
 } from "@workspace/api-client-react";
 import { router } from "expo-router";
@@ -9,10 +12,14 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -32,6 +39,13 @@ function localDateStr(d: Date): string {
 
 function isoToday(): string {
   return localDateStr(new Date());
+}
+
+function isValidIsoDate(str: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(str)) return false;
+  const d = new Date(str + "T00:00:00");
+  if (isNaN(d.getTime())) return false;
+  return d.toISOString().startsWith(str);
 }
 
 function isoWeekRange(): { start: string; end: string } {
@@ -60,10 +74,23 @@ export default function AppointmentsScreen() {
   const [riskFilter, setRiskFilter] = useState<RiskFilter>("all");
   const [updatingId, setUpdatingId] = useState<number | null>(null);
 
+  const [showNewModal, setShowNewModal] = useState(false);
+  const [pregnancySearch, setPregnancySearch] = useState("");
+  const [selectedPregnancyId, setSelectedPregnancyId] = useState<number | null>(null);
+  const [selectedHospitalId, setSelectedHospitalId] = useState<number | null>(null);
+  const [newApptDate, setNewApptDate] = useState("");
+
   const { data, isLoading, isError, refetch } = useListAppointments();
   const updateAppt = useUpdateAppointment();
+  const createAppt = useCreateAppointment();
+
+  const { data: pregnanciesData } = useListPregnancies({ limit: 200 });
+  const { data: hospitalsData } = useListHospitals();
 
   const all = data ?? [];
+  const allPregnancies = pregnanciesData?.items ?? [];
+  const allHospitals = hospitalsData ?? [];
+
   const today = isoToday();
   const week = isoWeekRange();
 
@@ -102,6 +129,20 @@ export default function AppointmentsScreen() {
         return a.appointmentDate.localeCompare(b.appointmentDate);
       });
   }, [all, dateFilter, attendanceFilter, riskFilter, today, week.start, week.end]);
+
+  const filteredPregnancies = useMemo(() => {
+    const q = pregnancySearch.trim().toLowerCase();
+    if (!q) return allPregnancies.slice(0, 50);
+    return allPregnancies.filter((p) => {
+      const name = (p.patientNameAr ?? "").toLowerCase();
+      const nid = (p.patientNationalId ?? "").toLowerCase();
+      return name.includes(q) || nid.includes(q);
+    }).slice(0, 50);
+  }, [allPregnancies, pregnancySearch]);
+
+  const selectedPregnancy = allPregnancies.find(
+    (p) => p.id === selectedPregnancyId
+  );
 
   const styles = makeStyles(colors, isRTL);
 
@@ -199,6 +240,44 @@ export default function AppointmentsScreen() {
     }
   }
 
+  function resetNewApptForm() {
+    setPregnancySearch("");
+    setSelectedPregnancyId(null);
+    setSelectedHospitalId(null);
+    setNewApptDate("");
+  }
+
+  function handleCloseModal() {
+    setShowNewModal(false);
+    resetNewApptForm();
+  }
+
+  function handleSubmitNewAppt() {
+    if (!selectedPregnancyId || !selectedHospitalId || !newApptDate.trim()) return;
+    createAppt.mutate(
+      {
+        data: {
+          pregnancyId: selectedPregnancyId,
+          hospitalId: selectedHospitalId,
+          appointmentDate: newApptDate.trim(),
+        },
+      },
+      {
+        onSuccess: () => {
+          handleCloseModal();
+          refetch();
+          Alert.alert(t("appointments.createSuccess"));
+        },
+        onError: () => {
+          Alert.alert(t("appointments.createError"));
+        },
+      }
+    );
+  }
+
+  const canSubmit =
+    !!selectedPregnancyId && !!selectedHospitalId && isValidIsoDate(newApptDate.trim());
+
   return (
     <View
       style={[
@@ -210,11 +289,22 @@ export default function AppointmentsScreen() {
         <Text style={[styles.screenTitle, isRTL && styles.rtlText]}>
           {t("appointments.title")}
         </Text>
-        {!isLoading && (
-          <Text style={styles.countBadge}>
-            {filtered.length} {t("appointments.totalCount")}
-          </Text>
-        )}
+        <View style={[styles.headerRight, isRTL && styles.rowReverse]}>
+          {!isLoading && (
+            <Text style={styles.countBadge}>
+              {filtered.length} {t("appointments.totalCount")}
+            </Text>
+          )}
+          <Pressable
+            style={styles.newApptBtn}
+            onPress={() => setShowNewModal(true)}
+          >
+            <Ionicons name="add" size={20} color="#fff" />
+            <Text style={styles.newApptBtnText}>
+              {t("appointments.newAppointment")}
+            </Text>
+          </Pressable>
+        </View>
       </View>
 
       {/* Needs Action Banner */}
@@ -351,7 +441,7 @@ export default function AppointmentsScreen() {
           keyExtractor={(item) => String(item.id)}
           renderItem={({ item }) => {
             const badge = getAttendanceBadge(item.attended);
-            const riskBadge = getRiskBadge(item.riskLevel);
+            const riskBadge = getRiskBadge((item as unknown as { riskLevel?: string }).riskLevel);
             const isUpdating = updatingId === item.id;
             const apptDate = item.appointmentDate.slice(0, 10);
             const isNeedsAction = apptDate < today && item.attended === null;
@@ -513,6 +603,169 @@ export default function AppointmentsScreen() {
           refreshing={isLoading && all.length === 0}
         />
       )}
+
+      <Modal
+        visible={showNewModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={handleCloseModal}
+      >
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <View
+            style={[
+              styles.modalContainer,
+              { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 },
+            ]}
+          >
+            <View style={[styles.modalHeader, isRTL && styles.rowReverse]}>
+              <Text style={[styles.modalTitle, isRTL && styles.rtlText]}>
+                {t("appointments.newApptTitle")}
+              </Text>
+              <Pressable
+                style={styles.closeBtn}
+                onPress={handleCloseModal}
+                hitSlop={8}
+              >
+                <Ionicons name="close" size={22} color={colors.foreground} />
+              </Pressable>
+            </View>
+
+            <ScrollView
+              style={{ flex: 1 }}
+              contentContainerStyle={styles.modalContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              <Text style={[styles.sectionLabel, isRTL && styles.rtlText]}>
+                {t("appointments.selectPregnancy")}
+              </Text>
+
+              {selectedPregnancy ? (
+                <Pressable
+                  style={[styles.selectedCard, isRTL && styles.rowReverse]}
+                  onPress={() => setSelectedPregnancyId(null)}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.selectedCardName, isRTL && styles.rtlText]}>
+                      {selectedPregnancy.patientNameAr ?? "—"}
+                    </Text>
+                    <Text style={[styles.selectedCardSub, isRTL && styles.rtlText]}>
+                      {selectedPregnancy.patientNationalId ?? ""}
+                    </Text>
+                  </View>
+                  <Ionicons name="close-circle" size={20} color={colors.mutedForeground} />
+                </Pressable>
+              ) : (
+                <>
+                  <TextInput
+                    style={[styles.searchInput, isRTL && styles.rtlText]}
+                    placeholder={t("appointments.searchPregnancy")}
+                    placeholderTextColor={colors.mutedForeground}
+                    value={pregnancySearch}
+                    onChangeText={setPregnancySearch}
+                    textAlign={isRTL ? "right" : "left"}
+                  />
+                  {filteredPregnancies.length === 0 ? (
+                    <Text style={[styles.noResults, isRTL && styles.rtlText]}>
+                      {t("appointments.noResults")}
+                    </Text>
+                  ) : (
+                    <View style={styles.pickList}>
+                      {filteredPregnancies.map((p) => (
+                        <Pressable
+                          key={p.id}
+                          style={({ pressed }) => [
+                            styles.pickItem,
+                            isRTL && styles.rowReverse,
+                            pressed && styles.pressed,
+                          ]}
+                          onPress={() => setSelectedPregnancyId(p.id)}
+                        >
+                          <View style={{ flex: 1 }}>
+                            <Text style={[styles.pickItemName, isRTL && styles.rtlText]}>
+                              {p.patientNameAr ?? "—"}
+                            </Text>
+                            <Text style={[styles.pickItemSub, isRTL && styles.rtlText]}>
+                              {p.patientNationalId ?? ""}
+                            </Text>
+                          </View>
+                          <Ionicons
+                            name="chevron-forward"
+                            size={16}
+                            color={colors.mutedForeground}
+                            style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined}
+                          />
+                        </Pressable>
+                      ))}
+                    </View>
+                  )}
+                </>
+              )}
+
+              <Text style={[styles.sectionLabel, isRTL && styles.rtlText]}>
+                {t("appointments.selectHospital")}
+              </Text>
+              <View style={styles.hospitalGrid}>
+                {allHospitals.map((h) => (
+                  <Pressable
+                    key={h.id}
+                    style={[
+                      styles.hospitalChip,
+                      selectedHospitalId === h.id && styles.hospitalChipActive,
+                    ]}
+                    onPress={() => setSelectedHospitalId(h.id)}
+                  >
+                    <Text
+                      style={[
+                        styles.hospitalChipText,
+                        selectedHospitalId === h.id && styles.hospitalChipTextActive,
+                        isRTL && styles.rtlText,
+                      ]}
+                      numberOfLines={2}
+                    >
+                      {h.nameAr}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              <Text style={[styles.sectionLabel, isRTL && styles.rtlText]}>
+                {t("appointments.selectDate")}
+              </Text>
+              <TextInput
+                style={[styles.dateInput, isRTL && styles.rtlText]}
+                placeholder="2026-01-15"
+                placeholderTextColor={colors.mutedForeground}
+                value={newApptDate}
+                onChangeText={setNewApptDate}
+                keyboardType="numeric"
+                maxLength={10}
+                textAlign={isRTL ? "right" : "left"}
+              />
+
+              <Pressable
+                style={[
+                  styles.submitBtn,
+                  (!canSubmit || createAppt.isPending) && styles.submitBtnDisabled,
+                ]}
+                onPress={handleSubmitNewAppt}
+                disabled={!canSubmit || createAppt.isPending}
+              >
+                {createAppt.isPending ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.submitBtnText}>
+                    {t("appointments.submit")}
+                  </Text>
+                )}
+              </Pressable>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -530,10 +783,15 @@ function makeStyles(colors: ReturnType<typeof useColors>, isRTL: boolean) {
       flexDirection: isRTL ? "row-reverse" : "row",
       alignItems: "center",
       justifyContent: "space-between",
-      marginBottom: 16,
+      marginBottom: 12,
+    },
+    headerRight: {
+      flexDirection: isRTL ? "row-reverse" : "row",
+      alignItems: "center",
+      gap: 10,
     },
     screenTitle: {
-      fontSize: 24,
+      fontSize: 22,
       fontWeight: "700",
       fontFamily: "Tajawal_700Bold",
       color: colors.foreground,
@@ -542,6 +800,20 @@ function makeStyles(colors: ReturnType<typeof useColors>, isRTL: boolean) {
       fontSize: 13,
       fontFamily: "Tajawal_500Medium",
       color: colors.mutedForeground,
+    },
+    newApptBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      backgroundColor: colors.primary,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 10,
+    },
+    newApptBtnText: {
+      color: "#fff",
+      fontSize: 13,
+      fontFamily: "Tajawal_700Bold",
     },
 
     needsActionBanner: {
@@ -553,9 +825,9 @@ function makeStyles(colors: ReturnType<typeof useColors>, isRTL: boolean) {
       borderColor: "#fed7aa",
       borderRadius: 12,
       paddingHorizontal: 14,
-      paddingVertical: 12,
-      marginBottom: 14,
-      gap: 8,
+      paddingVertical: 10,
+      marginBottom: 10,
+      gap: 10,
     },
     needsActionLeft: {
       flexDirection: isRTL ? "row-reverse" : "row",
@@ -608,19 +880,10 @@ function makeStyles(colors: ReturnType<typeof useColors>, isRTL: boolean) {
       backgroundColor: colors.card,
       borderWidth: 1,
       borderColor: colors.border,
-      position: "relative",
     },
     filterTabSmallActive: {
       backgroundColor: colors.primary + "22",
       borderColor: colors.primary,
-    },
-    filterTabNeedsAction: {
-      borderColor: "#fed7aa",
-      backgroundColor: "#fff7ed",
-    },
-    filterTabNeedsActionActive: {
-      borderColor: "#f97316",
-      backgroundColor: "#ffedd5",
     },
     filterTabSmallText: {
       fontSize: 12,
@@ -630,6 +893,15 @@ function makeStyles(colors: ReturnType<typeof useColors>, isRTL: boolean) {
     filterTabSmallTextActive: {
       color: colors.primary,
       fontFamily: "Tajawal_700Bold",
+    },
+    filterTabNeedsAction: {
+      borderColor: "#fed7aa",
+      backgroundColor: "#fff7ed",
+      position: "relative",
+    },
+    filterTabNeedsActionActive: {
+      backgroundColor: "#ffedd5",
+      borderColor: "#f97316",
     },
     filterTabNeedsActionText: {
       color: "#c2410c",
@@ -652,7 +924,7 @@ function makeStyles(colors: ReturnType<typeof useColors>, isRTL: boolean) {
     },
     filterBadgeText: {
       color: "#fff",
-      fontSize: 9,
+      fontSize: 10,
       fontFamily: "Tajawal_700Bold",
     },
 
@@ -690,18 +962,20 @@ function makeStyles(colors: ReturnType<typeof useColors>, isRTL: boolean) {
       gap: 8,
     },
     cardNeedsAction: {
-      backgroundColor: "#fff7ed",
-      borderColor: "#fdba74",
-      borderStartWidth: 4,
-      borderStartColor: "#f97316",
+      borderColor: "#fed7aa",
+      backgroundColor: "#fffbf5",
     },
     pressed: { opacity: 0.75 },
 
     needsActionCardBadge: {
-      flexDirection: isRTL ? "row-reverse" : "row",
+      flexDirection: "row",
       alignItems: "center",
       gap: 4,
-      alignSelf: isRTL ? "flex-end" : "flex-start",
+      alignSelf: "flex-start",
+      backgroundColor: "#ffedd5",
+      borderRadius: 6,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
     },
     needsActionCardBadgeRTL: {
       alignSelf: "flex-end",
@@ -727,13 +1001,13 @@ function makeStyles(colors: ReturnType<typeof useColors>, isRTL: boolean) {
       fontFamily: "Tajawal_700Bold",
       color: colors.foreground,
     },
+    dateTextNeedsAction: {
+      color: "#c2410c",
+    },
     badgeRow: {
       flexDirection: isRTL ? "row-reverse" : "row",
       gap: 6,
       alignItems: "center",
-    },
-    dateTextNeedsAction: {
-      color: "#c2410c",
     },
     statusBadge: {
       borderRadius: 8,
@@ -796,6 +1070,158 @@ function makeStyles(colors: ReturnType<typeof useColors>, isRTL: boolean) {
       fontSize: 13,
       fontFamily: "Tajawal_500Medium",
       color: "#fff",
+    },
+
+    modalContainer: {
+      flex: 1,
+      backgroundColor: colors.background,
+      paddingHorizontal: 20,
+    },
+    modalHeader: {
+      flexDirection: isRTL ? "row-reverse" : "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 20,
+    },
+    modalTitle: {
+      fontSize: 20,
+      fontWeight: "700",
+      fontFamily: "Tajawal_700Bold",
+      color: colors.foreground,
+    },
+    closeBtn: {
+      padding: 4,
+    },
+    modalContent: {
+      gap: 8,
+      paddingBottom: 40,
+    },
+    sectionLabel: {
+      fontSize: 14,
+      fontFamily: "Tajawal_700Bold",
+      color: colors.foreground,
+      marginTop: 12,
+      marginBottom: 4,
+    },
+    searchInput: {
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      fontSize: 14,
+      fontFamily: "Tajawal_400Regular",
+      color: colors.foreground,
+    },
+    noResults: {
+      fontSize: 13,
+      fontFamily: "Tajawal_400Regular",
+      color: colors.mutedForeground,
+      textAlign: "center",
+      paddingVertical: 12,
+    },
+    pickList: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      overflow: "hidden",
+      maxHeight: 220,
+    },
+    pickItem: {
+      flexDirection: isRTL ? "row-reverse" : "row",
+      alignItems: "center",
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      backgroundColor: colors.card,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      gap: 8,
+    },
+    pickItemName: {
+      fontSize: 14,
+      fontFamily: "Tajawal_700Bold",
+      color: colors.foreground,
+    },
+    pickItemSub: {
+      fontSize: 12,
+      fontFamily: "Tajawal_400Regular",
+      color: colors.mutedForeground,
+    },
+    selectedCard: {
+      flexDirection: isRTL ? "row-reverse" : "row",
+      alignItems: "center",
+      backgroundColor: colors.primary + "15",
+      borderWidth: 1,
+      borderColor: colors.primary,
+      borderRadius: 10,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      gap: 8,
+    },
+    selectedCardName: {
+      fontSize: 14,
+      fontFamily: "Tajawal_700Bold",
+      color: colors.primary,
+    },
+    selectedCardSub: {
+      fontSize: 12,
+      fontFamily: "Tajawal_400Regular",
+      color: colors.mutedForeground,
+    },
+    hospitalGrid: {
+      flexDirection: isRTL ? "row-reverse" : "row",
+      flexWrap: "wrap",
+      gap: 8,
+    },
+    hospitalChip: {
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 8,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      maxWidth: "48%",
+      minWidth: "30%",
+    },
+    hospitalChipActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    hospitalChipText: {
+      fontSize: 12,
+      fontFamily: "Tajawal_500Medium",
+      color: colors.foreground,
+      textAlign: "center",
+    },
+    hospitalChipTextActive: {
+      color: "#fff",
+    },
+    dateInput: {
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      fontSize: 15,
+      fontFamily: "Tajawal_400Regular",
+      color: colors.foreground,
+    },
+    submitBtn: {
+      backgroundColor: colors.primary,
+      borderRadius: 12,
+      paddingVertical: 14,
+      alignItems: "center",
+      marginTop: 16,
+    },
+    submitBtnDisabled: {
+      opacity: 0.5,
+    },
+    submitBtnText: {
+      color: "#fff",
+      fontSize: 16,
+      fontFamily: "Tajawal_700Bold",
     },
   });
 }
