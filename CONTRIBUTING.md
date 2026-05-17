@@ -2,7 +2,9 @@
 
 ## Branch Protection Requirements
 
-The `main` branch is protected. All pull requests targeting `main` **must** have the following CI status checks pass before merging:
+The `main` branch is protected. All pull requests targeting `main` **must** satisfy the following requirements before merging:
+
+### Required CI status checks
 
 | Required check | Workflow job | What it verifies |
 |---|---|---|
@@ -10,6 +12,10 @@ The `main` branch is protected. All pull requests targeting `main` **must** have
 | `typecheck` | `.github/workflows/ci.yml` → `typecheck` | Full TypeScript typecheck across all workspace packages |
 
 Both checks run automatically on every pull request via the CI workflow. A PR cannot be merged until both pass.
+
+### Required pull request review
+
+At least **1 approving review** from a team member is required before a PR can be merged. Approvals are automatically dismissed when new commits are pushed to the PR branch, ensuring the reviewer always sees the final state of the code.
 
 ### Configuring Branch Protection (repository admin)
 
@@ -27,12 +33,15 @@ Branch protection rules must be set in GitHub repository settings. Run the autom
 
 1. Go to **Settings → Branches** in the GitHub repository.
 2. Add a branch protection rule for `main` (or edit the existing one).
-3. Enable **Require status checks to pass before merging**.
-4. Search for and add both required checks:
+3. Enable **Require a pull request before merging**.
+   - Set **Required approving reviews** to **1**.
+   - Enable **Dismiss stale pull request approvals when new commits are pushed**.
+4. Enable **Require status checks to pass before merging**.
+5. Search for and add both required checks:
    - `Check API codegen is up to date` (job id: `check-codegen`)
    - `TypeScript typecheck` (job id: `typecheck`)
-5. Enable **Require branches to be up to date before merging**.
-6. Save the rule.
+6. Enable **Require branches to be up to date before merging**.
+7. Save the rule.
 
 ## Local Development Checks
 

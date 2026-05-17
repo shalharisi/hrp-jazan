@@ -13,10 +13,10 @@ permissions:
 
 jobs:
   protect:
-    name: Apply required CI status checks
+    name: Apply required CI status checks and review policy
     runs-on: ubuntu-latest
     steps:
-      - name: Add required status checks on ${{ inputs.branch }}
+      - name: Add required status checks and review policy on ${{ inputs.branch }}
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -56,10 +56,37 @@ jobs:
               // Preserve existing values; fall back to safe defaults when no rule existed yet.
               // enforce_admins must be a boolean — default false (do not enforce on admins).
               enforce_admins: current?.enforce_admins?.enabled ?? false,
-              // Pass required_pull_request_reviews through verbatim so no existing review
-              // setting (dismiss_stale_reviews, dismissal_restrictions, code-owner reviews,
-              // required_approving_review_count, bypass_pull_request_allowances, etc.) is lost.
-              required_pull_request_reviews: current?.required_pull_request_reviews ?? null,
+              // Require at least 1 approving review; dismiss stale approvals on new commits.
+              // Only writable fields are included to avoid sending read-only API response keys.
+              required_pull_request_reviews: {
+                required_approving_review_count: Math.max(
+                  current?.required_pull_request_reviews?.required_approving_review_count ?? 0,
+                  1
+                ),
+                dismiss_stale_reviews: true,
+                require_code_owner_reviews:
+                  current?.required_pull_request_reviews?.require_code_owner_reviews ?? false,
+                require_last_push_approval:
+                  current?.required_pull_request_reviews?.require_last_push_approval ?? false,
+                ...(current?.required_pull_request_reviews?.dismissal_restrictions
+                  ? {
+                      dismissal_restrictions: {
+                        users: current.required_pull_request_reviews.dismissal_restrictions.users?.map(u => u.login) ?? [],
+                        teams: current.required_pull_request_reviews.dismissal_restrictions.teams?.map(t => t.slug) ?? [],
+                        apps:  current.required_pull_request_reviews.dismissal_restrictions.apps?.map(a => a.slug) ?? []
+                      }
+                    }
+                  : {}),
+                ...(current?.required_pull_request_reviews?.bypass_pull_request_allowances
+                  ? {
+                      bypass_pull_request_allowances: {
+                        users: current.required_pull_request_reviews.bypass_pull_request_allowances.users?.map(u => u.login) ?? [],
+                        teams: current.required_pull_request_reviews.bypass_pull_request_allowances.teams?.map(t => t.slug) ?? [],
+                        apps:  current.required_pull_request_reviews.bypass_pull_request_allowances.apps?.map(a => a.slug) ?? []
+                      }
+                    }
+                  : {})
+              },
               restrictions: current?.restrictions
                 ? {
                     users: current.restrictions.users.map(u => u.login),
@@ -72,3 +99,4 @@ jobs:
             console.log(`Branch protection updated for '${branch}'.`);
             console.log(`Required status checks (${mergedContexts.length} total):`);
             mergedContexts.forEach(c => console.log(`  - ${c}`));
+            console.log(`Required approving reviews: 1 (stale reviews dismissed on new commits).`);
