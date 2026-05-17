@@ -2002,6 +2002,7 @@ async function captureScreenshots(
   outputDir?: string,
 ): Promise<Map<string, Buffer>> {
   const screenshots = new Map<string, Buffer>();
+  const captureOrder: Array<{ order: number; key: string; filename: string }> = [];
 
   if (outputDir) {
     fs.mkdirSync(outputDir, { recursive: true });
@@ -2034,10 +2035,11 @@ async function captureScreenshots(
       const buf = await page.screenshot({ type: "png", fullPage: false });
       const buffer = Buffer.from(buf);
       screenshots.set(key, buffer);
+      const filename = `${sanitizeScreenshotFilename(key)}.png`;
       if (outputDir) {
-        const filename = `${sanitizeScreenshotFilename(key)}.png`;
         fs.writeFileSync(path.join(outputDir, filename), buffer);
       }
+      captureOrder.push({ order: captureOrder.length + 1, key, filename });
       console.log(`  ✓ ${key}`);
     } catch (e) {
       console.warn(`  ✗ فشل أخذ اللقطة: ${key}`);
@@ -2287,6 +2289,38 @@ async function captureScreenshots(
 
   const captured = [...screenshots.values()].filter((b) => b.length > 0).length;
   console.log(`📸 تم التقاط ${captured} لقطة شاشة من أصل 19`);
+
+  if (outputDir && captureOrder.length > 0) {
+    const indexJsonPath = path.join(outputDir, "index.json");
+    fs.writeFileSync(indexJsonPath, JSON.stringify(captureOrder, null, 2), "utf8");
+    console.log(`📋 تم كتابة فهرس لقطات الشاشة: ${indexJsonPath}`);
+
+    const mdLines: string[] = [
+      "# فهرس لقطات الشاشة – منظومة تتبع الحمل عالي الخطورة",
+      "",
+      `> تم الالتقاط بترتيب: ${captureOrder.length} لقطة`,
+      "",
+      "| # | التسمية | اسم الملف |",
+      "|---|---------|-----------|",
+    ];
+    for (const entry of captureOrder) {
+      mdLines.push(`| ${entry.order} | ${entry.key} | [${entry.filename}](./${entry.filename}) |`);
+    }
+    mdLines.push("");
+    mdLines.push("## معاينة");
+    mdLines.push("");
+    for (const entry of captureOrder) {
+      mdLines.push(`### ${entry.order}. ${entry.key}`);
+      mdLines.push("");
+      mdLines.push(`![${entry.key}](./${entry.filename})`);
+      mdLines.push("");
+    }
+
+    const indexMdPath = path.join(outputDir, "index.md");
+    fs.writeFileSync(indexMdPath, mdLines.join("\n"), "utf8");
+    console.log(`📋 تم كتابة دليل الاستعراض: ${indexMdPath}`);
+  }
+
   return screenshots;
 }
 
