@@ -194,8 +194,17 @@ export default function AppointmentsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const [dateFilter, setDateFilter] = useState<DateFilter>("week");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const initialStatus = useMemo<StatusFilter>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const s = params.get("status");
+    if (s === "needs_action" || s === "scheduled" || s === "attended" || s === "absent") return s;
+    return "all";
+  }, []);
+
+  const [dateFilter, setDateFilter] = useState<DateFilter>(
+    initialStatus === "needs_action" ? "all" : "week"
+  );
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialStatus);
   const [sectorFilter, setSectorFilter] = useState<string>("all");
   const [dialogState, setDialogState] = useState<AttendanceDialogState>(null);
   const [attendanceNote, setAttendanceNote] = useState("");
