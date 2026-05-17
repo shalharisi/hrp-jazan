@@ -191,14 +191,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 {lang === "ar" ? "نظام آمن ومشفّر" : "Secure & Encrypted"}
               </div>
               {guideGenerating && (
-                <div
-                  className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium text-amber-800 bg-amber-100 border border-amber-300"
+                <Link
+                  href="/guide"
+                  className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium text-amber-800 bg-amber-100 border border-amber-300 hover:bg-amber-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-1"
                   role="status"
                   aria-live="polite"
                 >
                   <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" />
                   {t("guide.generatingBadge")}
-                </div>
+                </Link>
               )}
             </div>
 
