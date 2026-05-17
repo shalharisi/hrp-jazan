@@ -122,11 +122,16 @@ router.get(
     };
 
     const headers = [
-      "م", "اسم الحامل", "الهوية", "تاريخ الزيارة", "درجة الخطورة",
-      "خطر التجلط", "إينوكسابارين", "توصية الإحالة", "تاريخ الموعد",
-      "الالتزام", "أيام العمل", "المستشفى المُحوَّل إليه", "القطاع",
-      "ID", "Patient", "Nat.ID", "Visit Date", "Risk Level",
-      "VTE", "Enoxaparin", "Referral", "Appt Date", "Compliance", "Working Days", "Hospital", "Sector",
+      "م", "اسم الحامل", "الهوية", "تاريخ الزيارة", "عمر الحمل (أسبوع)", "درجة الخطورة",
+      "خطر التجلط", "إينوكسابارين", "توصية الإحالة", "الإحالة مُوضَّحة", "تاريخ الموعد",
+      "الالتزام", "أيام العمل", "المستشفى المُحوَّل إليه", "القطاع", "المركز الصحي",
+      "عوامل الخطر العامة", "عوامل خطر الحمل", "الأمراض المزمنة",
+      "الأدوية", "ملاحظات المتابعة",
+      "ID", "Patient", "Nat.ID", "Visit Date", "GA (wk)", "Risk Level",
+      "VTE", "Enoxaparin", "Referral", "Referral Explained", "Appt Date",
+      "Compliance", "Working Days", "Hospital", "Sector", "Health Center",
+      "Risk Factors (G1)", "Pregnancy Risk Factors (G2)", "Medical Conditions (G3)",
+      "Medications", "Follow-up Notes",
     ];
 
     const rows: string[] = [headers.join(",")];
@@ -139,33 +144,55 @@ router.get(
       if (sectorFilter && sector?.id !== sectorFilter) continue;
       const hospital = pg.referredHospitalId ? hospitalMap.get(pg.referredHospitalId) : null;
 
+      const riskFactors = Array.isArray(pg.riskFactors) ? (pg.riskFactors as string[]).join(" | ") : "";
+      const pregnancyRiskFactors = Array.isArray(pg.pregnancyRiskFactors) ? (pg.pregnancyRiskFactors as string[]).join(" | ") : "";
+      const medicalConditions = Array.isArray(pg.medicalConditions) ? (pg.medicalConditions as string[]).join(" | ") : "";
+      const referralExplainedAr = pg.referralExplained === true ? "نعم" : pg.referralExplained === false ? "لا" : "";
+      const referralExplainedEn = pg.referralExplained === true ? "Yes" : pg.referralExplained === false ? "No" : "";
+
       rows.push(toCsvRow([
         pg.id,
         patient.nameAr,
         patient.nationalId,
         pg.visitDate,
+        pg.gestationalAge ?? "",
         riskAr[pg.riskLevel] ?? pg.riskLevel,
         pg.isVteHighRisk ? "نعم" : "لا",
         pg.enoxaparinPrescribed ? "نعم" : "لا",
         referralAr[pg.referralRecommendation] ?? pg.referralRecommendation,
+        referralExplainedAr,
         pg.appointmentDate ?? "",
         complianceAr[pg.compliance] ?? pg.compliance,
         pg.workingDaysToAppointment ?? "",
         hospital?.nameAr ?? "",
         sector?.nameAr ?? "",
+        center?.nameAr ?? "",
+        riskFactors,
+        pregnancyRiskFactors,
+        medicalConditions,
+        pg.medications ?? "",
+        pg.followUpNotes ?? "",
         pg.id,
         patient.nameEn ?? patient.nameAr,
         patient.nationalId,
         pg.visitDate,
+        pg.gestationalAge ?? "",
         pg.riskLevel,
         pg.isVteHighRisk ? "Yes" : "No",
         pg.enoxaparinPrescribed ? "Yes" : "No",
         pg.referralRecommendation,
+        referralExplainedEn,
         pg.appointmentDate ?? "",
         pg.compliance,
         pg.workingDaysToAppointment ?? "",
         hospital?.nameEn ?? hospital?.nameAr ?? "",
         sector?.nameEn ?? sector?.nameAr ?? "",
+        center?.nameEn ?? center?.nameAr ?? "",
+        riskFactors,
+        pregnancyRiskFactors,
+        medicalConditions,
+        pg.medications ?? "",
+        pg.followUpNotes ?? "",
       ]));
     }
 

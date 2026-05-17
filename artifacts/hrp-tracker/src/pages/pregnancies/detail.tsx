@@ -6,6 +6,7 @@ import {
   useCreateAppointment, useUpdateAppointment,
   PregnancyUpdateRiskLevel, PregnancyUpdateReferralRecommendation
 } from "@workspace/api-client-react";
+import type { PregnancyDetail } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { RiskBadge, ComplianceBadge, ReferralBadge } from "@/components/ui/status-badges";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Pencil, X, Save, Plus, CheckCircle2, XCircle, RotateCcw } from "lucide-react";
+import { Pencil, X, Save, Plus, CheckCircle2, XCircle, RotateCcw, FileDown } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 
@@ -80,6 +81,164 @@ type EditForm = {
   notes: string;
   followUpNotes: string;
 };
+
+const riskLabelAr: Record<string, string> = {
+  low: "منخفض", medium: "متوسط", high: "عالي", critical: "حرج",
+};
+const complianceLabelAr: Record<string, string> = {
+  compliant: "ملتزم", non_compliant: "غير ملتزم", pending: "بانتظار موعد",
+};
+const referralLabelAr: Record<string, string> = {
+  follow_at_center: "متابعة في المركز",
+  follow_at_hospital: "متابعة في المستشفى",
+  transfer_kfch: "تحويل لـ KFCH",
+};
+
+function exportToPdf(detail: PregnancyDetail) {
+  const { pregnancy: p, patient, appointments } = detail;
+
+  function row(label: string, value: string) {
+    return `<tr><td class="lbl">${label}</td><td class="val">${value || "—"}</td></tr>`;
+  }
+
+  function section(title: string, content: string) {
+    return `<div class="section"><div class="section-title">${title}</div>${content}</div>`;
+  }
+
+  function chipList(items: string[] | null | undefined) {
+    if (!items || items.length === 0) return "<span class='none'>لا يوجد</span>";
+    return items.map(i => `<span class="chip">${i}</span>`).join(" ");
+  }
+
+  const aptRows = appointments && appointments.length > 0
+    ? appointments.map(a => `<tr>
+        <td>${new Date(a.appointmentDate).toLocaleDateString("ar-SA")}</td>
+        <td>${a.hospitalNameAr ?? "—"}</td>
+        <td>${a.attended === true ? "حضر" : a.attended === false ? "غائب" : "مجدول"}</td>
+        <td>${a.attendanceNote ?? "—"}</td>
+      </tr>`).join("")
+    : `<tr><td colspan="4" class="none-row">لا توجد مواعيد مسجلة</td></tr>`;
+
+  const html = `<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8"/>
+  <title>ملف الحامل – ${patient?.nameAr ?? ""}</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Tajawal', Arial, sans-serif; font-size: 13px; color: #1a1a1a; background: #fff; padding: 20mm 15mm; direction: rtl; }
+    h1 { font-size: 20px; color: #006633; text-align: center; margin-bottom: 4px; }
+    .subtitle { text-align: center; color: #666; font-size: 12px; margin-bottom: 16px; }
+    .header-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #006633; padding-bottom: 8px; margin-bottom: 16px; }
+    .header-meta { font-size: 11px; color: #555; }
+    .badges { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    .badge { border-radius: 12px; padding: 3px 10px; font-size: 12px; font-weight: 600; }
+    .badge-risk-low { background:#d1fae5; color:#065f46; }
+    .badge-risk-medium { background:#fef9c3; color:#854d0e; }
+    .badge-risk-high { background:#fee2e2; color:#991b1b; }
+    .badge-risk-critical { background:#7f1d1d; color:#fff; }
+    .badge-green { background:#d1fae5; color:#065f46; }
+    .badge-blue { background:#dbeafe; color:#1e40af; }
+    .badge-red { background:#fee2e2; color:#991b1b; }
+    .badge-yellow { background:#fef9c3; color:#854d0e; }
+    .section { margin-bottom: 14px; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden; }
+    .section-title { background: #006633; color: #fff; font-size: 13px; font-weight: 700; padding: 5px 10px; }
+    table.info { width: 100%; border-collapse: collapse; }
+    table.info td { padding: 5px 10px; border-bottom: 1px solid #f3f4f6; vertical-align: top; }
+    table.info td.lbl { color: #6b7280; width: 40%; font-size: 12px; }
+    table.info td.val { font-weight: 500; }
+    table.info tr:last-child td { border-bottom: none; }
+    .chip { display: inline-block; background: #f0fdf4; border: 1px solid #bbf7d0; color: #065f46; border-radius: 10px; padding: 2px 8px; margin: 2px; font-size: 11px; }
+    .chips-cell { padding: 8px 10px; }
+    .none { color: #9ca3af; font-size: 12px; }
+    .none-row { text-align: center; color: #9ca3af; }
+    table.appt { width: 100%; border-collapse: collapse; font-size: 12px; }
+    table.appt th { background: #f9fafb; padding: 6px 10px; text-align: right; border-bottom: 1px solid #e5e7eb; font-weight: 600; color: #374151; }
+    table.appt td { padding: 5px 10px; border-bottom: 1px solid #f3f4f6; }
+    .footer { margin-top: 20px; border-top: 1px solid #e5e7eb; padding-top: 8px; text-align: center; color: #9ca3af; font-size: 11px; }
+    @media print { body { padding: 10mm 10mm; } }
+  </style>
+</head>
+<body>
+  <div class="header-bar">
+    <div>
+      <h1>ملف الحامل – منظومة تتبع الحمل عالي الخطورة</h1>
+      <div class="subtitle">تجمع جازان الصحي 2026</div>
+    </div>
+    <div class="header-meta">
+      <div>تاريخ الطباعة: ${new Date().toLocaleDateString("ar-SA")}</div>
+      <div>رقم الحالة: ${p.id}</div>
+    </div>
+  </div>
+
+  <div class="badges">
+    <span class="badge badge-risk-${p.riskLevel}">${riskLabelAr[p.riskLevel] ?? p.riskLevel}</span>
+    <span class="badge ${p.compliance === "compliant" ? "badge-green" : p.compliance === "non_compliant" ? "badge-red" : "badge-yellow"}">${complianceLabelAr[p.compliance] ?? p.compliance}</span>
+    <span class="badge badge-blue">${referralLabelAr[p.referralRecommendation] ?? p.referralRecommendation}</span>
+    ${p.isVteHighRisk ? '<span class="badge badge-red">VTE عالي الخطورة</span>' : ""}
+    ${p.enoxaparinPrescribed ? '<span class="badge badge-blue">Enoxaparin موصوف</span>' : ""}
+    ${p.referralExplained === true ? '<span class="badge badge-green">الإحالة مُوضَّحة</span>' : p.referralExplained === false ? '<span class="badge badge-red">الإحالة غير مُوضَّحة</span>' : ""}
+  </div>
+
+  ${section("بيانات المريضة", `<table class="info">
+    ${row("الاسم", patient?.nameAr ?? "")}
+    ${row("الهوية الوطنية", patient?.nationalId ?? "")}
+    ${row("العمر", patient?.age != null ? `${patient.age} سنة` : "")}
+    ${row("الجوال", patient?.phone ?? "")}
+    ${patient?.doctorPhone ? row("جوال الطبيب", patient.doctorPhone) : ""}
+    ${patient?.address ? row("العنوان", patient.address) : ""}
+    ${row("المركز الصحي", patient?.healthCenterNameAr ?? "")}
+    ${row("القطاع", patient?.sectorNameAr ?? "")}
+  </table>`)}
+
+  ${section("بيانات الزيارة", `<table class="info">
+    ${row("تاريخ الزيارة", p.visitDate ? new Date(p.visitDate).toLocaleDateString("ar-SA") : "")}
+    ${row("تاريخ آخر دورة (LMP)", p.lmpDate ? new Date(p.lmpDate).toLocaleDateString("ar-SA") : "")}
+    ${row("عمر الحمل", p.gestationalAge != null ? `${p.gestationalAge} أسبوع` : "")}
+    ${row("درجة الخطورة", riskLabelAr[p.riskLevel] ?? p.riskLevel)}
+    ${row("اسم الطبيب", p.doctorName ?? "")}
+  </table>`)}
+
+  ${section("عوامل الخطر العامة (المجموعة 1)", `<div class="chips-cell">${chipList(p.riskFactors)}</div>`)}
+  ${section("عوامل خطر الحمل (المجموعة 2)", `<div class="chips-cell">${chipList(p.pregnancyRiskFactors)}</div>`)}
+  ${section("الأمراض المزمنة (المجموعة 3)", `<div class="chips-cell">${chipList(p.medicalConditions)}</div>`)}
+
+  ${section("الأدوية والإحالة", `<table class="info">
+    ${row("الأدوية", p.medications ?? "")}
+    ${row("خطر التجلط (VTE)", p.isVteHighRisk ? "نعم" : "لا")}
+    ${row("Enoxaparin موصوف", p.enoxaparinPrescribed ? "نعم" : "لا")}
+    ${row("توصية الإحالة", referralLabelAr[p.referralRecommendation] ?? p.referralRecommendation)}
+    ${row("الإحالة مُوضَّحة للمريضة", p.referralExplained === true ? "نعم" : p.referralExplained === false ? "لا" : "")}
+    ${row("المستشفى المُحوَّل إليه", p.referredHospitalNameAr ?? "")}
+    ${row("تاريخ الموعد", p.appointmentDate ? new Date(p.appointmentDate).toLocaleDateString("ar-SA") : "")}
+    ${row("الالتزام", complianceLabelAr[p.compliance] ?? p.compliance)}
+    ${p.workingDaysToAppointment != null ? row("أيام العمل للموعد", `${p.workingDaysToAppointment} يوم`) : ""}
+  </table>`)}
+
+  ${section("الملاحظات", `<table class="info">
+    ${row("ملاحظات عامة", p.notes ?? "")}
+    ${row("ملاحظات المتابعة والتواصل", p.followUpNotes ?? "")}
+  </table>`)}
+
+  ${section("المواعيد في المستشفى", `<table class="appt">
+    <thead><tr><th>التاريخ</th><th>المستشفى</th><th>الحضور</th><th>ملاحظة</th></tr></thead>
+    <tbody>${aptRows}</tbody>
+  </table>`)}
+
+  <div class="footer">
+    منظومة تتبع الحمل عالي الخطورة – تجمع جازان الصحي &nbsp;|&nbsp; ${new Date().toLocaleDateString("ar-SA")}
+  </div>
+</body>
+</html>`;
+
+  const win = window.open("", "_blank");
+  if (!win) return;
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(() => { win.print(); }, 800);
+}
 
 export default function PregnancyDetail() {
   const { id } = useParams();
@@ -250,10 +409,20 @@ export default function PregnancyDetail() {
               </Button>
             </>
           ) : (
-            <Button variant="outline" onClick={startEdit}>
-              <Pencil className="w-4 h-4 ms-2" />
-              {t("pregnancy.editCase")}
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                onClick={() => exportToPdf(detail)}
+                className="gap-2 border-green-700 text-green-800 hover:bg-green-50"
+              >
+                <FileDown className="w-4 h-4" />
+                تصدير PDF
+              </Button>
+              <Button variant="outline" onClick={startEdit}>
+                <Pencil className="w-4 h-4 ms-2" />
+                {t("pregnancy.editCase")}
+              </Button>
+            </>
           )}
         </div>
       </div>
