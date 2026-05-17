@@ -338,6 +338,57 @@ jobs:
 
           echo "No fully-shadowed CODEOWNERS rules detected."
 
+      - name: Check for duplicate path patterns in CODEOWNERS
+        if: steps.changed.outputs.modified == 'true'
+        run: |
+          set -euo pipefail
+
+          CODEOWNERS=".github/CODEOWNERS"
+
+          echo "Checking for duplicate path patterns in CODEOWNERS …"
+          echo "(GitHub applies only the LAST matching rule per file; an earlier"
+          echo " rule with the exact same pattern is permanently dead.)"
+          echo ""
+
+          # ── Collect (pattern → list of line numbers) ──────────────────────────
+          declare -A first_lineno   # pattern → line number of first occurrence
+          declare -A dup_lines      # pattern → space-separated list of subsequent line numbers
+          lineno=0
+          found_dupes=0
+
+          while IFS= read -r raw; do
+            lineno=$((lineno + 1))
+            [[ "$raw" =~ ^[[:space:]]*# ]] && continue
+            [[ -z "${raw//[[:space:]]/}" ]] && continue
+
+            read -r -a fields <<< "$raw"
+            pattern="${fields[0]}"
+
+            if [[ -z "${first_lineno[$pattern]+_}" ]]; then
+              first_lineno[$pattern]=$lineno
+            else
+              dup_lines[$pattern]="${dup_lines[$pattern]:-${first_lineno[$pattern]}} $lineno"
+              found_dupes=1
+            fi
+          done < "$CODEOWNERS"
+
+          # ── Report ─────────────────────────────────────────────────────────────
+          if [[ $found_dupes -ne 0 ]]; then
+            echo "ERROR: The following path patterns appear more than once."
+            echo "       Only the LAST occurrence is active; all earlier ones are dead rules."
+            echo ""
+            for pattern in "${!dup_lines[@]}"; do
+              lines="${dup_lines[$pattern]}"
+              echo "  Pattern: $pattern"
+              echo "    Lines: $lines"
+              echo "    → Remove or consolidate the duplicate entries."
+              echo ""
+            done
+            exit 1
+          fi
+
+          echo "No duplicate path patterns found in CODEOWNERS."
+
       - name: Skip — CODEOWNERS not modified in this PR
         if: steps.changed.outputs.modified == 'false'
         run: echo "CODEOWNERS was not modified in this PR — validation skipped."
