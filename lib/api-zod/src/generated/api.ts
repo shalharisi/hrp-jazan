@@ -527,7 +527,8 @@ export const GetPregnancyResponse = zod.object({
   "patientNameAr": zod.string().nullish(),
   "patientNationalId": zod.string().nullish(),
   "sectorId": zod.number().nullish(),
-  "sectorNameAr": zod.string().nullish()
+  "sectorNameAr": zod.string().nullish(),
+  "riskLevel": zod.union([zod.literal('low'),zod.literal('medium'),zod.literal('high'),zod.literal('critical'),zod.literal(null)]).nullish().describe('Risk level of the associated pregnancy')
 }))
 })
 
@@ -612,7 +613,8 @@ export const ListAppointmentsResponseItem = zod.object({
   "patientNameAr": zod.string().nullish(),
   "patientNationalId": zod.string().nullish(),
   "sectorId": zod.number().nullish(),
-  "sectorNameAr": zod.string().nullish()
+  "sectorNameAr": zod.string().nullish(),
+  "riskLevel": zod.union([zod.literal('low'),zod.literal('medium'),zod.literal('high'),zod.literal('critical'),zod.literal(null)]).nullish().describe('Risk level of the associated pregnancy')
 })
 export const ListAppointmentsResponse = zod.array(ListAppointmentsResponseItem)
 
@@ -653,7 +655,8 @@ export const UpdateAppointmentResponse = zod.object({
   "patientNameAr": zod.string().nullish(),
   "patientNationalId": zod.string().nullish(),
   "sectorId": zod.number().nullish(),
-  "sectorNameAr": zod.string().nullish()
+  "sectorNameAr": zod.string().nullish(),
+  "riskLevel": zod.union([zod.literal('low'),zod.literal('medium'),zod.literal('high'),zod.literal('critical'),zod.literal(null)]).nullish().describe('Risk level of the associated pregnancy')
 })
 
 

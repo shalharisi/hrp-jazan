@@ -1251,6 +1251,10 @@ components:
           type: ["integer", "null"]
         sectorNameAr:
           type: ["string", "null"]
+        riskLevel:
+          type: ["string", "null"]
+          enum: ["low", "medium", "high", "critical", null]
+          description: Risk level of the associated pregnancy
 
     AppointmentInput:
       type: object

@@ -396,6 +396,20 @@ export interface PregnancyUpdate {
   coordinatorClassification?: string | null;
 }
 
+/**
+ * Risk level of the associated pregnancy
+ * @nullable
+ */
+export type AppointmentRiskLevel = typeof AppointmentRiskLevel[keyof typeof AppointmentRiskLevel] | null;
+
+
+export const AppointmentRiskLevel = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+  critical: 'critical',
+} as const;
+
 export interface Appointment {
   id: number;
   pregnancyId: number;
@@ -419,6 +433,11 @@ export interface Appointment {
   sectorId?: number | null;
   /** @nullable */
   sectorNameAr?: string | null;
+  /**
+     * Risk level of the associated pregnancy
+     * @nullable
+     */
+  riskLevel?: AppointmentRiskLevel;
 }
 
 export interface PregnancyDetail {

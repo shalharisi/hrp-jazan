@@ -129,6 +129,21 @@ export default function AppointmentsScreen() {
     return { label: t("appt.pending"), bg: "#fef9c3", color: "#92400e" };
   }
 
+  function getRiskBadge(riskLevel: string | null | undefined) {
+    switch (riskLevel) {
+      case "critical":
+        return { label: t("risk.critical"), bg: "#7f1d1d", color: "#fef2f2" };
+      case "high":
+        return { label: t("risk.high"), bg: "#fef2f2", color: "#b91c1c" };
+      case "medium":
+        return { label: t("risk.medium"), bg: "#fff7ed", color: "#c2410c" };
+      case "low":
+        return { label: t("risk.low"), bg: "#f0fdf4", color: "#15803d" };
+      default:
+        return null;
+    }
+  }
+
   return (
     <View
       style={[
@@ -213,6 +228,7 @@ export default function AppointmentsScreen() {
           keyExtractor={(item) => String(item.id)}
           renderItem={({ item }) => {
             const badge = getAttendanceBadge(item.attended);
+            const riskBadge = getRiskBadge(item.riskLevel);
             const isUpdating = updatingId === item.id;
             const apptDate = item.appointmentDate.slice(0, 10);
 
@@ -238,15 +254,29 @@ export default function AppointmentsScreen() {
                       {apptDate}
                     </Text>
                   </View>
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      { backgroundColor: badge.bg },
-                    ]}
-                  >
-                    <Text style={[styles.statusText, { color: badge.color }]}>
-                      {badge.label}
-                    </Text>
+                  <View style={[styles.badgeRow, isRTL && styles.rowReverse]}>
+                    {riskBadge && (
+                      <View
+                        style={[
+                          styles.statusBadge,
+                          { backgroundColor: riskBadge.bg },
+                        ]}
+                      >
+                        <Text style={[styles.statusText, { color: riskBadge.color }]}>
+                          {riskBadge.label}
+                        </Text>
+                      </View>
+                    )}
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        { backgroundColor: badge.bg },
+                      ]}
+                    >
+                      <Text style={[styles.statusText, { color: badge.color }]}>
+                        {badge.label}
+                      </Text>
+                    </View>
                   </View>
                 </View>
 
@@ -476,6 +506,11 @@ function makeStyles(colors: ReturnType<typeof useColors>, isRTL: boolean) {
       fontSize: 14,
       fontFamily: "Tajawal_700Bold",
       color: colors.foreground,
+    },
+    badgeRow: {
+      flexDirection: isRTL ? "row-reverse" : "row",
+      gap: 6,
+      alignItems: "center",
     },
     statusBadge: {
       borderRadius: 8,

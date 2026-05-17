@@ -18,6 +18,7 @@ function serializeAppointment(
   hospital: typeof hospitalsTable.$inferSelect | undefined,
   patient?: { nameAr: string; nationalId: string } | undefined,
   sector?: { id: number; nameAr: string } | undefined,
+  riskLevel?: string | null,
 ) {
   return {
     id: a.id,
@@ -32,6 +33,7 @@ function serializeAppointment(
     patientNationalId: patient?.nationalId ?? null,
     sectorId: sector?.id ?? null,
     sectorNameAr: sector?.nameAr ?? null,
+    riskLevel: riskLevel ?? null,
   };
 }
 
@@ -87,9 +89,9 @@ router.get("/appointments", async (req, res): Promise<void> => {
     : [];
   const hospitalMap = new Map(hospitals.map((h) => [h.id, h]));
 
-  // Enrich with patient and sector info
+  // Enrich with patient, sector, and riskLevel info
   const pregnancyIds = [...new Set(appointments.map((a) => a.pregnancyId))];
-  let patientMap = new Map<number, { nameAr: string; nationalId: string; sectorId: number | null; sectorNameAr: string | null }>();
+  let patientMap = new Map<number, { nameAr: string; nationalId: string; sectorId: number | null; sectorNameAr: string | null; riskLevel: string | null }>();
   if (pregnancyIds.length > 0) {
     const rows = await db
       .select({
@@ -98,6 +100,7 @@ router.get("/appointments", async (req, res): Promise<void> => {
         patientNationalId: patientsTable.nationalId,
         sectorId: sectorsTable.id,
         sectorNameAr: sectorsTable.nameAr,
+        riskLevel: pregnanciesTable.riskLevel,
       })
       .from(pregnanciesTable)
       .innerJoin(patientsTable, eq(pregnanciesTable.patientId, patientsTable.id))
@@ -110,6 +113,7 @@ router.get("/appointments", async (req, res): Promise<void> => {
         nationalId: row.patientNationalId,
         sectorId: row.sectorId ?? null,
         sectorNameAr: row.sectorNameAr ?? null,
+        riskLevel: row.riskLevel ?? null,
       });
     }
   }
@@ -121,6 +125,7 @@ router.get("/appointments", async (req, res): Promise<void> => {
       hospitalMap.get(a.hospitalId),
       info ? { nameAr: info.nameAr, nationalId: info.nationalId } : undefined,
       info?.sectorId ? { id: info.sectorId, nameAr: info.sectorNameAr ?? "" } : undefined,
+      info?.riskLevel ?? null,
     );
   }));
 });
