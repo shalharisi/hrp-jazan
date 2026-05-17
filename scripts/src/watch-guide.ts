@@ -75,9 +75,26 @@ function loadScreenshots(): { screenshots: Map<string, Buffer>; captureOrder: Ca
   return { screenshots, captureOrder };
 }
 
-async function rebuild(changed: string[]): Promise<void> {
-  const changedList = changed.length > 0 ? ` — Changed: ${changed.join(", ")}` : "";
-  console.log(`\n${ts()} 🔄 تغيير مكتشف في لقطات الشاشة${changedList} — إعادة بناء المستند...`);
+type ChangeKind = "added" | "removed" | "updated";
+
+function buildDiffSummary(changes: Map<string, ChangeKind>): string {
+  const added = [...changes.values()].filter((k) => k === "added").length;
+  const removed = [...changes.values()].filter((k) => k === "removed").length;
+  const updated = [...changes.values()].filter((k) => k === "updated").length;
+
+  const parts: string[] = [];
+  if (updated > 0) parts.push(`${updated} updated`);
+  if (added > 0) parts.push(`${added} added`);
+  if (removed > 0) parts.push(`${removed} removed`);
+
+  const summary = parts.length > 0 ? ` (${parts.join(", ")})` : "";
+  const filenames = [...changes.keys()].sort().join(", ");
+  return filenames.length > 0 ? `${summary} — ${filenames}` : "";
+}
+
+async function rebuild(changes: Map<string, ChangeKind>): Promise<void> {
+  const diffInfo = buildDiffSummary(changes);
+  console.log(`\n${ts()} 🔄 تغيير مكتشف في لقطات الشاشة${diffInfo} — إعادة بناء المستند...`);
   try {
     const { screenshots, captureOrder } = loadScreenshots();
     const buffer = await buildDocument(
@@ -97,18 +114,33 @@ async function rebuild(changed: string[]): Promise<void> {
 }
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-const pendingChanges = new Set<string>();
+const pendingChanges = new Map<string, ChangeKind>();
 
-function scheduleRebuild(filename: string): void {
-  pendingChanges.add(filename);
+function scheduleRebuild(filename: string, eventType: string): void {
+  let kind: ChangeKind;
+  if (eventType === "rename") {
+    kind = fs.existsSync(path.join(SCREENSHOTS_DIR, filename)) ? "added" : "removed";
+  } else {
+    kind = "updated";
+  }
+  const existing = pendingChanges.get(filename);
+  if (existing === undefined) {
+    pendingChanges.set(filename, kind);
+  } else if (existing === "added" && kind === "removed") {
+    pendingChanges.delete(filename);
+  } else if (existing === "removed" && kind === "added") {
+    pendingChanges.set(filename, "updated");
+  } else if (kind === "removed") {
+    pendingChanges.set(filename, "removed");
+  }
   if (debounceTimer !== null) {
     clearTimeout(debounceTimer);
   }
   debounceTimer = setTimeout(() => {
     debounceTimer = null;
-    const changed = [...pendingChanges].sort();
+    const changes = new Map(pendingChanges);
     pendingChanges.clear();
-    rebuild(changed).catch(console.error);
+    rebuild(changes).catch(console.error);
   }, DEBOUNCE_MS);
 }
 
@@ -127,7 +159,7 @@ function startWatcher(): void {
 
   fs.watch(SCREENSHOTS_DIR, { persistent: true }, (eventType, filename) => {
     if (filename && filename.endsWith(".png")) {
-      scheduleRebuild(filename);
+      scheduleRebuild(filename, eventType);
     }
   });
 }
