@@ -468,6 +468,19 @@ async function buildDocument(screenshots?: Map<string, Buffer>, captureOrder?: C
       ["الجهة المُصدِرة", "تجمع جازان الصحي – إدارة المعلومات الصحية"],
       ["الفئة المستهدفة", "منسقو الحوامل عالي الخطورة، الأطباء، المسؤولون"],
       ["لغة الدليل", "العربية (RTL) – مع مصطلحات إنجليزية متخصصة"],
+      ...(screenshots && screenshots.size > 0
+        ? ([
+            ["عدد اللقطات", String(screenshots.size)],
+            [
+              "تاريخ التوليد",
+              new Date().toLocaleDateString("ar-SA", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              }),
+            ],
+          ] as [string, string][])
+        : []),
     ]),
     pageBreak(),
   );
