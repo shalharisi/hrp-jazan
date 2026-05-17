@@ -36,6 +36,9 @@ delete_bot_comment() {
 
   if [[ "$lookup_ok" == "false" ]]; then
     echo "WARNING: Could not reliably list PR comments after 3 attempts — skipping delete to avoid accidental data loss."
+    echo "::warning::suggest-codeowners-updates: GitHub API comment-lookup failed 3 times in delete_bot_comment() — stale bot comment (if any) was NOT deleted. Check API rate limits or network connectivity."
+    echo "### suggest-codeowners-updates warning" >> "$GITHUB_STEP_SUMMARY"
+    echo "GitHub API comment-lookup failed after 3 attempts in \`delete_bot_comment()\`. The stale bot comment (if any) was **not** deleted to avoid accidental data loss. This is usually caused by a transient API error or rate-limit burst — re-running the workflow should resolve it." >> "$GITHUB_STEP_SUMMARY"
   elif [[ -n "$existing_id" ]]; then
     echo "CODEOWNERS is already in sync — removing stale bot comment #${existing_id} …"
     if gh api "repos/$REPO/issues/comments/${existing_id}" \

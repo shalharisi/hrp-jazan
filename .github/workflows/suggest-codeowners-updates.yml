@@ -563,6 +563,17 @@ jobs:
           if [[ "$lookup_ok" == "false" ]]; then
             echo "WARNING: Could not reliably list PR comments after 3 attempts."
             echo "Skipping POST to avoid creating a duplicate comment."
+            echo "::warning::suggest-codeowners-updates: GitHub API comment-lookup failed 3 times in step 6 — no PR comment was posted. The suggested CODEOWNERS updates are listed in the job log. Check API rate limits or network connectivity and re-run the workflow."
+            echo "### suggest-codeowners-updates warning" >> "$GITHUB_STEP_SUMMARY"
+            echo "GitHub API comment-lookup failed after 3 attempts. **No PR comment was posted** to avoid creating a duplicate. The suggested CODEOWNERS updates are:" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "| Current pattern | Suggested pattern | Owners |" >> "$GITHUB_STEP_SUMMARY"
+            echo "|---|---|---|" >> "$GITHUB_STEP_SUMMARY"
+            for row in "${unique_suggestions[@]}"; do
+              echo "| $row |" >> "$GITHUB_STEP_SUMMARY"
+            done
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "Re-running the workflow should resolve the API error and post the comment automatically." >> "$GITHUB_STEP_SUMMARY"
             echo "Suggested CODEOWNERS updates (apply these manually before merging):"
             for row in "${unique_suggestions[@]}"; do
               echo "  $row"
