@@ -208,6 +208,14 @@ export const translations = {
     "reference.urgentThresholdLabel": "حد التنبيه العاجل للمواعيد",
     "reference.urgentThresholdDesc": "عدد المواعيد الماضية غير المسجَّل فيها الحضور الذي يُشغِّل بانر التنبيه العاجل في صفحة المواعيد. القيمة الافتراضية: 5.",
     "reference.urgentThresholdSaved": "تم حفظ الحد بنجاح",
+
+    // User Guide downloads
+    "guide.downloadTitle": "تحميل دليل المستخدم",
+    "guide.downloadDesc": "يتوفر الدليل بصيغتين للتحميل",
+    "guide.downloadPdf": "تحميل كـ PDF",
+    "guide.downloadWord": "تحميل كـ Word",
+    "guide.filesNotReady": "ملفات الدليل غير متاحة بعد. يرجى تشغيل سكريبت إنشاء الدليل أولاً.",
+    "guide.checking": "جارٍ التحقق...",
   },
   en: {
     // Navigation
@@ -418,6 +426,14 @@ export const translations = {
     "reference.urgentThresholdLabel": "Urgent Banner Threshold",
     "reference.urgentThresholdDesc": "Number of past unrecorded appointments that triggers the urgent banner on the Appointments page. Default: 5.",
     "reference.urgentThresholdSaved": "Threshold saved successfully",
+
+    // User Guide downloads
+    "guide.downloadTitle": "Download User Guide",
+    "guide.downloadDesc": "The guide is available in two formats",
+    "guide.downloadPdf": "Download as PDF",
+    "guide.downloadWord": "Download as Word",
+    "guide.filesNotReady": "Guide files are not yet available. Please run the guide generation script first.",
+    "guide.checking": "Checking availability...",
   }
 } as const;
 

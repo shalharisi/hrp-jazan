@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n-context";
 import { useAuth } from "@/lib/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -118,42 +118,25 @@ const sections: Section[] = [
   },
 ];
 
+type FileStatus = { docx: boolean; pdf: boolean } | null;
+
 export default function UserGuide() {
   const { t, lang } = useI18n();
-  const { accessToken } = useAuth();
-  const [downloading, setDownloading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const [status, setStatus] = useState<FileStatus>(null);
+  const [checking, setChecking] = useState(true);
 
-  const handleDownload = async () => {
-    setDownloading(true);
-    setError(null);
-    try {
-      const res = await fetch(`${API}/guide/download`, {
-        headers: { Authorization: `Bearer ${accessToken ?? ""}` },
-        credentials: "include",
-      });
+  useEffect(() => {
+    if (!user) return;
+    setChecking(true);
+    fetch(`${API}/downloads/user-guide/status`)
+      .then((res) => res.json())
+      .then((data: FileStatus) => setStatus(data))
+      .catch(() => setStatus({ docx: false, pdf: false }))
+      .finally(() => setChecking(false));
+  }, [user]);
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({})) as { error?: string };
-        setError(data.error ?? (lang === "ar" ? "فشل تحميل الملف" : "Download failed"));
-        return;
-      }
-
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "دليل_المستخدم_منظومة_جازان.docx";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    } catch {
-      setError(lang === "ar" ? "حدث خطأ أثناء تحميل الملف" : "An error occurred while downloading");
-    } finally {
-      setDownloading(false);
-    }
-  };
+  const anyAvailable = status && (status.pdf || status.docx);
 
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
@@ -162,23 +145,42 @@ export default function UserGuide() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <h1 className="text-3xl font-bold">{t("nav.guide")}</h1>
-        <div className="flex flex-col items-end gap-1">
-          <Button
-            onClick={handleDownload}
-            disabled={downloading}
-            className="gap-2"
-          >
-            {downloading
-              ? (lang === "ar" ? "جارٍ التحميل..." : "Downloading...")
-              : (lang === "ar" ? "تحميل الدليل (.docx)" : "Download Guide (.docx)")}
-          </Button>
-          {error && (
-            <p className="text-sm text-destructive">{error}</p>
-          )}
-        </div>
-      </div>
+      <h1 className="text-3xl font-bold">{t("nav.guide")}</h1>
+
+      {user && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("guide.downloadTitle")}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground text-sm">
+              {t("guide.downloadDesc")}
+            </p>
+            {checking ? (
+              <p className="text-sm text-muted-foreground">{t("guide.checking")}</p>
+            ) : anyAvailable ? (
+              <div className={`flex gap-3 flex-wrap ${lang === "ar" ? "flex-row-reverse justify-end" : ""}`}>
+                {status?.pdf && (
+                  <Button asChild variant="default">
+                    <a href={`${API}/downloads/user-guide.pdf`} download>
+                      {t("guide.downloadPdf")}
+                    </a>
+                  </Button>
+                )}
+                {status?.docx && (
+                  <Button asChild variant="outline">
+                    <a href={`${API}/downloads/user-guide.docx`} download>
+                      {t("guide.downloadWord")}
+                    </a>
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-amber-600">{t("guide.filesNotReady")}</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -191,8 +193,8 @@ export default function UserGuide() {
         <CardContent>
           <p className="text-muted-foreground text-sm">
             {lang === "ar"
-              ? "يغطي هذا الدليل جميع وظائف المنظومة: تسجيل المرضى، إدارة الحالات، المواعيد، التنبيهات، التقارير، وإدارة المستخدمين. اضغط على أي قسم في الفهرس للانتقال إليه، أو حمِّل النسخة الكاملة بصيغة Word."
-              : "This guide covers all system functions: patient registration, case management, appointments, alerts, reports, and user administration. Click any section in the TOC to jump to it, or download the full Word version."}
+              ? "يغطي هذا الدليل جميع وظائف المنظومة: تسجيل المرضى، إدارة الحالات، المواعيد، التنبيهات، التقارير، وإدارة المستخدمين. اضغط على أي قسم في الفهرس للانتقال إليه."
+              : "This guide covers all system functions: patient registration, case management, appointments, alerts, reports, and user administration. Click any section in the TOC to jump to it."}
           </p>
         </CardContent>
       </Card>
