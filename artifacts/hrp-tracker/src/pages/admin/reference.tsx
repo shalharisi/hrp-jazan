@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, MapPin, Plus, Pencil, Database, Trash2, AlertTriangle } from "lucide-react";
+import { Building2, MapPin, Plus, Pencil, Database, Trash2, AlertTriangle, Settings } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 const API = `${BASE}/api`;
@@ -712,6 +712,76 @@ function HealthCentersTab() {
   );
 }
 
+// ─── Settings tab ──────────────────────────────────────────────────────────────
+const URGENT_THRESHOLD_KEY = "hrp_urgent_threshold";
+const DEFAULT_URGENT_THRESHOLD = 5;
+
+function SettingsTab() {
+  const { lang, t } = useI18n();
+  const ar = lang === "ar";
+  const { toast } = useToast();
+
+  const [inputValue, setInputValue] = useState<string>(() => {
+    const stored = localStorage.getItem(URGENT_THRESHOLD_KEY);
+    if (stored !== null) {
+      const parsed = parseInt(stored, 10);
+      if (!isNaN(parsed) && parsed >= 0) return String(parsed);
+    }
+    return String(DEFAULT_URGENT_THRESHOLD);
+  });
+
+  const handleSave = () => {
+    const parsed = parseInt(inputValue, 10);
+    if (isNaN(parsed) || parsed < 0) {
+      toast({ title: ar ? "يجب أن تكون القيمة رقمًا صحيحًا غير سالب" : "Value must be a non-negative integer", variant: "destructive" });
+      return;
+    }
+    localStorage.setItem(URGENT_THRESHOLD_KEY, String(parsed));
+    toast({ title: t("reference.urgentThresholdSaved") });
+  };
+
+  return (
+    <div className="space-y-6 max-w-lg">
+      <div>
+        <h2 className="text-base font-semibold" style={{ color: "#006633" }}>
+          {t("reference.urgentThresholdLabel")}
+        </h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          {t("reference.urgentThresholdDesc")}
+        </p>
+        <div className="flex items-center gap-3 mt-3">
+          <Input
+            type="number"
+            min={0}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            className="w-32"
+            dir="ltr"
+          />
+          <Button
+            style={{ background: "#006633" }}
+            className="text-white"
+            onClick={handleSave}
+          >
+            {t("general.save")}
+          </Button>
+          <Button
+            variant="ghost"
+            className="text-muted-foreground text-xs"
+            onClick={() => {
+              setInputValue(String(DEFAULT_URGENT_THRESHOLD));
+              localStorage.removeItem(URGENT_THRESHOLD_KEY);
+              toast({ title: ar ? "تم استعادة القيمة الافتراضية" : "Reset to default" });
+            }}
+          >
+            {ar ? "إعادة تعيين" : "Reset to default"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main page ─────────────────────────────────────────────────────────────────
 export default function ReferencePage() {
   const { lang, t } = useI18n();
@@ -759,6 +829,10 @@ export default function ReferencePage() {
                 <MapPin className="h-4 w-4" />
                 {t("reference.healthCenters")}
               </TabsTrigger>
+              <TabsTrigger value="settings" className="gap-2">
+                <Settings className="h-4 w-4" />
+                {t("reference.settings")}
+              </TabsTrigger>
             </TabsList>
 
             <CardContent className="pt-6">
@@ -767,6 +841,9 @@ export default function ReferencePage() {
               </TabsContent>
               <TabsContent value="health-centers" className="mt-0">
                 <HealthCentersTab />
+              </TabsContent>
+              <TabsContent value="settings" className="mt-0">
+                <SettingsTab />
               </TabsContent>
             </CardContent>
           </Tabs>

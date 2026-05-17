@@ -193,6 +193,14 @@ export const translations = {
     "appointments.urgentBanner": "تنبيه عاجل: يوجد {count} موعد ماضٍ لم يُسجَّل فيه الحضور بعد — يستوجب متابعة فورية.",
     "appointments.urgentBannerAction": "عرض المواعيد بحاجة إجراء",
     "appointments.urgentBannerDismiss": "إغلاق",
+
+    // Settings tab (reference page)
+    "reference.settings": "الإعدادات",
+    "reference.settingsTitle": "إعدادات النظام",
+    "reference.settingsDesc": "ضبط إعدادات تشغيل المنظومة",
+    "reference.urgentThresholdLabel": "حد التنبيه العاجل للمواعيد",
+    "reference.urgentThresholdDesc": "عدد المواعيد الماضية غير المسجَّل فيها الحضور الذي يُشغِّل بانر التنبيه العاجل في صفحة المواعيد. القيمة الافتراضية: 5.",
+    "reference.urgentThresholdSaved": "تم حفظ الحد بنجاح",
   },
   en: {
     // Navigation
@@ -388,6 +396,14 @@ export const translations = {
     "appointments.urgentBanner": "Urgent: {count} past appointments have no attendance recorded — immediate follow-up required.",
     "appointments.urgentBannerAction": "View appointments needing action",
     "appointments.urgentBannerDismiss": "Dismiss",
+
+    // Settings tab (reference page)
+    "reference.settings": "Settings",
+    "reference.settingsTitle": "System Settings",
+    "reference.settingsDesc": "Configure system operational settings",
+    "reference.urgentThresholdLabel": "Urgent Banner Threshold",
+    "reference.urgentThresholdDesc": "Number of past unrecorded appointments that triggers the urgent banner on the Appointments page. Default: 5.",
+    "reference.urgentThresholdSaved": "Threshold saved successfully",
   }
 } as const;
 

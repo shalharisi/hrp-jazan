@@ -187,7 +187,17 @@ type AttendanceDialogState = {
   marking: "attended" | "absent";
 } | null;
 
-const URGENT_THRESHOLD = 5;
+const DEFAULT_URGENT_THRESHOLD = 5;
+const URGENT_THRESHOLD_KEY = "hrp_urgent_threshold";
+
+function getUrgentThreshold(): number {
+  const stored = localStorage.getItem(URGENT_THRESHOLD_KEY);
+  if (stored !== null) {
+    const parsed = parseInt(stored, 10);
+    if (!isNaN(parsed) && parsed >= 0) return parsed;
+  }
+  return DEFAULT_URGENT_THRESHOLD;
+}
 
 export default function AppointmentsPage() {
   const { t, lang } = useI18n();
@@ -324,7 +334,8 @@ export default function AppointmentsPage() {
     day: "numeric",
   });
 
-  const showUrgentBanner = !isLoading && statsNeedsAction > URGENT_THRESHOLD && statsNeedsAction > dismissedCount;
+  const urgentThreshold = getUrgentThreshold();
+  const showUrgentBanner = !isLoading && statsNeedsAction > urgentThreshold && statsNeedsAction > dismissedCount;
 
   const urgentBannerText = t("appointments.urgentBanner").replace(
     "{count}",
