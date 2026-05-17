@@ -121,7 +121,7 @@ function buildExportFilename(dateFilter: DateFilter, statusFilter: StatusFilter,
   const today = localDateStr(new Date());
   const parts: string[] = ["appointments"];
   if (dateFilter !== "all") parts.push(dateFilter);
-  if (statusFilter !== "all") parts.push(statusFilter);
+  if (statusFilter !== "all") parts.push(statusFilter.replace(/_/g, "-"));
   if (sectorName) parts.push("sector", sectorName.replace(/\s+/g, "-"));
   parts.push(today);
   return `${parts.join("-")}.csv`;
