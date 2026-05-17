@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useI18n } from "@/context/I18nContext";
 import { useColors } from "@/hooks/useColors";
+import { GuideGenerationBanner } from "@/components/GuideGenerationBanner";
 
 type RiskLevel = "low" | "medium" | "high" | "critical";
 type Compliance = "compliant" | "non_compliant" | "pending";
@@ -67,6 +68,8 @@ export default function CasesScreen() {
           </View>
         )}
       </View>
+
+      <GuideGenerationBanner />
 
       <ScrollView
         horizontal

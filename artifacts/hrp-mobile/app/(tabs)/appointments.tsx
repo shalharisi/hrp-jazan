@@ -26,6 +26,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useI18n } from "@/context/I18nContext";
 import { useColors } from "@/hooks/useColors";
 import { NewAppointmentModal } from "@/components/NewAppointmentModal";
+import { GuideGenerationBanner } from "@/components/GuideGenerationBanner";
 
 type DateFilter = "today" | "week" | "all" | "custom";
 type AttendanceFilter = "all" | "pending" | "attended" | "missed" | "needs_action";
@@ -366,6 +367,8 @@ export default function AppointmentsScreen() {
           </Pressable>
         </View>
       </View>
+
+      <GuideGenerationBanner />
 
       {/* Needs Action Banner */}
       {!isLoading && needsActionCount > 0 && (

@@ -14,6 +14,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useI18n } from "@/context/I18nContext";
 import { useColors } from "@/hooks/useColors";
+import { GuideGenerationBanner } from "@/components/GuideGenerationBanner";
 
 type AlertFilter = "all" | "vte" | "critical" | "missed";
 
@@ -57,6 +58,8 @@ export default function AlertsScreen() {
           </View>
         )}
       </View>
+
+      <GuideGenerationBanner />
 
       <View style={[styles.filterRow, isRTL && styles.rowReverse]}>
         {filterTabs.map((tab) => (

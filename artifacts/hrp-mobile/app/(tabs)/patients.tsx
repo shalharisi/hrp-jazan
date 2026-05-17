@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useI18n } from "@/context/I18nContext";
 import { useColors } from "@/hooks/useColors";
+import { GuideGenerationBanner } from "@/components/GuideGenerationBanner";
 
 export default function PatientsScreen() {
   const colors = useColors();
@@ -41,6 +42,8 @@ export default function PatientsScreen() {
           </View>
         )}
       </View>
+
+      <GuideGenerationBanner />
 
       <View style={[styles.searchWrap, isRTL && styles.rowReverse]}>
         <Ionicons

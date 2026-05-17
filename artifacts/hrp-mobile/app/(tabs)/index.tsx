@@ -22,7 +22,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BANNER_KEY_PREFIX, useAuth } from "@/context/AuthContext";
 import { useI18n } from "@/context/I18nContext";
 import { useColors } from "@/hooks/useColors";
-import { useGuideGenerationStatus } from "@/hooks/useGuideGenerationStatus";
+import { GuideGenerationBanner } from "@/components/GuideGenerationBanner";
 
 const RISK_COLORS: Record<string, string> = {
   low: "#22c55e",
@@ -54,8 +54,6 @@ export default function DashboardScreen() {
   const { refetch: refetchRiskStats } = riskStats;
   const { refetch: refetchAlerts } = alerts;
   const { refetch: refetchAppointments } = appointments;
-
-  const isGuideGenerating = useGuideGenerationStatus();
 
   const [bannerDismissed, setBannerDismissed] = useState(false);
 
@@ -208,19 +206,7 @@ export default function DashboardScreen() {
         </View>
       </View>
 
-      {isGuideGenerating && (
-        <View style={[styles.guideBanner, isRTL && styles.rowReverse]}>
-          <ActivityIndicator size="small" color="#2563eb" />
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.guideBannerTitle, isRTL && styles.rtlText]}>
-              {t("guide.generating")}
-            </Text>
-            <Text style={[styles.guideBannerSub, isRTL && styles.rtlText]}>
-              {t("guide.generatingSub")}
-            </Text>
-          </View>
-        </View>
-      )}
+      <GuideGenerationBanner />
 
       {showUrgentBanner && (
         <Pressable
@@ -602,29 +588,6 @@ function makeStyles(colors: ReturnType<typeof useColors>, isRTL: boolean) {
     },
     urgentBannerDismiss: {
       padding: 2,
-    },
-    guideBanner: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 10,
-      backgroundColor: "#eff6ff",
-      borderWidth: 1,
-      borderColor: "#bfdbfe",
-      borderRadius: 12,
-      paddingHorizontal: 14,
-      paddingVertical: 12,
-      marginBottom: 16,
-    },
-    guideBannerTitle: {
-      fontSize: 13,
-      fontFamily: "Tajawal_700Bold",
-      color: "#1d4ed8",
-    },
-    guideBannerSub: {
-      fontSize: 12,
-      fontFamily: "Tajawal_400Regular",
-      color: "#3b82f6",
-      marginTop: 1,
     },
   });
 }
