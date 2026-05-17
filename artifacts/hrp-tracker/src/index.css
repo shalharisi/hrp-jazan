@@ -258,10 +258,83 @@
     print-color-adjust: exact;
   }
 
-  /* Page margins */
+  /* Page margins — default landscape for data tables */
   @page {
     margin: 15mm 10mm;
     size: A4 landscape;
+  }
+
+  /* ── Guide page: portrait A4 (injected via JS print handler) ── */
+
+  /* Guide-specific: hide download card and interactive TOC */
+  .guide-page .no-print {
+    display: none !important;
+  }
+
+  /* Note / FAQ boxes — keep border, avoid splitting */
+  .guide-page .rounded-md {
+    break-inside: avoid;
+  }
+
+  /* Subsection divs — try to keep together */
+  .guide-page .scroll-mt-4 {
+    break-inside: avoid-page;
+  }
+
+  /* Section headings in print */
+  .guide-page h1 {
+    font-size: 16pt !important;
+    color: #005a2e !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    margin-bottom: 8pt;
+  }
+
+  /* Emerald section title colours */
+  .guide-page .text-emerald-800,
+  .guide-page .text-emerald-700 {
+    color: #005a2e !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Muted text — print readable */
+  .guide-page .text-muted-foreground {
+    color: #333 !important;
+  }
+
+  /* Print-only title block */
+  .guide-print-header {
+    display: block !important;
+    text-align: center;
+    margin-bottom: 12pt;
+    border-bottom: 2px solid #005a2e;
+    padding-bottom: 8pt;
+  }
+  .guide-print-header h2 {
+    font-size: 14pt;
+    font-weight: bold;
+    color: #005a2e !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .guide-print-header p {
+    font-size: 9pt;
+    color: #555 !important;
+    margin-top: 3pt;
+  }
+
+  /* Alternating table rows */
+  .guide-page .bg-emerald-50 {
+    background: #f0faf4 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .guide-page thead tr {
+    background: #005a2e !important;
+    color: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 }
 

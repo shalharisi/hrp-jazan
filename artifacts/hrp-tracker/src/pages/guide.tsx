@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ChevronUp, Loader2 } from "lucide-react";
+import { ChevronUp, Loader2, Printer } from "lucide-react";
 import { type TranslationKey } from "@/i18n";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
@@ -1218,13 +1218,55 @@ export default function UserGuide() {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  // Inject a portrait @page override while the guide is mounted so both the
+  // "Print Guide" button and the browser's native Ctrl/Cmd+P produce portrait A4.
+  useEffect(() => {
+    const style = document.createElement("style");
+    style.id = "guide-print-portrait";
+    style.textContent = "@page { size: A4 portrait; margin: 15mm 20mm; }";
+    document.head.appendChild(style);
+    return () => {
+      document.getElementById("guide-print-portrait")?.remove();
+    };
+  }, []);
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const printDate = new Date().toLocaleDateString(lang === "ar" ? "ar-SA" : "en-GB", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">{t("nav.guide")}</h1>
+    <div className="space-y-6 guide-page">
+      {/* Print-only header — hidden on screen */}
+      <div className="guide-print-header hidden" aria-hidden="true">
+        <h2>
+          {lang === "ar"
+            ? "دليل المستخدم الشامل – منظومة تتبع الحمل عالي الخطورة"
+            : "Comprehensive User Guide – High-Risk Pregnancy Tracker"}
+        </h2>
+        <p>
+          {lang === "ar"
+            ? `تجمع جازان الصحي — طُبع بتاريخ: ${printDate}`
+            : `Jazan Health Cluster — Printed: ${printDate}`}
+        </p>
+      </div>
+
+      <div className="flex items-center justify-between gap-4 flex-wrap no-print">
+        <h1 className="text-3xl font-bold">{t("nav.guide")}</h1>
+        <Button variant="outline" onClick={handlePrint} className="gap-2 shrink-0">
+          <Printer className="h-4 w-4" />
+          {lang === "ar" ? "طباعة الدليل" : "Print Guide"}
+        </Button>
+      </div>
 
       {/* Download card */}
       {user && (
-        <Card>
+        <Card className="no-print">
           <CardHeader>
             <CardTitle>{t("guide.downloadTitle")}</CardTitle>
           </CardHeader>
@@ -1338,8 +1380,8 @@ export default function UserGuide() {
         </CardContent>
       </Card>
 
-      {/* Table of Contents */}
-      <Card>
+      {/* Table of Contents — hidden when printing (buttons are non-functional on paper) */}
+      <Card className="no-print">
         <CardHeader>
           <CardTitle>{lang === "ar" ? "فهرس المحتويات" : "Table of Contents"}</CardTitle>
         </CardHeader>
