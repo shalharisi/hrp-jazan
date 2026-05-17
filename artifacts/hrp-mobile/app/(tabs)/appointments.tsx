@@ -99,8 +99,9 @@ export default function AppointmentsScreen() {
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingApptId, setEditingApptId] = useState<number | null>(null);
-  const [editDate, setEditDate] = useState("");
+  const [editDateObj, setEditDateObj] = useState<Date>(new Date());
   const [editHospitalId, setEditHospitalId] = useState<number | null>(null);
+  const [editHospitalSearch, setEditHospitalSearch] = useState("");
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const { data, isLoading, isError, refetch } = useListAppointments();
@@ -287,22 +288,25 @@ export default function AppointmentsScreen() {
 
   function handleOpenEdit(item: (typeof all)[0]) {
     setEditingApptId(item.id);
-    setEditDate(item.appointmentDate.slice(0, 10));
+    setEditDateObj(parseDateStr(item.appointmentDate.slice(0, 10)));
     setEditHospitalId(item.hospitalId ?? null);
+    setEditHospitalSearch("");
     setShowEditModal(true);
   }
 
   function handleCloseEdit() {
     setShowEditModal(false);
     setEditingApptId(null);
-    setEditDate("");
+    setEditDateObj(new Date());
     setEditHospitalId(null);
+    setEditHospitalSearch("");
   }
 
   function handleSaveEdit() {
-    if (!editingApptId || !editDate.trim() || !editHospitalId) return;
+    if (!editingApptId || !editHospitalId) return;
+    const editDate = localDateStr(editDateObj);
     updateAppt.mutate(
-      { id: editingApptId, data: { appointmentDate: editDate.trim(), hospitalId: editHospitalId } },
+      { id: editingApptId, data: { appointmentDate: editDate, hospitalId: editHospitalId } },
       {
         onSuccess: () => {
           handleCloseEdit();
@@ -764,52 +768,83 @@ export default function AppointmentsScreen() {
               <Text style={[styles.sectionLabel, isRTL && styles.rtlText]}>
                 {t("appointments.selectHospital")}
               </Text>
-              <View style={styles.hospitalGrid}>
-                {allHospitals.map((h) => (
-                  <Pressable
-                    key={h.id}
-                    style={[
-                      styles.hospitalChip,
-                      editHospitalId === h.id && styles.hospitalChipActive,
-                    ]}
-                    onPress={() => setEditHospitalId(h.id)}
-                  >
-                    <Text
-                      style={[
-                        styles.hospitalChipText,
-                        editHospitalId === h.id && styles.hospitalChipTextActive,
-                        isRTL && styles.rtlText,
-                      ]}
-                      numberOfLines={2}
-                    >
-                      {h.nameAr}
+              <TextInput
+                style={[styles.editHospitalSearch, isRTL && styles.rtlText]}
+                placeholder={t("appointments.searchHospital")}
+                placeholderTextColor={colors.mutedForeground}
+                value={editHospitalSearch}
+                onChangeText={setEditHospitalSearch}
+                textAlign={isRTL ? "right" : "left"}
+              />
+              {(() => {
+                const q = editHospitalSearch.trim().toLowerCase();
+                const filtered = q
+                  ? allHospitals.filter(
+                      (h) =>
+                        (h.nameAr ?? "").toLowerCase().includes(q) ||
+                        (h.nameEn ?? "").toLowerCase().includes(q)
+                    )
+                  : allHospitals;
+                if (filtered.length === 0) {
+                  return (
+                    <Text style={[styles.editNoHospitals, isRTL && styles.rtlText]}>
+                      {t("appointments.noResults")}
                     </Text>
-                  </Pressable>
-                ))}
-              </View>
+                  );
+                }
+                return (
+                  <View style={styles.hospitalGrid}>
+                    {filtered.map((h) => (
+                      <Pressable
+                        key={h.id}
+                        style={[
+                          styles.hospitalChip,
+                          editHospitalId === h.id && styles.hospitalChipActive,
+                        ]}
+                        onPress={() => setEditHospitalId(h.id)}
+                      >
+                        <Text
+                          style={[
+                            styles.hospitalChipText,
+                            editHospitalId === h.id && styles.hospitalChipTextActive,
+                            isRTL && styles.rtlText,
+                          ]}
+                          numberOfLines={2}
+                        >
+                          {h.nameAr}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                );
+              })()}
 
               <Text style={[styles.sectionLabel, isRTL && styles.rtlText]}>
                 {t("appointments.selectDate")}
               </Text>
-              <TextInput
-                style={[styles.dateInput, isRTL && styles.rtlText]}
-                placeholder="2026-01-15"
-                placeholderTextColor={colors.mutedForeground}
-                value={editDate}
-                onChangeText={setEditDate}
-                keyboardType="numeric"
-                maxLength={10}
-                textAlign={isRTL ? "right" : "left"}
-              />
+              <View style={styles.datePickerWrapper}>
+                <DateTimePicker
+                  value={editDateObj}
+                  mode="date"
+                  display={Platform.OS === "web" ? "default" : "spinner"}
+                  onChange={(_, date) => {
+                    if (date) setEditDateObj(date);
+                  }}
+                  style={styles.datePicker}
+                  textColor={colors.foreground}
+                  accentColor={colors.primary}
+                />
+              </View>
 
               <Pressable
                 style={[
                   styles.submitBtn,
-                  (!editHospitalId || !isValidIsoDate(editDate.trim()) || updateAppt.isPending) &&
+                  (!editHospitalId || updateAppt.isPending) &&
                     styles.submitBtnDisabled,
+                  { marginTop: 20 },
                 ]}
                 onPress={handleSaveEdit}
-                disabled={!editHospitalId || !isValidIsoDate(editDate.trim()) || updateAppt.isPending}
+                disabled={!editHospitalId || updateAppt.isPending}
               >
                 {updateAppt.isPending ? (
                   <ActivityIndicator color="#fff" size="small" />
@@ -1348,6 +1383,24 @@ function makeStyles(colors: ReturnType<typeof useColors>, isRTL: boolean) {
       fontSize: 15,
       fontFamily: "Tajawal_400Regular",
       color: colors.foreground,
+    },
+    editHospitalSearch: {
+      backgroundColor: colors.muted,
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      fontSize: 14,
+      fontFamily: "Tajawal_400Regular",
+      color: colors.foreground,
+      marginBottom: 10,
+    },
+    editNoHospitals: {
+      textAlign: "center",
+      color: colors.mutedForeground,
+      fontSize: 14,
+      fontFamily: "Tajawal_400Regular",
+      paddingVertical: 12,
+      marginBottom: 16,
     },
     submitBtn: {
       backgroundColor: colors.primary,
