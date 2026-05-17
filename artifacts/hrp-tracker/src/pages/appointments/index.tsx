@@ -36,7 +36,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { CalendarCheck2, CalendarX2, Clock, ExternalLink, CalendarDays, Download, AlertCircle, Printer } from "lucide-react";
+import { CalendarCheck2, CalendarX2, Clock, ExternalLink, CalendarDays, Download, AlertCircle, Printer, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { getListAppointmentsQueryKey } from "@workspace/api-client-react";
@@ -186,6 +186,8 @@ type AttendanceDialogState = {
   marking: "attended" | "absent";
 } | null;
 
+const URGENT_THRESHOLD = 5;
+
 export default function AppointmentsPage() {
   const { t, lang } = useI18n();
   const { canWrite } = useAuth();
@@ -197,6 +199,7 @@ export default function AppointmentsPage() {
   const [sectorFilter, setSectorFilter] = useState<string>("all");
   const [dialogState, setDialogState] = useState<AttendanceDialogState>(null);
   const [attendanceNote, setAttendanceNote] = useState("");
+  const [bannerDismissed, setBannerDismissed] = useState(false);
 
   const { data: appointments, isLoading } = useListAppointments();
   const { data: sectors } = useListSectors();
@@ -291,6 +294,13 @@ export default function AppointmentsPage() {
     day: "numeric",
   });
 
+  const showUrgentBanner = !bannerDismissed && !isLoading && statsNeedsAction > URGENT_THRESHOLD;
+
+  const urgentBannerText = t("appointments.urgentBanner").replace(
+    "{count}",
+    String(statsNeedsAction)
+  );
+
   return (
     <div className="space-y-6">
       {/* Print-only header — hidden on screen */}
@@ -309,6 +319,39 @@ export default function AppointmentsPage() {
         <h1 className="text-3xl font-bold">{t("appointments.title")}</h1>
         <p className="text-muted-foreground mt-1 text-sm">{t("appointments.subtitle")}</p>
       </div>
+
+      {/* Urgent follow-up banner */}
+      {showUrgentBanner && (
+        <div
+          role="alert"
+          className="flex items-start gap-3 rounded-lg border border-orange-300 bg-orange-50 px-4 py-3 text-orange-900"
+        >
+          <AlertCircle className="mt-0.5 w-5 h-5 flex-shrink-0 text-orange-600" aria-hidden="true" />
+          <p className="flex-1 text-sm font-medium leading-snug">{urgentBannerText}</p>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs border-orange-400 text-orange-800 hover:bg-orange-100"
+              onClick={() => {
+                setStatusFilter("needs_action");
+                setDateFilter("all");
+                setBannerDismissed(true);
+              }}
+            >
+              {t("appointments.urgentBannerAction")}
+            </Button>
+            <button
+              type="button"
+              aria-label={t("appointments.urgentBannerDismiss")}
+              className="rounded p-0.5 hover:bg-orange-100 transition-colors"
+              onClick={() => setBannerDismissed(true)}
+            >
+              <X className="w-4 h-4 text-orange-600" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Stats */}
       {!isLoading && (

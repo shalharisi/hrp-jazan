@@ -189,6 +189,9 @@ export const translations = {
     "appointments.printFilterSector": "القطاع",
     "appointments.printAll": "الكل",
     "appointments.printDate": "تاريخ الطباعة",
+    "appointments.urgentBanner": "تنبيه عاجل: يوجد {count} موعد ماضٍ لم يُسجَّل فيه الحضور بعد — يستوجب متابعة فورية.",
+    "appointments.urgentBannerAction": "عرض المواعيد بحاجة إجراء",
+    "appointments.urgentBannerDismiss": "إغلاق",
   },
   en: {
     // Navigation
@@ -380,6 +383,9 @@ export const translations = {
     "appointments.printFilterSector": "Sector",
     "appointments.printAll": "All",
     "appointments.printDate": "Print Date",
+    "appointments.urgentBanner": "Urgent: {count} past appointments have no attendance recorded — immediate follow-up required.",
+    "appointments.urgentBannerAction": "View appointments needing action",
+    "appointments.urgentBannerDismiss": "Dismiss",
   }
 } as const;
 
