@@ -521,7 +521,7 @@ export default function AppointmentsScreen() {
           keyExtractor={(item) => String(item.id)}
           renderItem={({ item }) => {
             const badge = getAttendanceBadge(item.attended);
-            const riskBadge = getRiskBadge((item as unknown as { riskLevel?: string }).riskLevel);
+            const riskBadge = getRiskBadge(item.riskLevel);
             const isUpdating = updatingId === item.id;
             const apptDate = item.appointmentDate.slice(0, 10);
             const isNeedsAction = apptDate < today && item.attended === null;
