@@ -36,13 +36,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { CalendarCheck2, CalendarX2, Clock, ExternalLink, CalendarDays, Download } from "lucide-react";
+import { CalendarCheck2, CalendarX2, Clock, ExternalLink, CalendarDays, Download, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { getListAppointmentsQueryKey } from "@workspace/api-client-react";
 
 type DateFilter = "today" | "week" | "all";
-type StatusFilter = "all" | "scheduled" | "attended" | "absent";
+type StatusFilter = "all" | "scheduled" | "attended" | "absent" | "needs_action";
 
 function localDateStr(d: Date): string {
   const y = d.getFullYear();
@@ -199,7 +199,10 @@ export default function AppointmentsPage() {
       list = list.filter((a) => a.appointmentDate >= range.start && a.appointmentDate <= range.end);
     }
 
-    if (statusFilter !== "all") {
+    if (statusFilter === "needs_action") {
+      const today = localDateStr(new Date());
+      list = list.filter((a) => a.appointmentDate < today && a.attended === null);
+    } else if (statusFilter !== "all") {
       list = list.filter((a) => attendedToStatus(a.attended) === statusFilter);
     }
 
@@ -244,6 +247,11 @@ export default function AppointmentsPage() {
   const statsAttended = filtered.filter((a) => a.attended === true).length;
   const statsAbsent = filtered.filter((a) => a.attended === false).length;
 
+  const statsNeedsAction = useMemo(() => {
+    if (!appointments) return 0;
+    return appointments.filter((a) => a.appointmentDate < todayStr && a.attended === null).length;
+  }, [appointments, todayStr]);
+
   return (
     <div className="space-y-6">
       <div>
@@ -253,7 +261,7 @@ export default function AppointmentsPage() {
 
       {/* Stats */}
       {!isLoading && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
               <div className="p-2 rounded-full bg-slate-100">
@@ -298,6 +306,27 @@ export default function AppointmentsPage() {
               </div>
             </CardContent>
           </Card>
+          <Card
+            className={`cursor-pointer transition-colors border-2 ${
+              statusFilter === "needs_action"
+                ? "border-orange-500 bg-orange-50"
+                : "border-transparent hover:border-orange-300 hover:bg-orange-50/50"
+            }`}
+            onClick={() => {
+              setStatusFilter(statusFilter === "needs_action" ? "all" : "needs_action");
+              setDateFilter("all");
+            }}
+          >
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="p-2 rounded-full bg-orange-100">
+                <AlertCircle className="w-5 h-5 text-orange-600" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">{t("appointments.needsAction")}</p>
+                <p className="text-xl font-bold text-orange-700">{statsNeedsAction}</p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 
@@ -320,12 +349,20 @@ export default function AppointmentsPage() {
 
           <div className="flex flex-col gap-1">
             <Label className="text-xs text-muted-foreground">{t("appointments.filterStatus")}</Label>
-            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+            <Select
+              value={statusFilter}
+              onValueChange={(v) => {
+                const next = v as StatusFilter;
+                setStatusFilter(next);
+                if (next === "needs_action") setDateFilter("all");
+              }}
+            >
               <SelectTrigger className="w-44 h-9">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("appointments.statusAll")}</SelectItem>
+                <SelectItem value="needs_action">⚠️ {t("appointments.statusNeedsAction")}</SelectItem>
                 <SelectItem value="scheduled">{t("appt.scheduled")}</SelectItem>
                 <SelectItem value="attended">{t("appt.attended")}</SelectItem>
                 <SelectItem value="absent">{t("appt.absent")}</SelectItem>
@@ -411,10 +448,11 @@ export default function AppointmentsPage() {
                 <TableBody>
                   {filtered.map((appt) => {
                     const past = isPast(appt.appointmentDate);
+                    const needsAction = past && appt.attended === null;
                     return (
                       <TableRow
                         key={appt.id}
-                        className={past && appt.attended === null ? "bg-red-50/40" : ""}
+                        className={needsAction ? "bg-red-50 border-s-4 border-s-red-500" : ""}
                       >
                         <TableCell className="font-medium">
                           {appt.patientNameAr ?? "—"}

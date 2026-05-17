@@ -179,6 +179,9 @@ export const translations = {
     "appointments.totalCount": "إجمالي المواعيد",
     "appointments.exportCsv": "تصدير CSV",
     "appointments.colAttendanceNote": "افادة الحضور",
+    "appointments.needsAction": "بحاجة إجراء",
+    "appointments.needsActionDesc": "مواعيد ماضية لم يُسجَّل فيها الحضور",
+    "appointments.statusNeedsAction": "بحاجة إجراء",
   },
   en: {
     // Navigation
@@ -360,6 +363,9 @@ export const translations = {
     "appointments.totalCount": "Total Appointments",
     "appointments.exportCsv": "Export CSV",
     "appointments.colAttendanceNote": "Attendance Note",
+    "appointments.needsAction": "Needs Action",
+    "appointments.needsActionDesc": "Past appointments with no attendance recorded",
+    "appointments.statusNeedsAction": "Needs Action",
   }
 } as const;
 
