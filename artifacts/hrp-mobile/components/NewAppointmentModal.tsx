@@ -4,6 +4,7 @@ import {
   useListHospitals,
   useListPregnancies,
 } from "@workspace/api-client-react";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -22,11 +23,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useI18n } from "@/context/I18nContext";
 import { useColors } from "@/hooks/useColors";
 
-function isValidIsoDate(str: string): boolean {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(str)) return false;
-  const d = new Date(str + "T00:00:00");
-  if (isNaN(d.getTime())) return false;
-  return d.toISOString().startsWith(str);
+function localDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 interface NewAppointmentModalProps {
@@ -51,13 +52,14 @@ export function NewAppointmentModal({
   const { t, isRTL } = useI18n();
 
   const [pregnancySearch, setPregnancySearch] = useState("");
+  const [hospitalSearch, setHospitalSearch] = useState("");
   const [selectedPregnancyId, setSelectedPregnancyId] = useState<number | null>(
     initialPregnancyId ?? null
   );
   const [selectedHospitalId, setSelectedHospitalId] = useState<number | null>(
     initialHospitalId ?? null
   );
-  const [newApptDate, setNewApptDate] = useState("");
+  const [apptDateObj, setApptDateObj] = useState(new Date());
 
   const createAppt = useCreateAppointment();
   const { data: pregnanciesData } = useListPregnancies({ limit: 200 });
@@ -69,9 +71,10 @@ export function NewAppointmentModal({
   useEffect(() => {
     if (visible) {
       setPregnancySearch("");
+      setHospitalSearch("");
       setSelectedPregnancyId(initialPregnancyId ?? null);
       setSelectedHospitalId(initialHospitalId ?? null);
-      setNewApptDate("");
+      setApptDateObj(new Date());
     }
   }, [visible, initialPregnancyId, initialHospitalId]);
 
@@ -87,6 +90,15 @@ export function NewAppointmentModal({
       .slice(0, 50);
   }, [allPregnancies, pregnancySearch]);
 
+  const filteredHospitals = useMemo(() => {
+    const q = hospitalSearch.trim().toLowerCase();
+    if (!q) return allHospitals;
+    return allHospitals.filter((h) =>
+      (h.nameAr ?? "").toLowerCase().includes(q) ||
+      (h.nameEn ?? "").toLowerCase().includes(q)
+    );
+  }, [allHospitals, hospitalSearch]);
+
   const selectedPregnancy = allPregnancies.find(
     (p) => p.id === selectedPregnancyId
   );
@@ -98,14 +110,14 @@ export function NewAppointmentModal({
   }
 
   function handleSubmit() {
-    if (!selectedPregnancyId || !selectedHospitalId || !newApptDate.trim())
-      return;
+    if (!selectedPregnancyId || !selectedHospitalId) return;
+    const appointmentDate = localDateStr(apptDateObj);
     createAppt.mutate(
       {
         data: {
           pregnancyId: selectedPregnancyId,
           hospitalId: selectedHospitalId,
-          appointmentDate: newApptDate.trim(),
+          appointmentDate,
         },
       },
       {
@@ -121,10 +133,7 @@ export function NewAppointmentModal({
     );
   }
 
-  const canSubmit =
-    !!selectedPregnancyId &&
-    !!selectedHospitalId &&
-    isValidIsoDate(newApptDate.trim());
+  const canSubmit = !!selectedPregnancyId && !!selectedHospitalId;
 
   const prefilled = !!initialPregnancyId;
 
@@ -269,44 +278,61 @@ export function NewAppointmentModal({
             <Text style={[styles.sectionLabel, isRTL && styles.rtlText]}>
               {t("appointments.selectHospital")}
             </Text>
-            <View style={styles.hospitalGrid}>
-              {allHospitals.map((h) => (
-                <Pressable
-                  key={h.id}
-                  style={[
-                    styles.hospitalChip,
-                    selectedHospitalId === h.id && styles.hospitalChipActive,
-                  ]}
-                  onPress={() => setSelectedHospitalId(h.id)}
-                >
-                  <Text
+            <TextInput
+              style={[styles.searchInput, isRTL && styles.rtlText]}
+              placeholder={t("appointments.searchHospital")}
+              placeholderTextColor={colors.mutedForeground}
+              value={hospitalSearch}
+              onChangeText={setHospitalSearch}
+              textAlign={isRTL ? "right" : "left"}
+            />
+            {filteredHospitals.length === 0 ? (
+              <Text style={[styles.noResults, isRTL && styles.rtlText]}>
+                {t("appointments.noResults")}
+              </Text>
+            ) : (
+              <View style={styles.hospitalGrid}>
+                {filteredHospitals.map((h) => (
+                  <Pressable
+                    key={h.id}
                     style={[
-                      styles.hospitalChipText,
-                      selectedHospitalId === h.id &&
-                        styles.hospitalChipTextActive,
-                      isRTL && styles.rtlText,
+                      styles.hospitalChip,
+                      selectedHospitalId === h.id && styles.hospitalChipActive,
                     ]}
-                    numberOfLines={2}
+                    onPress={() => setSelectedHospitalId(h.id)}
                   >
-                    {h.nameAr}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
+                    <Text
+                      style={[
+                        styles.hospitalChipText,
+                        selectedHospitalId === h.id &&
+                          styles.hospitalChipTextActive,
+                        isRTL && styles.rtlText,
+                      ]}
+                      numberOfLines={2}
+                    >
+                      {h.nameAr}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
 
             <Text style={[styles.sectionLabel, isRTL && styles.rtlText]}>
               {t("appointments.selectDate")}
             </Text>
-            <TextInput
-              style={[styles.dateInput, isRTL && styles.rtlText]}
-              placeholder="2026-01-15"
-              placeholderTextColor={colors.mutedForeground}
-              value={newApptDate}
-              onChangeText={setNewApptDate}
-              keyboardType="numeric"
-              maxLength={10}
-              textAlign={isRTL ? "right" : "left"}
-            />
+            <View style={styles.datePickerWrapper}>
+              <DateTimePicker
+                value={apptDateObj}
+                mode="date"
+                display={Platform.OS === "web" ? "default" : "spinner"}
+                onChange={(_, date) => {
+                  if (date) setApptDateObj(date);
+                }}
+                style={styles.datePicker}
+                textColor={colors.foreground}
+                accentColor={colors.primary}
+              />
+            </View>
 
             <Pressable
               style={[
@@ -470,15 +496,17 @@ function makeStyles(colors: ReturnType<typeof useColors>, isRTL: boolean) {
     hospitalChipTextActive: {
       color: "#fff",
     },
-    dateInput: {
-      backgroundColor: colors.muted,
-      borderRadius: 12,
-      padding: 14,
-      fontSize: 16,
-      fontFamily: "Tajawal_500Medium",
-      color: colors.foreground,
+    datePickerWrapper: {
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      overflow: "hidden",
       marginBottom: 24,
-      letterSpacing: 1,
+    },
+    datePicker: {
+      height: Platform.OS === "web" ? 44 : 130,
+      width: "100%",
     },
     submitBtn: {
       backgroundColor: colors.primary,
