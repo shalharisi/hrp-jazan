@@ -363,9 +363,12 @@ jobs:
           echo " rule with the exact same pattern is permanently dead.)"
           echo ""
 
-          # ── Collect (pattern → list of line numbers) ──────────────────────────
-          declare -A first_lineno   # pattern → line number of first occurrence
-          declare -A dup_lines      # pattern → space-separated list of subsequent line numbers
+          # ── Collect (pattern → first line number, first owners, dup line numbers) ─
+          declare -A first_lineno    # pattern → line number of first occurrence
+          declare -A first_owners    # pattern → owners string of first occurrence
+          declare -A dup_lines       # pattern → space-separated list of subsequent line numbers
+          declare -A last_owners     # pattern → owners string of the most recent occurrence
+          declare -A owners_mismatch # pattern → "1" if ANY occurrence differs from the first
           lineno=0
           found_dupes=0
 
@@ -376,11 +379,20 @@ jobs:
 
             read -r -a fields <<< "$raw"
             pattern="${fields[0]}"
+            # Build a canonical owners string (space-separated, fields 1+)
+            owners="${fields[*]:1}"
 
             if [[ -z "${first_lineno[$pattern]+_}" ]]; then
               first_lineno[$pattern]=$lineno
+              first_owners[$pattern]="$owners"
+              owners_mismatch[$pattern]=0
             else
               dup_lines[$pattern]="${dup_lines[$pattern]:-${first_lineno[$pattern]}} $lineno"
+              last_owners[$pattern]="$owners"
+              # Flag any occurrence whose owners differ from the very first
+              if [[ "$owners" != "${first_owners[$pattern]}" ]]; then
+                owners_mismatch[$pattern]=1
+              fi
               found_dupes=1
             fi
           done < "$CODEOWNERS"
@@ -392,9 +404,21 @@ jobs:
             echo ""
             for pattern in "${!dup_lines[@]}"; do
               lines="${dup_lines[$pattern]}"
+              owners_first="${first_owners[$pattern]}"
+              owners_last="${last_owners[$pattern]}"
               echo "  Pattern: $pattern"
               echo "    Lines: $lines"
-              echo "    → Remove or consolidate the duplicate entries."
+              if [[ "${owners_mismatch[$pattern]}" == "0" ]]; then
+                echo "    Owners: identical on all occurrences ($owners_first)"
+                echo "    → The duplicate lines are redundant. Delete all but the last occurrence."
+              else
+                echo "    First owners : $owners_first"
+                echo "    Last owners  : $owners_last"
+                echo "    → The occurrences list DIFFERENT owners. GitHub silently drops all but"
+                echo "      the last rule, so the first owner list will never be used."
+                echo "      Consolidate all intended owners onto a single line, e.g.:"
+                echo "        $pattern $owners_first $owners_last"
+              fi
               echo ""
             done
             exit 1
