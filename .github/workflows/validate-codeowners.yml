@@ -52,6 +52,50 @@ jobs:
             echo "modified=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Check for owner-less rules
+        if: steps.changed.outputs.modified == 'true'
+        run: |
+          set -euo pipefail
+
+          CODEOWNERS=".github/CODEOWNERS"
+          failed=0
+
+          echo "Checking for CODEOWNERS rules with no owners listed …"
+          echo ""
+
+          while IFS= read -r line; do
+            # Skip comment lines and blank lines
+            [[ "$line" =~ ^[[:space:]]*# ]] && continue
+            [[ -z "${line//[[:space:]]/}" ]] && continue
+
+            # Tokenise: field 0 is the path pattern, fields 1+ are owner tokens
+            read -r -a fields <<< "$line"
+
+            if [[ ${#fields[@]} -lt 2 ]]; then
+              echo "✗  Owner-less rule: '${fields[0]}'"
+              echo "   This pattern has no owners — GitHub will silently disable"
+              echo "   code-owner review for matching paths."
+              failed=1
+            else
+              echo "✓  ${fields[0]}"
+            fi
+          done < "$CODEOWNERS"
+
+          echo ""
+          if [[ $failed -ne 0 ]]; then
+            echo "ERROR: One or more CODEOWNERS rules have no owners listed."
+            echo ""
+            echo "A pattern with no '@owner' tokens is accepted by GitHub but"
+            echo "effectively removes review coverage for those paths."
+            echo ""
+            echo "How to fix:"
+            echo "  • Add at least one '@username' or '@org/team-slug' owner to the rule."
+            echo "  • Remove the rule entirely if coverage is no longer needed."
+            exit 1
+          fi
+
+          echo "All CODEOWNERS rules have at least one owner."
+
       - name: Validate every owner resolves via the GitHub API
         if: steps.changed.outputs.modified == 'true'
         env:
