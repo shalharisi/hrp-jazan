@@ -2014,19 +2014,32 @@ export default function UserGuide() {
               {allSections.map((section) => {
                 const isActive = activeSection === section.id;
                 return (
-                  <button
-                    key={section.id}
-                    onClick={() => {
-                      scrollTo(section.id);
-                      setShowJumpMenu(false);
-                    }}
-                    className={`block w-full px-4 py-2.5 text-start text-sm border-b border-border/50 last:border-b-0 transition-colors ${isActive ? "bg-emerald-50 text-emerald-700 font-semibold" : "hover:bg-emerald-50 hover:text-emerald-700"}`}
-                  >
-                    {isActive && (
-                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 me-2 mb-0.5 align-middle" />
-                    )}
-                    {lang === "ar" ? section.ar : section.en}
-                  </button>
+                  <div key={section.id} className="border-b border-border/50 last:border-b-0">
+                    <button
+                      onClick={() => {
+                        scrollTo(section.id);
+                        setShowJumpMenu(false);
+                      }}
+                      className={`block w-full px-4 py-2.5 text-start text-sm transition-colors ${isActive ? "bg-emerald-50 text-emerald-700 font-semibold" : "hover:bg-emerald-50 hover:text-emerald-700"}`}
+                    >
+                      {isActive && (
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 me-2 mb-0.5 align-middle" />
+                      )}
+                      {lang === "ar" ? section.ar : section.en}
+                    </button>
+                    {section.subsections.map((sub, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          scrollTo(`${section.id}-${idx}`);
+                          setShowJumpMenu(false);
+                        }}
+                        className="block w-full px-4 ps-8 py-1.5 text-start text-xs text-muted-foreground hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+                      >
+                        {lang === "ar" ? sub.ar : sub.en}
+                      </button>
+                    ))}
+                  </div>
                 );
               })}
             </div>
