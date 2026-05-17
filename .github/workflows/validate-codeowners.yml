@@ -96,6 +96,81 @@ jobs:
 
           echo "All CODEOWNERS rules have at least one owner."
 
+      - name: Check for duplicate owners on the same rule line
+        if: steps.changed.outputs.modified == 'true'
+        run: |
+          set -euo pipefail
+
+          CODEOWNERS=".github/CODEOWNERS"
+          failed=0
+          lineno=0
+
+          echo "Checking for duplicate owner tokens within a single CODEOWNERS rule …"
+          echo ""
+
+          while IFS= read -r line; do
+            lineno=$((lineno + 1))
+
+            # Skip comment lines and blank lines
+            [[ "$line" =~ ^[[:space:]]*# ]] && continue
+            [[ -z "${line//[[:space:]]/}" ]] && continue
+
+            # Tokenise: field 0 is the path pattern, fields 1+ are owner tokens
+            read -r -a fields <<< "$line"
+
+            # Need at least two owners for a duplicate to be possible
+            if [[ ${#fields[@]} -lt 3 ]]; then
+              echo "✓  Line $lineno: '${fields[0]}'"
+              continue
+            fi
+
+            # Check for repeated tokens among the owner fields (index 1+)
+            declare -A seen_owners
+            dupes=()
+            for (( i=1; i<${#fields[@]}; i++ )); do
+              token="${fields[$i]}"
+              if [[ -n "${seen_owners[$token]+_}" ]]; then
+                dupes+=("$token")
+              else
+                seen_owners[$token]=1
+              fi
+            done
+            unset seen_owners
+
+            if [[ ${#dupes[@]} -gt 0 ]]; then
+              # Deduplicate the reported tokens for a cleaner message
+              declare -A reported
+              unique_dupes=()
+              for t in "${dupes[@]}"; do
+                if [[ -z "${reported[$t]+_}" ]]; then
+                  unique_dupes+=("$t")
+                  reported[$t]=1
+                fi
+              done
+              unset reported
+
+              echo "✗  Line $lineno: '${fields[0]}' — duplicate owner(s): ${unique_dupes[*]}"
+              echo "   Full rule: $line"
+              echo "   Listing the same reviewer twice is redundant and misleading;"
+              echo "   GitHub requests each owner only once regardless."
+              failed=1
+            else
+              echo "✓  Line $lineno: '${fields[0]}'"
+            fi
+          done < "$CODEOWNERS"
+
+          echo ""
+          if [[ $failed -ne 0 ]]; then
+            echo "ERROR: One or more CODEOWNERS rules list the same owner more than once."
+            echo ""
+            echo "How to fix:"
+            echo "  • Remove the duplicate '@username' or '@org/team-slug' tokens so each"
+            echo "    owner appears exactly once on the rule line."
+            exit 1
+          fi
+
+          echo "No duplicate owners found within any single CODEOWNERS rule."
+
       - name: Validate every owner resolves via the GitHub API
         if: steps.changed.outputs.modified == 'true'
         env:
