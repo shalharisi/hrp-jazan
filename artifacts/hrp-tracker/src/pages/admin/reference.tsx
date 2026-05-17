@@ -822,6 +822,7 @@ function HealthCentersTab() {
 // ─── Settings tab ──────────────────────────────────────────────────────────────
 const URGENT_THRESHOLD_KEY = "hrp_urgent_threshold";
 const DEFAULT_URGENT_THRESHOLD = 5;
+const GUIDE_DURATION_KEY = "guideExpectedDuration";
 
 function SettingsTab() {
   const { lang, t } = useI18n();
@@ -836,6 +837,15 @@ function SettingsTab() {
     }
     return String(DEFAULT_URGENT_THRESHOLD);
   });
+
+  const lastDuration = (() => {
+    const stored = localStorage.getItem(GUIDE_DURATION_KEY);
+    if (stored !== null) {
+      const parsed = parseInt(stored, 10);
+      if (!isNaN(parsed) && parsed > 0) return parsed;
+    }
+    return null;
+  })();
 
   const handleSave = () => {
     const parsed = parseInt(inputValue, 10);
@@ -884,6 +894,14 @@ function SettingsTab() {
           </Button>
         </div>
       </div>
+
+      {lastDuration !== null && (
+        <div>
+          <p className="text-sm text-muted-foreground">
+            {t("guide.lastDuration").replace("{n}", String(lastDuration))}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
