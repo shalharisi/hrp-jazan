@@ -1126,6 +1126,7 @@ export default function UserGuide() {
   const GUIDE_SESSION_KEY = "guide-last-section";
   const [showJumpMenu, setShowJumpMenu] = useState(false);
   const jumpMenuRef = useRef<HTMLDivElement>(null);
+  const [activeSection, setActiveSection] = useState<string | null>(null);
 
   const bcRef = useRef<BroadcastChannel | null>(null);
 
@@ -1191,6 +1192,9 @@ export default function UserGuide() {
   useEffect(() => {
     const savedId = sessionStorage.getItem(GUIDE_SESSION_KEY);
     if (!savedId) return;
+    // Pre-seed the active highlight so the dropdown shows the right section
+    // immediately on page load/restore before the observer fires.
+    setActiveSection(savedId);
     const timer = setTimeout(() => {
       const el = document.getElementById(savedId);
       if (el) el.scrollIntoView({ behavior: "instant", block: "start" });
@@ -1200,13 +1204,20 @@ export default function UserGuide() {
 
   useEffect(() => {
     const sectionIds = allSections.map((s) => s.id);
+    const visibleSections = new Set<string>();
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
           if (entry.isIntersecting) {
+            visibleSections.add(entry.target.id);
             sessionStorage.setItem(GUIDE_SESSION_KEY, entry.target.id);
+          } else {
+            visibleSections.delete(entry.target.id);
           }
         }
+        // Pick the topmost visible section (first in document order)
+        const top = sectionIds.find((id) => visibleSections.has(id)) ?? null;
+        setActiveSection(top);
       },
       { threshold: 0.1, rootMargin: "-80px 0px -55% 0px" },
     );
@@ -1960,18 +1971,24 @@ export default function UserGuide() {
               className={`mb-1 max-h-80 w-64 overflow-y-auto rounded-xl border border-border bg-white shadow-xl ${lang === "ar" ? "text-right" : "text-left"}`}
               dir={lang === "ar" ? "rtl" : "ltr"}
             >
-              {allSections.map((section) => (
-                <button
-                  key={section.id}
-                  onClick={() => {
-                    scrollTo(section.id);
-                    setShowJumpMenu(false);
-                  }}
-                  className="block w-full px-4 py-2.5 text-start text-sm hover:bg-emerald-50 hover:text-emerald-700 border-b border-border/50 last:border-b-0 transition-colors"
-                >
-                  {lang === "ar" ? section.ar : section.en}
-                </button>
-              ))}
+              {allSections.map((section) => {
+                const isActive = activeSection === section.id;
+                return (
+                  <button
+                    key={section.id}
+                    onClick={() => {
+                      scrollTo(section.id);
+                      setShowJumpMenu(false);
+                    }}
+                    className={`block w-full px-4 py-2.5 text-start text-sm border-b border-border/50 last:border-b-0 transition-colors ${isActive ? "bg-emerald-50 text-emerald-700 font-semibold" : "hover:bg-emerald-50 hover:text-emerald-700"}`}
+                  >
+                    {isActive && (
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 me-2 mb-0.5 align-middle" />
+                    )}
+                    {lang === "ar" ? section.ar : section.en}
+                  </button>
+                );
+              })}
             </div>
           )}
 
