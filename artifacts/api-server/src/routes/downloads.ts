@@ -2,6 +2,8 @@ import { Router, type IRouter } from "express";
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
+import { spawn } from "child_process";
+import { requireRole } from "../lib/auth.js";
 
 // When built with esbuild, import.meta.url resolves to the bundle file
 // (dist/index.mjs), so __dirname = artifacts/api-server/dist/.
@@ -13,6 +15,9 @@ const DOCX_PATH = path.join(WORKSPACE_ROOT, "دليل_المستخدم_منظو�
 const PDF_PATH = path.join(WORKSPACE_ROOT, "دليل_المستخدم_منظومة_جازان.pdf");
 
 const router: IRouter = Router();
+
+// In-process lock: prevents concurrent guide generation runs.
+let guideGenerating = false;
 
 // GET /api/downloads/user-guide.docx — all authenticated users
 // Auth is enforced globally in routes/index.ts; no per-route middleware needed.
@@ -44,6 +49,40 @@ router.get("/downloads/user-guide/status", (req, res): void => {
   res.json({
     docx: fs.existsSync(DOCX_PATH),
     pdf: fs.existsSync(PDF_PATH),
+  });
+});
+
+// POST /api/downloads/user-guide/generate — admin only; triggers guide generation on demand
+router.post("/downloads/user-guide/generate", requireRole("admin"), (req, res): void => {
+  if (guideGenerating) {
+    res.status(409).json({ error: "Guide generation is already in progress. Please wait and try again." });
+    return;
+  }
+
+  guideGenerating = true;
+
+  const child = spawn("pnpm", ["--filter", "@workspace/scripts", "run", "generate-guide"], {
+    cwd: WORKSPACE_ROOT,
+    stdio: "pipe",
+  });
+
+  child.on("close", (code) => {
+    guideGenerating = false;
+    if (res.headersSent) return;
+    if (code === 0) {
+      req.log.info("User guide generated successfully via admin trigger");
+      res.json({ ok: true });
+    } else {
+      req.log.error({ code }, "Guide generation script exited with non-zero code");
+      res.status(500).json({ error: "Guide generation failed", code });
+    }
+  });
+
+  child.on("error", (err) => {
+    guideGenerating = false;
+    if (res.headersSent) return;
+    req.log.error({ err }, "Failed to spawn guide generation script");
+    res.status(500).json({ error: "Failed to start guide generation", detail: err.message });
   });
 });
 

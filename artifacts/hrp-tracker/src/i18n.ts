@@ -215,6 +215,13 @@ export const translations = {
     "guide.downloadPdf": "تحميل كـ PDF",
     "guide.downloadWord": "تحميل كـ Word",
     "guide.filesNotReady": "ملفات الدليل غير متاحة بعد. يرجى تشغيل سكريبت إنشاء الدليل أولاً.",
+    "guide.filesNotReadyAdmin": "لم تُولَّد ملفات الدليل بعد. لإنشائها، شغِّل الأمر التالي من مجلد المشروع:",
+    "guide.filesNotReadyAdminCmd": "pnpm --filter @workspace/scripts run generate-guide",
+    "guide.filesNotReadyUser": "دليل المستخدم سيكون متاحًا قريبًا. يرجى التواصل مع مسؤول النظام إذا كنت بحاجة إليه.",
+    "guide.generateBtn": "إنشاء الدليل الآن",
+    "guide.generating": "جارٍ إنشاء الدليل...",
+    "guide.generateSuccess": "تم إنشاء الدليل بنجاح. يمكنك تحميله الآن.",
+    "guide.generateError": "تعذَّر إنشاء الدليل. راجع سجل الخادم للاطلاع على التفاصيل.",
     "guide.checking": "جارٍ التحقق...",
   },
   en: {
@@ -433,6 +440,13 @@ export const translations = {
     "guide.downloadPdf": "Download as PDF",
     "guide.downloadWord": "Download as Word",
     "guide.filesNotReady": "Guide files are not yet available. Please run the guide generation script first.",
+    "guide.filesNotReadyAdmin": "Guide files have not been generated yet. To create them, run the following command from the project directory:",
+    "guide.filesNotReadyAdminCmd": "pnpm --filter @workspace/scripts run generate-guide",
+    "guide.filesNotReadyUser": "The user guide will be available for download soon. Please contact your system administrator if you need it urgently.",
+    "guide.generateBtn": "Generate Guide Now",
+    "guide.generating": "Generating guide...",
+    "guide.generateSuccess": "Guide generated successfully. You can now download it.",
+    "guide.generateError": "Failed to generate the guide. Please check the server log for details.",
     "guide.checking": "Checking availability...",
   }
 } as const;

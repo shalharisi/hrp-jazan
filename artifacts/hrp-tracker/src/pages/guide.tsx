@@ -3,6 +3,7 @@ import { useI18n } from "@/lib/i18n-context";
 import { useAuth } from "@/lib/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 const API = `${BASE}/api`;
@@ -122,19 +123,43 @@ type FileStatus = { docx: boolean; pdf: boolean } | null;
 
 export default function UserGuide() {
   const { t, lang } = useI18n();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [status, setStatus] = useState<FileStatus>(null);
   const [checking, setChecking] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [generateResult, setGenerateResult] = useState<"success" | "error" | null>(null);
 
-  useEffect(() => {
-    if (!user) return;
+  const fetchStatus = () => {
     setChecking(true);
     fetch(`${API}/downloads/user-guide/status`)
       .then((res) => res.json())
       .then((data: FileStatus) => setStatus(data))
       .catch(() => setStatus({ docx: false, pdf: false }))
       .finally(() => setChecking(false));
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    fetchStatus();
   }, [user]);
+
+  const handleGenerate = async () => {
+    setGenerating(true);
+    setGenerateResult(null);
+    try {
+      const res = await fetch(`${API}/downloads/user-guide/generate`, { method: "POST" });
+      if (res.ok) {
+        setGenerateResult("success");
+        fetchStatus();
+      } else {
+        setGenerateResult("error");
+      }
+    } catch {
+      setGenerateResult("error");
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const anyAvailable = status && (status.pdf || status.docx);
 
@@ -175,8 +200,32 @@ export default function UserGuide() {
                   </Button>
                 )}
               </div>
+            ) : isAdmin ? (
+              <div className="space-y-3">
+                <p className="text-sm text-amber-700">{t("guide.filesNotReadyAdmin")}</p>
+                <pre className="bg-muted rounded-md px-4 py-3 text-sm font-mono text-start overflow-x-auto select-all">
+                  {t("guide.filesNotReadyAdminCmd")}
+                </pre>
+                {generateResult === "success" && (
+                  <Alert className="border-green-200 bg-green-50 text-green-800">
+                    <AlertDescription>{t("guide.generateSuccess")}</AlertDescription>
+                  </Alert>
+                )}
+                {generateResult === "error" && (
+                  <Alert className="border-red-200 bg-red-50 text-red-800">
+                    <AlertDescription>{t("guide.generateError")}</AlertDescription>
+                  </Alert>
+                )}
+                <Button
+                  onClick={handleGenerate}
+                  disabled={generating}
+                  variant="secondary"
+                >
+                  {generating ? t("guide.generating") : t("guide.generateBtn")}
+                </Button>
+              </div>
             ) : (
-              <p className="text-sm text-amber-600">{t("guide.filesNotReady")}</p>
+              <p className="text-sm text-muted-foreground">{t("guide.filesNotReadyUser")}</p>
             )}
           </CardContent>
         </Card>
