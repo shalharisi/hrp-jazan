@@ -341,9 +341,11 @@ function pageBreak(): Paragraph {
 }
 
 // ── Build document ────────────────────────────────────────────────────────────
-type CaptureEntry = { order: number; key: string; filename: string };
+export type CaptureEntry = { order: number; key: string; filename: string };
 
-async function buildDocument(screenshots?: Map<string, Buffer>, captureOrder?: CaptureEntry[]): Promise<Buffer> {
+export { OUTPUT_PATH };
+
+export async function buildDocument(screenshots?: Map<string, Buffer>, captureOrder?: CaptureEntry[]): Promise<Buffer> {
   // Load logo if available
   let logoImage: ImageRun | null = null;
   if (fs.existsSync(LOGO_PATH)) {
@@ -2849,7 +2851,11 @@ function progress(step: string): void {
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
-(async () => {
+const _isMain =
+  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url) ||
+  path.resolve(process.argv[1]).replace(/\.js$/, ".ts") ===
+    fileURLToPath(import.meta.url);
+if (_isMain)(async () => {
   const startTime = Date.now();
   const args = process.argv.slice(2);
 
