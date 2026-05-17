@@ -174,7 +174,19 @@ function exportAppointmentsToCsv(
     return s;
   };
 
-  const lines: string[] = [cols.map(escape).join(",")];
+  const hasFilter = statusFilter !== "all" || dateFilter !== "all";
+  const lines: string[] = [];
+
+  if (hasFilter) {
+    const exportDate = localDateStr(new Date());
+    const summaryLine =
+      lang === "ar"
+        ? `إجمالي السجلات: ${rows.length} – بتاريخ ${exportDate}`
+        : `Total records: ${rows.length} as of ${exportDate}`;
+    lines.push(escape(summaryLine));
+  }
+
+  lines.push(cols.map(escape).join(","));
   for (const row of rows) {
     lines.push(
       [
