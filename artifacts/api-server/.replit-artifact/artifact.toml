@@ -10,6 +10,9 @@ name = "API Server"
 paths = ["/api"]
 
 [services.development]
+# The codegen watcher (watch:codegen) is intentionally only in this shell
+# command, not in services.production.run which uses an explicit args array.
+# watch-codegen.ts also guards against NODE_ENV=production as a second layer.
 run = "pnpm --filter @workspace/api-server run dev & pnpm --filter @workspace/scripts run watch:codegen & wait"
 
 [services.production]

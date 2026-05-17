@@ -2,6 +2,17 @@ import { watch } from "fs";
 import { resolve } from "path";
 import { execSync } from "child_process";
 
+// Safety guard: this script is a dev-only file watcher and must never run in
+// production. The production artifact.toml uses an explicit args array (not a
+// shell command) so it never starts this script, but we exit early here as an
+// additional safeguard in case the production run command is changed in future.
+if (process.env.NODE_ENV === "production") {
+  console.error(
+    "watch:codegen — refusing to run in production (NODE_ENV=production). Exiting."
+  );
+  process.exit(1);
+}
+
 const root = resolve(import.meta.dirname, "../..");
 const specPath = resolve(root, "lib/api-spec/openapi.yaml");
 
