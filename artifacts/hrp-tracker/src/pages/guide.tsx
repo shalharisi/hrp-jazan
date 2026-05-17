@@ -1329,6 +1329,150 @@ export default function UserGuide() {
     window.print();
   };
 
+  const handlePrintSection = (section: Section) => {
+    const el = document.getElementById(section.id);
+    if (!el) return;
+
+    const sectionTitle = lang === "ar" ? section.ar : section.en;
+    const orgLine =
+      lang === "ar"
+        ? `تجمع جازان الصحي — طُبع بتاريخ: ${printDate}`
+        : `Jazan Health Cluster — Printed: ${printDate}`;
+    const dir = lang === "ar" ? "rtl" : "ltr";
+
+    const contentHtml = el.innerHTML;
+
+    const html = `<!DOCTYPE html>
+<html lang="${lang}" dir="${dir}">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>${sectionTitle}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+  @page { size: A4 portrait; margin: 15mm 20mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Tajawal', sans-serif;
+    font-size: 11pt;
+    color: #111;
+    background: white;
+    margin: 0;
+    padding: 0;
+    direction: ${dir};
+  }
+  .section-print-header {
+    text-align: center;
+    border-bottom: 2px solid #005a2e;
+    padding-bottom: 8pt;
+    margin-bottom: 14pt;
+  }
+  .section-print-header h1 {
+    font-size: 13pt;
+    font-weight: bold;
+    color: #005a2e;
+    margin: 0 0 4pt 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .section-print-header p {
+    font-size: 9pt;
+    color: #555;
+    margin: 0;
+  }
+  .section-print-footer {
+    margin-top: 18pt;
+    border-top: 1px solid #ccc;
+    padding-top: 6pt;
+    font-size: 9pt;
+    color: #555;
+    text-align: center;
+  }
+  /* Card shell — strip it visually */
+  [data-slot="card"] { box-shadow: none !important; border: none !important; background: white !important; padding: 0; }
+  [data-slot="card-header"] { padding: 0 0 8pt 0; }
+  [data-slot="card-content"] { padding: 0; }
+  /* Section title */
+  .text-emerald-800, .text-emerald-700 { color: #005a2e !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  /* Headings */
+  h2, h3, h4 { margin: 6pt 0 3pt 0; }
+  h3 { font-size: 11pt; border-bottom: 1px solid #ddd; padding-bottom: 3pt; }
+  h4 { font-size: 10pt; color: #005a2e; }
+  /* Body text */
+  p { margin: 3pt 0; line-height: 1.6; }
+  .text-muted-foreground { color: #333 !important; }
+  /* Lists */
+  ul { margin: 3pt 0; padding-${dir === "rtl" ? "right" : "left"}: 14pt; list-style: none; }
+  li { margin: 2pt 0; }
+  /* Tables */
+  .overflow-x-auto { overflow: visible !important; }
+  table { width: 100%; border-collapse: collapse; font-size: 10pt; margin: 6pt 0; }
+  th, td { border: 1px solid #bbb; padding: 4px 8px; text-align: ${dir === "rtl" ? "right" : "left"}; }
+  thead tr { background: #005a2e !important; color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .bg-emerald-50 { background: #f0faf4 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .bg-emerald-700, .bg-emerald-800 { background: #005a2e !important; color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  /* Note boxes */
+  .rounded-md { break-inside: avoid; }
+  .bg-blue-50 { background: #eff6ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .bg-amber-50 { background: #fffbeb !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .bg-emerald-50 { background: #f0faf4 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .border { border: 1px solid #ccc; }
+  .border-blue-200 { border-color: #bfdbfe; }
+  .border-amber-200 { border-color: #fde68a; }
+  .border-emerald-200 { border-color: #a7f3d0; }
+  .p-3 { padding: 8px; }
+  .px-3 { padding-left: 8px; padding-right: 8px; }
+  .py-2 { padding-top: 5px; padding-bottom: 5px; }
+  .space-y-1 > * + * { margin-top: 4px; }
+  .space-y-2 > * + * { margin-top: 6px; }
+  .space-y-3 > * + * { margin-top: 8px; }
+  .space-y-4 > * + * { margin-top: 10px; }
+  .space-y-6 > * + * { margin-top: 14px; }
+  .font-semibold { font-weight: 600; }
+  .font-bold { font-weight: 700; }
+  .text-sm { font-size: 10pt; }
+  .text-lg { font-size: 12pt; }
+  .text-base { font-size: 11pt; }
+  .gap-2 { gap: 6px; }
+  .flex { display: flex; }
+  .shrink-0 { flex-shrink: 0; }
+  .leading-relaxed { line-height: 1.7; }
+  .mt-2 { margin-top: 6pt; }
+  .pb-1 { padding-bottom: 3pt; }
+  .border-b { border-bottom: 1px solid #ddd; }
+  .scroll-mt-4 { break-inside: avoid-page; }
+  /* Hide section-level card title (we show it in the header) */
+  [data-slot="card-header"] .text-lg { display: none; }
+  /* Hide print button itself if somehow rendered */
+  button { display: none !important; }
+  /* FAQ boxes */
+  .bg-muted\\/40 { background: #f5f5f5 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+</style>
+</head>
+<body>
+<div class="section-print-header">
+  <h1>${sectionTitle}</h1>
+  <p>${orgLine}</p>
+</div>
+<div>${contentHtml}</div>
+<div class="section-print-footer">${orgLine}</div>
+<script>
+  window.onload = function() {
+    window.print();
+    setTimeout(function() { window.close(); }, 500);
+  };
+</script>
+</body>
+</html>`;
+
+    const win = window.open("", "_blank", "width=900,height=700");
+    if (!win) return;
+    win.document.write(html);
+    win.document.close();
+  };
+
   const printDate = new Date().toLocaleDateString(lang === "ar" ? "ar-SA" : "en-GB", {
     year: "numeric",
     month: "long",
@@ -1539,9 +1683,19 @@ export default function UserGuide() {
       {allSections.map((section) => (
         <Card key={section.id} id={section.id} className="scroll-mt-4 guide-section-card">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg text-emerald-800">
-              {lang === "ar" ? section.ar : section.en}
-            </CardTitle>
+            <div className="flex items-start justify-between gap-2 no-print-section-btn">
+              <CardTitle className="text-lg text-emerald-800">
+                {lang === "ar" ? section.ar : section.en}
+              </CardTitle>
+              <button
+                onClick={() => handlePrintSection(section)}
+                title={lang === "ar" ? "طباعة هذا القسم" : "Print this section"}
+                aria-label={lang === "ar" ? "طباعة هذا القسم" : "Print this section"}
+                className="no-print shrink-0 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              >
+                <Printer className="h-4 w-4" />
+              </button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-6">
             {section.subsections.map((sub, idx) => (
