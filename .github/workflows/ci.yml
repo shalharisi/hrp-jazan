@@ -21,6 +21,18 @@ jobs:
       - id: guard
         uses: ./.github/actions/detect-bot-commit
 
+  test-bot-detection:
+    name: Smoke-test bot-detection guard
+    runs-on: ubuntu-latest
+    # Intentionally ungated: this job must always run so it can catch regressions
+    # in the guard itself.  If it depended on `should-run`, a broken guard that
+    # returns proceed=false for human actors would silently skip this check.
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run bot-detection smoke tests
+        run: bash scripts/test-bot-detection.sh
+
   check-codegen:
     name: Check API codegen is up to date
     runs-on: ubuntu-latest
