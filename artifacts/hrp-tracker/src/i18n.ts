@@ -223,6 +223,7 @@ export const translations = {
     "guide.generateSuccess": "تم إنشاء الدليل بنجاح. يمكنك تحميله الآن.",
     "guide.generateError": "تعذَّر إنشاء الدليل. راجع سجل الخادم للاطلاع على التفاصيل.",
     "guide.checking": "جارٍ التحقق...",
+    "guide.generatingHint": "قد تستغرق العملية من 10 إلى 30 ثانية. يرجى الانتظار...",
   },
   en: {
     // Navigation
@@ -448,6 +449,7 @@ export const translations = {
     "guide.generateSuccess": "Guide generated successfully. You can now download it.",
     "guide.generateError": "Failed to generate the guide. Please check the server log for details.",
     "guide.checking": "Checking availability...",
+    "guide.generatingHint": "This may take 10–30 seconds. Please wait...",
   }
 } as const;
 

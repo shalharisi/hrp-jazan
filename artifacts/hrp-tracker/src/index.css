@@ -269,3 +269,9 @@
 .print-only {
   display: none;
 }
+
+@keyframes progress {
+  0% { width: 5%; margin-inline-start: 0; }
+  50% { width: 60%; margin-inline-start: 20%; }
+  100% { width: 5%; margin-inline-start: 95%; }
+}

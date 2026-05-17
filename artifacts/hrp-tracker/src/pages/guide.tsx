@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2 } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 const API = `${BASE}/api`;
@@ -221,8 +222,22 @@ export default function UserGuide() {
                   disabled={generating}
                   variant="secondary"
                 >
+                  {generating && (
+                    <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                  )}
                   {generating ? t("guide.generating") : t("guide.generateBtn")}
                 </Button>
+                {generating && (
+                  <div className="flex items-center gap-3 pt-1">
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground shrink-0" />
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                        <div className="h-full bg-primary/60 rounded-full animate-[progress_2s_ease-in-out_infinite]" />
+                      </div>
+                      <p className="text-xs text-muted-foreground">{t("guide.generatingHint")}</p>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">{t("guide.filesNotReadyUser")}</p>
