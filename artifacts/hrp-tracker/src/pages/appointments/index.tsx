@@ -543,8 +543,16 @@ export default function AppointmentsPage() {
               variant="outline"
               className="h-7 text-xs border-orange-400 text-orange-800 hover:bg-orange-100 gap-1"
               onClick={() => {
+                const bannerExportRows =
+                  sectorFilter !== "all"
+                    ? needsActionRows.filter((a) => String(a.sectorId) === sectorFilter)
+                    : needsActionRows;
+                const bannerSectorName =
+                  sectorFilter !== "all"
+                    ? (sectors?.find((s) => String(s.id) === sectorFilter)?.nameAr ?? sectorFilter)
+                    : null;
                 exportAppointmentsToCsv(
-                  needsActionRows,
+                  bannerExportRows,
                   lang,
                   {
                     patient: t("appointments.colPatient"),
@@ -557,7 +565,7 @@ export default function AppointmentsPage() {
                   },
                   "all",
                   "needs_action",
-                  null,
+                  bannerSectorName,
                   undefined,
                   undefined,
                   {
@@ -566,7 +574,7 @@ export default function AppointmentsPage() {
                     statusFieldLabel: t("appointments.printFilterStatus"),
                     statusValue: t("appointments.statusNeedsAction"),
                     sectorFieldLabel: t("appointments.printFilterSector"),
-                    sectorValue: t("appointments.printAll"),
+                    sectorValue: sectorFilterLabel,
                   }
                 );
               }}
