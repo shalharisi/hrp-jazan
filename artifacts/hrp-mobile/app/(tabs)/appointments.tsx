@@ -82,6 +82,7 @@ export default function AppointmentsScreen() {
     } else {
       setAttendanceFilter("all");
       setDateFilter("today");
+      setRiskFilter("all");
     }
   }, [params.filter]);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
