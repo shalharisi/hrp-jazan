@@ -1,0 +1,152 @@
+name: Check Guide Screenshots
+
+# Verify that committed screenshots in scripts/screenshots/ still match the
+# live application.  Runs on every pull-request so screenshot drift is caught
+# before the branch is merged.
+#
+# How it works:
+#   1. Build and start the API server (port 8080) and frontend (port 22604).
+#   2. Start nginx on port 80 to proxy /api → 8080 and / → 22604, mirroring
+#      the Replit reverse-proxy that the capture script expects at localhost:80.
+#   3. Run `capture-screenshots` to produce fresh PNGs in scripts/screenshots/.
+#   4. Compare freshly generated PNGs to the committed baseline with
+#      `git diff --cached --name-only`.  If any file changed (or a new one
+#      appeared), the job prints the list of drifted screens and exits non-zero.
+#
+# To fix a failure: run `pnpm --filter @workspace/scripts run capture-screenshots`
+# locally (with the app running) and commit the updated PNGs.
+
+on:
+  pull_request:
+    branches: ["**"]
+
+  # Allow a manual re-run from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  check-screenshots:
+    name: Detect screenshot drift
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium for Puppeteer
+        run: npx --yes puppeteer browsers install chrome
+        working-directory: scripts
+
+      # ── Start services ──────────────────────────────────────────────────────
+      - name: Build and start API server
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PORT: 8080
+          BASE_PATH: /api
+          NODE_ENV: production
+        run: |
+          pnpm --filter @workspace/api-server run build
+          pnpm --filter @workspace/api-server run start &
+          echo "API_PID=$!" >> "$GITHUB_ENV"
+
+      - name: Build and start frontend
+        env:
+          PORT: 22604
+          BASE_PATH: /
+          NODE_ENV: production
+        run: |
+          pnpm --filter @workspace/hrp-tracker run build
+          npx --yes serve -s artifacts/hrp-tracker/dist -l 22604 &
+          echo "FRONTEND_PID=$!" >> "$GITHUB_ENV"
+
+      # ── Set up reverse proxy on port 80 ────────────────────────────────────
+      # Mirrors the Replit proxy so the capture script can use http://localhost:80
+      # exactly as it does in the local dev environment.
+      - name: Configure and start nginx reverse proxy
+        run: |
+          sudo tee /etc/nginx/sites-enabled/default > /dev/null <<'NGINX_EOF'
+          server {
+            listen 80;
+
+            location /api {
+              proxy_pass http://localhost:8080;
+              proxy_set_header Host $host;
+              proxy_set_header X-Real-IP $remote_addr;
+            }
+
+            location / {
+              proxy_pass http://localhost:22604;
+              proxy_set_header Host $host;
+              proxy_set_header X-Real-IP $remote_addr;
+            }
+          }
+          NGINX_EOF
+          sudo nginx -t
+          sudo systemctl start nginx
+
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for API server (port 8080)..."
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8080/api/healthz && echo " OK" && break || { echo " not ready yet (attempt $i)"; sleep 2; }
+          done
+          echo "Waiting for frontend (port 22604)..."
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:22604 && echo " OK" && break || { echo " not ready yet (attempt $i)"; sleep 2; }
+          done
+          echo "Waiting for nginx proxy (port 80)..."
+          for i in $(seq 1 10); do
+            curl -sf http://localhost:80 && echo " OK" && break || { echo " not ready yet (attempt $i)"; sleep 1; }
+          done
+
+      # ── Capture fresh screenshots ───────────────────────────────────────────
+      - name: Capture screenshots
+        run: |
+          pnpm --filter @workspace/scripts run capture-screenshots \
+            --output-screenshots-dir=screenshots \
+            --base-url="http://localhost:80"
+
+      # ── Diff against committed baseline ────────────────────────────────────
+      - name: Check for screenshot drift
+        run: |
+          # Check whether a baseline PNG set has been committed yet.
+          BASELINE=$(git ls-files scripts/screenshots/ -- '*.png' | wc -l | tr -d ' ')
+          if [ "$BASELINE" = "0" ]; then
+            echo "No baseline PNGs are committed yet in scripts/screenshots/."
+            echo "Run the 'Refresh Guide Screenshots' workflow on the main branch to establish"
+            echo "a baseline, then re-run this check."
+            echo "(Skipping drift comparison — nothing to compare against.)"
+            exit 0
+          fi
+
+          # Stage all changes (new, modified, and deleted) so `git diff --cached`
+          # can compare them to the last committed state.
+          git add -A scripts/screenshots/
+
+          # Limit the diff to PNGs only so unrelated index file changes are ignored.
+          CHANGED=$(git diff --cached --name-only -- 'scripts/screenshots/*.png')
+
+          if [ -z "$CHANGED" ]; then
+            echo "All guide screenshots are up to date."
+            exit 0
+          fi
+
+          echo ""
+          echo "ERROR: The following guide screenshots have drifted from the committed baseline:"
+          echo ""
+          echo "$CHANGED" | sed 's/^/  - /'
+          echo ""
+          echo "To fix: run the app locally, then execute:"
+          echo "  pnpm --filter @workspace/scripts run capture-screenshots"
+          echo "and commit the updated PNGs in scripts/screenshots/."
+          exit 1
