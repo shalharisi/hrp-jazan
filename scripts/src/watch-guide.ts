@@ -188,8 +188,15 @@ function startWatcher(): void {
     console.warn(`⚠  لم يُعثر على ${INDEX_JSON} — لن تتم مراقبته حتى تتم إعادة تشغيل المراقب`);
   }
 
-  fs.watch(GUIDE_SOURCE, { persistent: true }, (eventType, filename) => {
-    scheduleRebuild(filename ?? path.basename(GUIDE_SOURCE), eventType ?? "change");
+  // Watch the guide source via its parent directory so that file replacements
+  // (e.g. cp new-guide.ts generate-user-guide.ts) are reliably captured on Linux,
+  // where fs.watch on an individual file stops firing after the inode is swapped.
+  const guideSourceDir = path.dirname(GUIDE_SOURCE);
+  const guideSourceName = path.basename(GUIDE_SOURCE);
+  fs.watch(guideSourceDir, { persistent: true }, (_eventType, filename) => {
+    if (filename === guideSourceName) {
+      scheduleRebuild(guideSourceName, "change");
+    }
   });
 
   // Watch each static asset file via its parent directory so that file
