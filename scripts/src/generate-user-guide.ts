@@ -341,7 +341,9 @@ function pageBreak(): Paragraph {
 }
 
 // ── Build document ────────────────────────────────────────────────────────────
-async function buildDocument(screenshots?: Map<string, Buffer>): Promise<Buffer> {
+type CaptureEntry = { order: number; key: string; filename: string };
+
+async function buildDocument(screenshots?: Map<string, Buffer>, captureOrder?: CaptureEntry[]): Promise<Buffer> {
   // Load logo if available
   let logoImage: ImageRun | null = null;
   if (fs.existsSync(LOGO_PATH)) {
@@ -1347,6 +1349,25 @@ async function buildDocument(screenshots?: Map<string, Buffer>): Promise<Buffer>
       }),
     ]),
   );
+
+  // ============================================================
+  // APPENDIX E: SCREENSHOT INDEX (only when real screenshots exist)
+  // ============================================================
+  if (captureOrder && captureOrder.length > 0) {
+    const screenshotRows: [string, string][] = captureOrder.map((entry) => [
+      `${entry.order}. ${entry.key}`,
+      entry.filename,
+    ]);
+    sections.push(
+      pageBreak(),
+      sectionHeading("ملحق هـ: فهرس لقطات الشاشة", 1),
+      rtlPara(
+        "يسرد هذا الملحق جميع لقطات الشاشة المُضمَّنة في الدليل بترتيبها التسلسلي مع أسماء الملفات المقابلة لها.",
+        { spacing: { before: 120, after: 120 } }
+      ),
+      infoTable(screenshotRows, "التسمية | اسم الملف")
+    );
+  }
 
   // ── Build final document ──────────────────────────────────────────────────
   const doc = new Document({
@@ -2407,9 +2428,9 @@ async function seedDemoData(): Promise<DemoSeedResult> {
 async function captureScreenshots(
   baseUrl: string,
   outputDir?: string,
-): Promise<Map<string, Buffer>> {
+): Promise<{ screenshots: Map<string, Buffer>; captureOrder: CaptureEntry[] }> {
   const screenshots = new Map<string, Buffer>();
-  const captureOrder: Array<{ order: number; key: string; filename: string }> = [];
+  const captureOrder: CaptureEntry[] = [];
 
   if (outputDir) {
     fs.mkdirSync(outputDir, { recursive: true });
@@ -2733,7 +2754,7 @@ async function captureScreenshots(
     console.log(`📋 تم كتابة دليل الاستعراض: ${indexMdPath}`);
   }
 
-  return screenshots;
+  return { screenshots, captureOrder };
 }
 
 // ── Progress reporting ────────────────────────────────────────────────────────
@@ -2773,6 +2794,7 @@ function progress(step: string): void {
   }
 
   let screenshots: Map<string, Buffer> | undefined;
+  let captureOrder: CaptureEntry[] | undefined;
   if (useScreenshots) {
     console.log(`🔗 رابط التطبيق: ${baseUrl}`);
     if (outputScreenshotsDir) {
@@ -2780,7 +2802,9 @@ function progress(step: string): void {
     }
     progress("screenshots");
     try {
-      screenshots = await captureScreenshots(baseUrl, outputScreenshotsDir);
+      const result = await captureScreenshots(baseUrl, outputScreenshotsDir);
+      screenshots = result.screenshots;
+      captureOrder = result.captureOrder;
     } catch (e) {
       console.error("⚠ فشل التقاط لقطات الشاشة – سيُنشأ الملف بالنصوص البديلة:", e);
     }
@@ -2788,7 +2812,7 @@ function progress(step: string): void {
 
   progress("build_docx");
   console.log(`${ts()} 📝 بناء مستند Word...`);
-  const buffer = await buildDocument(screenshots);
+  const buffer = await buildDocument(screenshots, captureOrder);
 
   progress("write_docx");
   fs.writeFileSync(OUTPUT_PATH, buffer);
