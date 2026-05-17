@@ -1862,9 +1862,27 @@ async function buildPdf(): Promise<Buffer> {
   }
 }
 
+// ── Helper: sanitize a screenshot key to a safe filename ─────────────────────
+function sanitizeScreenshotFilename(key: string): string {
+  return key
+    .replace(/[\\/:"*?<>|]/g, "_")
+    .replace(/\s+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_|_$/g, "")
+    .slice(0, 180);
+}
+
 // ── Screenshot capture via Puppeteer ──────────────────────────────────────────
-async function captureScreenshots(baseUrl: string): Promise<Map<string, Buffer>> {
+async function captureScreenshots(
+  baseUrl: string,
+  outputDir?: string,
+): Promise<Map<string, Buffer>> {
   const screenshots = new Map<string, Buffer>();
+
+  if (outputDir) {
+    fs.mkdirSync(outputDir, { recursive: true });
+    console.log(`💾 سيتم حفظ لقطات الشاشة في: ${outputDir}`);
+  }
 
   console.log("🌐 تشغيل المتصفح وأخذ لقطات الشاشة...");
   const executablePath = await resolvePuppeteerExecutable();
@@ -1888,7 +1906,12 @@ async function captureScreenshots(baseUrl: string): Promise<Map<string, Buffer>>
     try {
       await new Promise<void>((r) => setTimeout(r, 800));
       const buf = await page.screenshot({ type: "png", fullPage: false });
-      screenshots.set(key, Buffer.from(buf));
+      const buffer = Buffer.from(buf);
+      screenshots.set(key, buffer);
+      if (outputDir) {
+        const filename = `${sanitizeScreenshotFilename(key)}.png`;
+        fs.writeFileSync(path.join(outputDir, filename), buffer);
+      }
       console.log(`  ✓ ${key}`);
     } catch (e) {
       console.warn(`  ✗ فشل أخذ اللقطة: ${key}`);
@@ -2123,18 +2146,42 @@ async function captureScreenshots(baseUrl: string): Promise<Map<string, Buffer>>
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 (async () => {
-  const generatePdf = !process.argv.includes("--no-pdf");
-  const useScreenshots = process.argv.includes("--screenshots");
-  const baseUrl = process.argv.find((a) => a.startsWith("--base-url="))?.split("=")[1] ?? "http://localhost:80";
+  const args = process.argv.slice(2);
+
+  const generatePdf = !args.includes("--no-pdf");
+  const useScreenshots = args.includes("--screenshots");
+  const screenshotsOnly = args.includes("--screenshots-only");
+  const baseUrl = args.find((a) => a.startsWith("--base-url="))?.split("=")[1] ?? "http://localhost:80";
+  const outputScreenshotsDir = args.find((a) => a.startsWith("--output-screenshots-dir="))?.split("=").slice(1).join("=");
   let pdfStatus: "produced" | "skipped" | "disabled" = "disabled";
+
+  if (screenshotsOnly) {
+    if (!outputScreenshotsDir) {
+      console.error("❌ --screenshots-only requires --output-screenshots-dir=<path>");
+      process.exit(1);
+    }
+    console.log(`📸 التقاط لقطات الشاشة فقط إلى: ${outputScreenshotsDir}`);
+    console.log(`🔗 رابط التطبيق: ${baseUrl}`);
+    try {
+      await captureScreenshots(baseUrl, outputScreenshotsDir);
+      console.log("✅ اكتمل التقاط لقطات الشاشة.");
+    } catch (e) {
+      console.error("❌ فشل التقاط لقطات الشاشة:", e);
+      process.exit(1);
+    }
+    return;
+  }
 
   console.log("📄 جاري إنشاء دليل المستخدم (Word)...");
 
   let screenshots: Map<string, Buffer> | undefined;
   if (useScreenshots) {
     console.log(`🔗 رابط التطبيق: ${baseUrl}`);
+    if (outputScreenshotsDir) {
+      console.log(`💾 ستُحفظ لقطات الشاشة أيضًا في: ${outputScreenshotsDir}`);
+    }
     try {
-      screenshots = await captureScreenshots(baseUrl);
+      screenshots = await captureScreenshots(baseUrl, outputScreenshotsDir);
     } catch (e) {
       console.error("⚠ فشل التقاط لقطات الشاشة – سيُنشأ الملف بالنصوص البديلة:", e);
     }

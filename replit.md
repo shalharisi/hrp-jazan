@@ -11,6 +11,8 @@ High-Risk Pregnancy Tracking Platform for Jazan Health Cluster 2026 — a biling
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - `pnpm --filter @workspace/scripts run generate-guide` — regenerate the user guide Word + PDF files (output: `دليل_المستخدم_منظومة_جازان.docx` and `دليل_المستخدم_منظومة_جازان.pdf` at workspace root); append `--no-pdf` to skip PDF generation
+- `pnpm --filter @workspace/scripts run generate-guide-with-screenshots` — same as above but also captures live screenshots from the running app and saves them as PNGs to `scripts/screenshots/` for version-control diffing; supports `--output-screenshots-dir=<path>` and `--base-url=<url>` overrides
+- `pnpm --filter @workspace/scripts run capture-screenshots` — capture screenshots only (no guide build), saved to `scripts/screenshots/`; supports `--output-screenshots-dir=<path>` and `--base-url=<url>` overrides
 - Required env: `DATABASE_URL` — Postgres connection string
 
 ## Stack

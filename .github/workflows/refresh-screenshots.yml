@@ -1,0 +1,115 @@
+name: Refresh Guide Screenshots
+
+# Re-capture screenshots and update the on-disk PNGs in `screenshots/`
+# whenever key UI source files change on the main branch, or on a weekly
+# schedule. The updated PNGs are committed back automatically so they can
+# be diffed in pull-requests and the user guide always uses fresh captures.
+
+on:
+  schedule:
+    # Every Sunday at 01:00 UTC (03:00 AST, outside business hours)
+    - cron: "0 1 * * 0"
+
+  push:
+    branches: ["main"]
+    paths:
+      - "artifacts/hrp-tracker/src/**"
+      - "artifacts/hrp-mobile/**"
+      - "lib/api-spec/openapi.yaml"
+      - "scripts/src/generate-user-guide.ts"
+
+  # Allow manual re-runs from the Actions tab
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Base URL of the running app (default: http://localhost:80)"
+        required: false
+        default: "http://localhost:80"
+
+jobs:
+  refresh-screenshots:
+    name: Capture screenshots and commit updates
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write   # needed to push the updated PNGs back
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Fetch with a PAT so the auto-commit push is accepted
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium for Puppeteer
+        run: npx --yes puppeteer browsers install chrome
+        working-directory: scripts
+
+      # ── Start the app services ─────────────────────────────────────────────
+      - name: Start API server
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PORT: 8080
+          BASE_PATH: /api
+          NODE_ENV: production
+        run: |
+          pnpm --filter @workspace/api-server run build
+          pnpm --filter @workspace/api-server run start &
+          echo "API_PID=$!" >> "$GITHUB_ENV"
+
+      - name: Start frontend
+        env:
+          PORT: 22604
+          BASE_PATH: /
+          NODE_ENV: production
+        run: |
+          pnpm --filter @workspace/hrp-tracker run build
+          # Serve the built output with a simple static server
+          npx --yes serve -s artifacts/hrp-tracker/dist -l 22604 &
+          echo "FRONTEND_PID=$!" >> "$GITHUB_ENV"
+
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for API..."
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8080/api/healthz && break || sleep 2
+          done
+          echo "Waiting for frontend..."
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:22604 && break || sleep 2
+          done
+
+      # ── Capture screenshots ────────────────────────────────────────────────
+      - name: Capture screenshots
+        env:
+          BASE_URL: ${{ github.event.inputs.base_url || 'http://localhost:80' }}
+        run: |
+          pnpm --filter @workspace/scripts run generate-guide-with-screenshots \
+            --no-pdf \
+            --output-screenshots-dir=screenshots \
+            --base-url="$BASE_URL"
+
+      # ── Commit updated PNGs ────────────────────────────────────────────────
+      - name: Commit updated screenshots
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add screenshots/
+          if git diff --cached --quiet; then
+            echo "No screenshot changes detected — nothing to commit."
+          else
+            CHANGED=$(git diff --cached --name-only screenshots/ | wc -l | tr -d ' ')
+            git commit -m "chore(screenshots): refresh ${CHANGED} guide screenshot(s) [skip ci]"
+            git push
+          fi
