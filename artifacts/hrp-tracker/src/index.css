@@ -69,36 +69,36 @@
 }
 
 :root {
-  /* Saudi MoH Green + Sky-blue background clinical palette */
-  --background: 200 60% 95%;
-  --foreground: 210 40% 12%;
+  /* Saudi MoH Green palette */
+  --background: 150 30% 96%;
+  --foreground: 150 40% 10%;
 
   --card: 0 0% 100%;
-  --card-foreground: 210 40% 12%;
-  --card-border: 200 30% 88%;
+  --card-foreground: 150 40% 10%;
+  --card-border: 150 20% 88%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 210 40% 12%;
-  --popover-border: 200 30% 88%;
+  --popover-foreground: 150 40% 10%;
+  --popover-border: 150 20% 88%;
 
   /* MoH primary green #006633 ≈ hsl(150, 100%, 20%) */
   --primary: 150 100% 20%;
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 200 40% 92%;
-  --secondary-foreground: 210 40% 12%;
+  --secondary: 150 25% 92%;
+  --secondary-foreground: 150 40% 10%;
 
-  --muted: 200 40% 92%;
-  --muted-foreground: 210 20% 45%;
+  --muted: 150 20% 92%;
+  --muted-foreground: 150 15% 42%;
 
-  --accent: 200 40% 92%;
-  --accent-foreground: 210 40% 12%;
+  --accent: 150 25% 92%;
+  --accent-foreground: 150 40% 10%;
 
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 200 30% 85%;
-  --input: 200 30% 85%;
+  --border: 150 20% 86%;
+  --input: 150 20% 86%;
   --ring: 150 100% 20%;
 
   --sidebar: 150 100% 15%;
