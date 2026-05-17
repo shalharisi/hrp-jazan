@@ -36,7 +36,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { CalendarCheck2, CalendarX2, Clock, ExternalLink, CalendarDays } from "lucide-react";
+import { CalendarCheck2, CalendarX2, Clock, ExternalLink, CalendarDays, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { getListAppointmentsQueryKey } from "@workspace/api-client-react";
@@ -109,6 +109,64 @@ function formatDate(dateStr: string, lang: string) {
     month: "short",
     day: "numeric",
   });
+}
+
+function attendedLabel(attended: boolean | null | undefined, lang: string): string {
+  if (attended === true) return lang === "ar" ? "حضر" : "Attended";
+  if (attended === false) return lang === "ar" ? "غائب" : "Absent";
+  return lang === "ar" ? "مجدول" : "Scheduled";
+}
+
+function exportAppointmentsToCsv(
+  rows: Appointment[],
+  lang: string,
+  headers: { patient: string; nationalId: string; sector: string; hospital: string; date: string; status: string; note: string }
+) {
+  const cols = [
+    headers.patient,
+    headers.nationalId,
+    headers.sector,
+    headers.hospital,
+    headers.date,
+    headers.status,
+    headers.note,
+  ];
+
+  const escape = (val: string | null | undefined) => {
+    const s = val ?? "";
+    if (s.includes(",") || s.includes('"') || s.includes("\n")) {
+      return `"${s.replace(/"/g, '""')}"`;
+    }
+    return s;
+  };
+
+  const lines: string[] = [cols.map(escape).join(",")];
+  for (const row of rows) {
+    lines.push(
+      [
+        escape(row.patientNameAr),
+        escape(row.patientNationalId),
+        escape(row.sectorNameAr),
+        escape(row.hospitalNameAr),
+        escape(row.appointmentDate),
+        escape(attendedLabel(row.attended, lang)),
+        escape(row.attendanceNote),
+      ].join(",")
+    );
+  }
+
+  const BOM = "\uFEFF";
+  const csvContent = BOM + lines.join("\r\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const today = new Date().toISOString().slice(0, 10);
+  link.href = url;
+  link.download = `appointments-${today}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 type AttendanceDialogState = {
@@ -245,7 +303,7 @@ export default function AppointmentsPage() {
 
       {/* Filters */}
       <Card>
-        <CardContent className="p-4 flex flex-wrap gap-3 items-center">
+        <CardContent className="p-4 flex flex-wrap gap-3 items-end">
           <div className="flex flex-col gap-1">
             <Label className="text-xs text-muted-foreground">{t("appointments.filterDate")}</Label>
             <Select value={dateFilter} onValueChange={(v) => setDateFilter(v as DateFilter)}>
@@ -291,6 +349,29 @@ export default function AppointmentsPage() {
               </SelectContent>
             </Select>
           </div>
+
+          <div className="flex-1" />
+
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 gap-2"
+            disabled={filtered.length === 0}
+            onClick={() =>
+              exportAppointmentsToCsv(filtered, lang, {
+                patient: t("appointments.colPatient"),
+                nationalId: t("appointments.colNationalId"),
+                sector: t("appointments.colSector"),
+                hospital: t("appointments.colHospital"),
+                date: t("appointments.colDate"),
+                status: t("appointments.colStatus"),
+                note: t("appointments.colAttendanceNote"),
+              })
+            }
+          >
+            <Download className="w-4 h-4" />
+            {t("appointments.exportCsv")}
+          </Button>
         </CardContent>
       </Card>
 

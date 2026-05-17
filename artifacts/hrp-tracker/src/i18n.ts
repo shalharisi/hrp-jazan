@@ -177,6 +177,8 @@ export const translations = {
     "appointments.noData": "لا توجد مواعيد تطابق الفلاتر المحددة",
     "appointments.viewCase": "عرض الحالة",
     "appointments.totalCount": "إجمالي المواعيد",
+    "appointments.exportCsv": "تصدير CSV",
+    "appointments.colAttendanceNote": "افادة الحضور",
   },
   en: {
     // Navigation
@@ -356,6 +358,8 @@ export const translations = {
     "appointments.noData": "No appointments match the selected filters",
     "appointments.viewCase": "View Case",
     "appointments.totalCount": "Total Appointments",
+    "appointments.exportCsv": "Export CSV",
+    "appointments.colAttendanceNote": "Attendance Note",
   }
 } as const;
 
