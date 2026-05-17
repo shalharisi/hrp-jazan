@@ -79,6 +79,9 @@ export default function AppointmentsScreen() {
     if (params.filter === "needs_action") {
       setAttendanceFilter("needs_action");
       setDateFilter("all");
+    } else {
+      setAttendanceFilter("all");
+      setDateFilter("today");
     }
   }, [params.filter]);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
